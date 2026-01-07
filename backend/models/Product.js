@@ -67,6 +67,7 @@ const productSchema = new mongoose.Schema(
     subCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
+      index: true,
     },
     brand: {
       type: String,
@@ -224,10 +225,23 @@ const productSchema = new mongoose.Schema(
     },
     variants: [
       {
-        sku: String,
-        price: Number,
-        comparePrice: Number,
-        stock: Number,
+        sku: {
+          type: String,
+          uppercase: true,
+        },
+        price: {
+          type: Number,
+          min: [0, "Variant price cannot be negative"],
+        },
+        comparePrice: {
+          type: Number,
+          min: [0, "Variant compare price cannot be negative"],
+        },
+        stock: {
+          type: Number,
+          min: [0, "Variant stock cannot be negative"],
+          default: 0,
+        },
         attributes: [
           {
             name: String,
@@ -240,6 +254,14 @@ const productSchema = new mongoose.Schema(
             publicId: String,
           },
         ],
+        isActive: {
+          type: Boolean,
+          default: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
   },
@@ -268,8 +290,76 @@ productSchema.pre("save", function (next) {
     this.sku = `${namePrefix}-${randomNum}`;
   }
 
+  // Generate SKU for variants if not provided
+  if (this.variants && this.variants.length > 0) {
+    this.variants.forEach((variant, index) => {
+      if (!variant.sku && this.sku) {
+        variant.sku = `${this.sku}-V${index + 1}`;
+      }
+    });
+  }
+
   next();
 });
+
+// Middleware to update category product count when product is saved
+productSchema.pre("save", async function (next) {
+  // Only run if category is being modified
+  if (this.isModified("category")) {
+    const Category = mongoose.model("Category");
+
+    // Decrement old category count if product already exists
+    if (this.isModified("category") && !this.isNew) {
+      try {
+        const oldProduct = await this.constructor
+          .findById(this._id)
+          .select("category");
+        if (oldProduct && oldProduct.category) {
+          await Category.findByIdAndUpdate(oldProduct.category, {
+            $inc: { productCount: -1 },
+          });
+        }
+      } catch (error) {
+        console.error("Error updating old category count:", error);
+      }
+    }
+
+    // Increment new category count
+    if (this.category) {
+      try {
+        await Category.findByIdAndUpdate(this.category, {
+          $inc: { productCount: 1 },
+        });
+      } catch (error) {
+        console.error("Error updating new category count:", error);
+      }
+    }
+  }
+
+  next();
+});
+
+// Middleware to handle category count when product is deleted
+productSchema.pre(
+  "deleteOne",
+  { document: true, query: false },
+  async function (next) {
+    const Category = mongoose.model("Category");
+
+    // Decrement category count
+    if (this.category) {
+      try {
+        await Category.findByIdAndUpdate(this.category, {
+          $inc: { productCount: -1 },
+        });
+      } catch (error) {
+        console.error("Error decrementing category count:", error);
+      }
+    }
+
+    next();
+  }
+);
 
 // Update average rating when reviews change
 productSchema.methods.updateAverageRating = async function () {
@@ -280,11 +370,47 @@ productSchema.methods.updateAverageRating = async function () {
     this.totalReviews = 0;
   } else {
     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-    this.averageRating = totalRating / reviews.length;
+    this.averageRating = Math.round((totalRating / reviews.length) * 10) / 10; // Round to 1 decimal
     this.totalReviews = reviews.length;
   }
 
   await this.save();
+};
+
+// Add rating and review
+productSchema.methods.addRating = async function (userId, rating, review = "") {
+  // Check if user already rated this product
+  const existingRatingIndex = this.ratings.findIndex(
+    (r) => r.user.toString() === userId.toString()
+  );
+
+  if (existingRatingIndex >= 0) {
+    // Update existing rating
+    this.ratings[existingRatingIndex].rating = rating;
+    this.ratings[existingRatingIndex].review = review;
+    this.ratings[existingRatingIndex].createdAt = Date.now();
+  } else {
+    // Add new rating
+    this.ratings.push({
+      user: userId,
+      rating,
+      review,
+      createdAt: Date.now(),
+    });
+  }
+
+  await this.updateAverageRating();
+  return this;
+};
+
+// Remove rating
+productSchema.methods.removeRating = async function (userId) {
+  this.ratings = this.ratings.filter(
+    (r) => r.user.toString() !== userId.toString()
+  );
+
+  await this.updateAverageRating();
+  return this;
 };
 
 // Check if product is in low stock
@@ -295,6 +421,20 @@ productSchema.virtual("isLowStock").get(function () {
 // Check if product is out of stock
 productSchema.virtual("isOutOfStock").get(function () {
   return this.stock <= 0;
+});
+
+// Get total stock including variants
+productSchema.virtual("totalStock").get(function () {
+  let total = this.stock;
+
+  if (this.variants && this.variants.length > 0) {
+    total += this.variants.reduce(
+      (sum, variant) => sum + (variant.stock || 0),
+      0
+    );
+  }
+
+  return total;
 });
 
 // Get discount percentage
@@ -340,8 +480,20 @@ productSchema.methods.incrementSalesCount = function (quantity = 1) {
   return this.save();
 };
 
+// Update stock
+productSchema.methods.updateStock = function (quantity) {
+  this.stock = Math.max(0, quantity);
+  return this.save();
+};
+
 // Method to add variant
 productSchema.methods.addVariant = function (variantData) {
+  // Generate SKU if not provided
+  if (!variantData.sku) {
+    const variantCount = this.variants.length;
+    variantData.sku = `${this.sku}-V${variantCount + 1}`;
+  }
+
   this.variants.push(variantData);
   return this.save();
 };
@@ -361,6 +513,97 @@ productSchema.methods.deleteVariant = function (variantId) {
   return this.save();
 };
 
+// Method to toggle variant active status
+productSchema.methods.toggleVariantActive = function (variantId) {
+  const variant = this.variants.id(variantId);
+  if (variant) {
+    variant.isActive = !variant.isActive;
+  }
+  return this.save();
+};
+
+// Method to check if user has reviewed this product
+productSchema.methods.hasUserReviewed = function (userId) {
+  return this.ratings.some((r) => r.user.toString() === userId.toString());
+};
+
+// Method to get user's rating
+productSchema.methods.getUserRating = function (userId) {
+  const rating = this.ratings.find(
+    (r) => r.user.toString() === userId.toString()
+  );
+  return rating ? rating.rating : null;
+};
+
+// Static method to find products by category
+productSchema.statics.findByCategory = function (categoryId, options = {}) {
+  const {
+    limit = 10,
+    skip = 0,
+    sort = "-createdAt",
+    isActive = true,
+  } = options;
+
+  return this.find({
+    category: categoryId,
+    isActive,
+  })
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+};
+
+// Static method to find featured products
+productSchema.statics.findFeatured = function (limit = 10) {
+  return this.find({
+    featured: true,
+    isActive: true,
+    stock: { $gt: 0 },
+  })
+    .sort("-createdAt")
+    .limit(limit);
+};
+
+// Static method to find best sellers
+productSchema.statics.findBestSellers = function (limit = 10) {
+  return this.find({
+    isActive: true,
+    stock: { $gt: 0 },
+  })
+    .sort("-salesCount")
+    .limit(limit);
+};
+
+// Static method to find new arrivals
+productSchema.statics.findNewArrivals = function (limit = 10, days = 30) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+
+  return this.find({
+    isActive: true,
+    createdAt: { $gte: date },
+  })
+    .sort("-createdAt")
+    .limit(limit);
+};
+
+// Static method to search products
+productSchema.statics.searchProducts = function (searchTerm, options = {}) {
+  const { limit = 20, skip = 0 } = options;
+
+  return this.find({
+    $or: [
+      { name: { $regex: searchTerm, $options: "i" } },
+      { description: { $regex: searchTerm, $options: "i" } },
+      { brand: { $regex: searchTerm, $options: "i" } },
+      { tags: { $regex: searchTerm, $options: "i" } },
+    ],
+    isActive: true,
+  })
+    .skip(skip)
+    .limit(limit);
+};
+
 // Add pagination plugin
 productSchema.plugin(mongoosePaginate);
 
@@ -377,8 +620,10 @@ productSchema.index({ salesCount: -1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ category: 1, isActive: 1 });
 productSchema.index({ seller: 1, isActive: 1 });
+productSchema.index({ subCategory: 1, isActive: 1 });
+productSchema.index({ "variants.sku": 1 });
+productSchema.index({ "variants.isActive": 1 });
 
 const Product = mongoose.model("Product", productSchema);
 
 export default Product;
-                                    

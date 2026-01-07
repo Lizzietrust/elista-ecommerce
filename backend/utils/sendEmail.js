@@ -1,43 +1,108 @@
 import nodemailer from "nodemailer";
 
 const sendEmail = async (options) => {
-  // Create transporter
+  // Development mode - log to console
+  if (process.env.NODE_ENV === "development" && !process.env.SMTP_HOST) {
+    console.log("📧 ====== DEVELOPMENT EMAIL ======");
+    console.log("To:", options.email);
+    console.log("Subject:", options.subject);
+    console.log("HTML Length:", options.html?.length || 0, "characters");
+
+    if (options.html) {
+      const plainText = options.html
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      console.log("Text Preview:", plainText.substring(0, 200) + "...");
+    }
+
+    console.log("📧 ===============================");
+
+    // Simulate successful send
+    return {
+      messageId: "dev-mode-simulated-id",
+      previewUrl: null,
+      success: true,
+    };
+  }
+
+  // Check if SMTP is configured
+  if (
+    !process.env.SMTP_HOST ||
+    !process.env.SMTP_USER ||
+    !process.env.SMTP_PASS
+  ) {
+    console.error("❌ SMTP configuration is missing in .env file");
+    throw new Error("Email service is not configured");
+  }
+
+  // Create transporter with enhanced options
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_PORT === "465",
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    tls: {
+      rejectUnauthorized: process.env.NODE_ENV === "production", // Only reject in production
+    },
+    pool: true, // Use pooled connections
+    maxConnections: 5, // Max simultaneous connections
+    maxMessages: 100, // Max messages per connection
   });
 
-  // For development - log to console instead of sending
-  if (process.env.NODE_ENV === "development" && !process.env.SMTP_HOST) {
-    console.log("=== EMAIL (Development Mode) ===");
-    console.log("To:", options.email);
-    console.log("Subject:", options.subject);
-    console.log(
-      "HTML Preview (first 500 chars):",
-      options.html?.substring(0, 500) + "..."
-    );
-    console.log("================================");
-
-    // Return a mock success response
-    return Promise.resolve();
+  // Test the connection
+  try {
+    await transporter.verify();
+    console.log("✅ SMTP connection verified successfully");
+  } catch (error) {
+    console.error("❌ SMTP connection failed:", error.message);
+    throw new Error(`Failed to connect to email server: ${error.message}`);
   }
 
   // Define email options
   const mailOptions = {
-    from: `"Your Ecommerce Store" <${process.env.SMTP_USER}>`,
+    from: `"${process.env.EMAIL_FROM_NAME || "Elista Ecommerce"}" <${
+      process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER
+    }>`,
     to: options.email,
     subject: options.subject,
     html: options.html,
-    text: options.text || options.html?.replace(/<[^>]*>/g, ""), // Plain text fallback
+    text:
+      options.text ||
+      (options.html
+        ? options.html
+            .replace(/<[^>]*>/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+        : ""),
+    replyTo: options.replyTo || process.env.EMAIL_REPLY_TO,
+    // Attachments if provided
+    ...(options.attachments && { attachments: options.attachments }),
+    // CC/BCC if provided
+    ...(options.cc && { cc: options.cc }),
+    ...(options.bcc && { bcc: options.bcc }),
   };
 
   // Send email
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(
+      `✅ Email sent to ${options.email} - Message ID: ${info.messageId}`
+    );
+
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info), // Only works with test accounts
+      response: info.response,
+    };
+  } catch (error) {
+    console.error("❌ Error sending email:", error.message);
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
 };
 
 export default sendEmail;

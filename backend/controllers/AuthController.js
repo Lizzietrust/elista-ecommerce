@@ -4,22 +4,37 @@ import { validationResult } from "express-validator";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
 
-// Generate JWT Token
-const generateToken = (userId) => {
+// Helper functions for token generation
+const generateJWTToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
 
+const generateEmailVerificationToken = () => {
+  return crypto.randomBytes(20).toString("hex");
+};
+
+const generatePasswordResetToken = () => {
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+  const resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  return { resetToken, resetPasswordToken, resetPasswordExpire };
+};
+
 // Send JWT Token in response
 const sendTokenResponse = (user, statusCode, res) => {
   // Create token
-  const token = generateToken(user._id);
+  const token = generateJWTToken(user._id);
 
   // Cookie options
   const cookieOptions = {
     expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+      Date.now() + (process.env.JWT_COOKIE_EXPIRE || 7) * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -61,6 +76,10 @@ export const register = async (req, res, next) => {
       });
     }
 
+    // Generate email verification token
+    const emailVerificationToken = generateEmailVerificationToken();
+    const emailVerificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
     // Create user
     const user = await User.create({
       name,
@@ -68,65 +87,122 @@ export const register = async (req, res, next) => {
       password,
       phone,
       address,
-      emailVerificationToken: crypto.randomBytes(32).toString("hex"),
-      emailVerificationExpire: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      emailVerificationToken: crypto
+        .createHash("sha256")
+        .update(emailVerificationToken)
+        .digest("hex"),
+      emailVerificationTokenExpiry,
+      isEmailVerified: false,
     });
 
+    // Generate JWT token for immediate response
+    const token = generateJWTToken(user._id);
+
     // Generate email verification URL
-    const verificationUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/api/auth/verify-email/${user.emailVerificationToken}`;
+    const verificationUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }/verify-email/${emailVerificationToken}`;
 
     // Send verification email
-    const message = `
-      <h1>Verify Your Email</h1>
-      <p>Please click the link below to verify your email address:</p>
-      <a href="${verificationUrl}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-        Verify Email
-      </a>
-      <p>Or copy and paste this URL in your browser:</p>
-      <p>${verificationUrl}</p>
-      <p>This link will expire in 24 hours.</p>
+    const verificationMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Welcome to Elista Ecommerce!</h1>
+        <p>Hi ${name},</p>
+        <p>Thank you for registering with us. Please verify your email address to complete your registration.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </div>
+        <p>Or copy and paste this link in your browser:</p>
+        <p style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all;">
+          ${verificationUrl}
+        </p>
+        <p>This link will expire in 24 hours.</p>
+        <p>If you did not create an account, please ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #666; font-size: 12px;">
+          This email was sent by Elista Ecommerce. Please do not reply to this email.
+        </p>
+      </div>
     `;
 
+    // Send welcome email
+    const welcomeMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Welcome to Elista Ecommerce!</h1>
+        <p>Hi ${name},</p>
+        <p>We're excited to have you on board. Here's what you can do with your account:</p>
+        <ul>
+          <li>Browse our wide range of products</li>
+          <li>Create wishlists</li>
+          <li>Track your orders</li>
+          <li>Save your shipping preferences</li>
+        </ul>
+        <p>Start shopping now and enjoy exclusive benefits!</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${
+            process.env.FRONTEND_URL || "http://localhost:3000"
+          }" style="background-color: #2196F3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+            Start Shopping
+          </a>
+        </div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #666; font-size: 12px;">
+          If you have any questions, please contact our support team.
+        </p>
+      </div>
+    `;
+
+    // Send emails
     try {
+      // Send verification email
       await sendEmail({
         email: user.email,
-        subject: "Email Verification - Your Ecommerce Store",
-        html: message,
+        subject: "Verify Your Email - Elista Ecommerce",
+        html: verificationMessage,
       });
+      console.log(`✅ Verification email sent to ${email}`);
 
+      // Send welcome email
+      await sendEmail({
+        email: user.email,
+        subject: "Welcome to Elista Ecommerce!",
+        html: welcomeMessage,
+      });
+      console.log(`✅ Welcome email sent to ${email}`);
+
+      // Return success response with token
       res.status(201).json({
         success: true,
         message:
           "Registration successful! Please check your email to verify your account.",
+        token,
         user: {
           _id: user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
+          isEmailVerified: user.isEmailVerified,
         },
       });
     } catch (emailError) {
-      // If email fails, still create user but log the error
-      console.error("Email sending failed:", emailError);
+      console.error("❌ Email sending failed:", emailError.message);
 
-      // Update user to indicate email wasn't sent
-      await User.findByIdAndUpdate(user._id, {
-        emailVerificationToken: undefined,
-        emailVerificationExpire: undefined,
-        isEmailVerified: false,
-      });
-
+      // Still return success but inform user about email issue
       res.status(201).json({
         success: true,
         message:
           "Registration successful but verification email failed to send. Please try resending verification email.",
+        token,
         user: {
           _id: user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
+          isEmailVerified: user.isEmailVerified,
         },
       });
     }
@@ -165,11 +241,21 @@ export const login = async (req, res, next) => {
       });
     }
 
+    // Check if password matches
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
     // Check if email is verified
     if (!user.isEmailVerified) {
       return res.status(401).json({
         success: false,
-        message: "Please verify your email before logging in",
+        message: "Please verify your email address before logging in",
         needsVerification: true,
         email: user.email,
       });
@@ -180,16 +266,6 @@ export const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: "Your account has been deactivated. Please contact support.",
-      });
-    }
-
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
       });
     }
 
@@ -233,7 +309,18 @@ export const getMe = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        createdAt: user.createdAt,
+        wishlist: user.wishlist,
+        recentlyViewed: user.recentlyViewed,
+      },
     });
   } catch (error) {
     console.error("Get me error:", error);
@@ -253,6 +340,8 @@ export const logout = async (req, res, next) => {
     res.cookie("token", "none", {
       expires: new Date(Date.now() + 10 * 1000), // Expires in 10 seconds
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     res.status(200).json({
@@ -299,10 +388,13 @@ export const updateDetails = async (req, res, next) => {
 
       // If email changed, require verification
       fieldsToUpdate.isEmailVerified = false;
+      const emailVerificationToken = generateEmailVerificationToken();
       fieldsToUpdate.emailVerificationToken = crypto
-        .randomBytes(32)
-        .toString("hex");
-      fieldsToUpdate.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+        .createHash("sha256")
+        .update(emailVerificationToken)
+        .digest("hex");
+      fieldsToUpdate.emailVerificationTokenExpiry =
+        Date.now() + 24 * 60 * 60 * 1000;
     }
 
     const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
@@ -312,9 +404,9 @@ export const updateDetails = async (req, res, next) => {
 
     // Send verification email if email was changed
     if (fieldsToUpdate.email && fieldsToUpdate.email !== req.user.email) {
-      const verificationUrl = `${req.protocol}://${req.get(
-        "host"
-      )}/api/auth/verify-email/${user.emailVerificationToken}`;
+      const verificationUrl = `${
+        process.env.FRONTEND_URL || "http://localhost:3000"
+      }/verify-email/${emailVerificationToken}`;
 
       const message = `
         <h1>Verify Your New Email</h1>
@@ -327,7 +419,7 @@ export const updateDetails = async (req, res, next) => {
 
       await sendEmail({
         email: user.email,
-        subject: "Verify Your New Email - Your Ecommerce Store",
+        subject: "Verify Your New Email - Elista Ecommerce",
         html: message,
       });
     }
@@ -383,14 +475,13 @@ export const updatePassword = async (req, res, next) => {
     // Send notification email
     const message = `
       <h1>Password Changed</h1>
-      <p>Your password was successfully changed.</p>
+      <p>Your password was successfully changed on ${new Date().toLocaleString()}.</p>
       <p>If you did not make this change, please contact our support team immediately.</p>
-      <p>Date: ${new Date().toLocaleString()}</p>
     `;
 
     await sendEmail({
       email: user.email,
-      subject: "Password Changed - Your Ecommerce Store",
+      subject: "Password Changed - Elista Ecommerce",
       html: message,
     });
 
@@ -425,30 +516,21 @@ export const forgotPassword = async (req, res, next) => {
       // For security, don't reveal that user doesn't exist
       return res.status(200).json({
         success: true,
-        message: "If your email exists, you will receive a password reset link",
+        message:
+          "If your email exists in our system, you will receive a password reset link",
       });
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString("hex");
+    // Generate reset token using improved function
+    const { resetToken, resetPasswordToken, resetPasswordExpire } =
+      generatePasswordResetToken();
 
-    // Hash token and set to resetPasswordToken field
-    user.resetPasswordToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
-
-    // Set token expire time (10 minutes)
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
-
+    // Save hashed token and expiry to database
+    user.resetPasswordToken = resetPasswordToken;
+    user.resetPasswordExpire = resetPasswordExpire;
     await user.save({ validateBeforeSave: false });
 
-    // Create reset URL
-    const resetUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/api/auth/reset-password/${resetToken}`;
-
-    // For frontend application, you might want to use a frontend URL
+    // Create reset URL for frontend
     const frontendResetUrl = `${
       process.env.FRONTEND_URL || "http://localhost:3000"
     }/reset-password/${resetToken}`;
@@ -459,8 +541,6 @@ export const forgotPassword = async (req, res, next) => {
       <a href="${frontendResetUrl}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
         Reset Password
       </a>
-      <p>Or copy and paste this token in the reset form:</p>
-      <p><strong>${resetToken}</strong></p>
       <p>This link will expire in 10 minutes.</p>
       <p>If you did not request this, please ignore this email.</p>
     `;
@@ -468,34 +548,37 @@ export const forgotPassword = async (req, res, next) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: "Password Reset Request - Your Ecommerce Store",
+        subject: "Password Reset Request - Elista Ecommerce",
         html: message,
       });
 
+      console.log(`✅ Password reset email sent to ${email}`);
+
       res.status(200).json({
         success: true,
-        message: "Password reset email sent",
-        resetToken:
-          process.env.NODE_ENV === "development" ? resetToken : undefined,
+        message: "Password reset email sent. Please check your inbox.",
       });
-    } catch (error) {
-      console.error("Email sending failed:", error);
+    } catch (emailError) {
+      console.error(
+        "❌ Failed to send password reset email:",
+        emailError.message
+      );
 
-      // Reset token fields if email fails
+      // Clear the reset token since email failed
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
 
       return res.status(500).json({
         success: false,
-        message: "Email could not be sent",
+        message: "Failed to send password reset email. Please try again later.",
       });
     }
   } catch (error) {
     console.error("Forgot password error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Server error processing forgot password",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
@@ -551,11 +634,24 @@ export const resetPassword = async (req, res, next) => {
 
     await sendEmail({
       email: user.email,
-      subject: "Password Reset Successful - Your Ecommerce Store",
+      subject: "Password Reset Successful - Elista Ecommerce",
       html: message,
     });
 
-    sendTokenResponse(user, 200, res);
+    // Generate new token for auto-login
+    const token = generateJWTToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (error) {
     console.error("Reset password error:", error);
     res.status(500).json({
@@ -573,9 +669,13 @@ export const verifyEmail = async (req, res, next) => {
   try {
     const { token } = req.params;
 
+    // Hash the token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Find user with valid token
     const user = await User.findOne({
-      emailVerificationToken: token,
-      emailVerificationExpire: { $gt: Date.now() },
+      emailVerificationToken: hashedToken,
+      emailVerificationTokenExpiry: { $gt: Date.now() },
     });
 
     if (!user) {
@@ -585,27 +685,32 @@ export const verifyEmail = async (req, res, next) => {
       });
     }
 
-    // Mark email as verified
+    // Update user
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
-    user.emailVerificationExpire = undefined;
+    user.emailVerificationTokenExpiry = undefined;
     await user.save();
+
+    // Generate token for auto-login
+    const authToken = generateJWTToken(user._id);
 
     // For API response
     if (req.headers.accept?.includes("application/json")) {
       return res.status(200).json({
         success: true,
-        message: "Email verified successfully. You can now log in.",
+        message: "Email verified successfully! You can now log in.",
+        token: authToken,
         user: {
           _id: user._id,
           name: user.name,
           email: user.email,
+          role: user.role,
           isEmailVerified: user.isEmailVerified,
         },
       });
     }
 
-    // For browser redirect (if accessed via browser)
+    // For browser redirect
     res.redirect(
       `${
         process.env.FRONTEND_URL || "http://localhost:3000"
@@ -661,14 +766,21 @@ export const resendVerificationEmail = async (req, res, next) => {
     }
 
     // Generate new verification token
-    user.emailVerificationToken = crypto.randomBytes(32).toString("hex");
-    user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    const emailVerificationToken = generateEmailVerificationToken();
+    const emailVerificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+    // Update user with new token
+    user.emailVerificationToken = crypto
+      .createHash("sha256")
+      .update(emailVerificationToken)
+      .digest("hex");
+    user.emailVerificationTokenExpiry = emailVerificationTokenExpiry;
     await user.save({ validateBeforeSave: false });
 
     // Generate verification URL
-    const verificationUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/api/auth/verify-email/${user.emailVerificationToken}`;
+    const verificationUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }/verify-email/${emailVerificationToken}`;
 
     const message = `
       <h1>Verify Your Email</h1>
@@ -682,32 +794,34 @@ export const resendVerificationEmail = async (req, res, next) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: "Resend: Email Verification - Your Ecommerce Store",
+        subject: "Resend: Email Verification - Elista Ecommerce",
         html: message,
       });
 
+      console.log(`✅ Verification email resent to ${email}`);
+
       res.status(200).json({
         success: true,
-        message: "Verification email sent successfully",
+        message: "Verification email resent. Please check your inbox.",
       });
     } catch (error) {
-      console.error("Email sending failed:", error);
+      console.error("❌ Failed to resend verification email:", error.message);
 
       // Reset token fields if email fails
       user.emailVerificationToken = undefined;
-      user.emailVerificationExpire = undefined;
+      user.emailVerificationTokenExpiry = undefined;
       await user.save({ validateBeforeSave: false });
 
       return res.status(500).json({
         success: false,
-        message: "Verification email could not be sent",
+        message: "Failed to send verification email. Please try again later.",
       });
     }
   } catch (error) {
     console.error("Resend verification error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Server error resending verification email",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

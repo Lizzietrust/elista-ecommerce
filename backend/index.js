@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 import http from "http";
 import { v2 as cloudinary } from "cloudinary";
+import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 // Import routes for ecommerce
 import authRoutes from "./routes/AuthRoutes.js";
@@ -37,13 +39,27 @@ console.log(
   process.env.CLOUDINARY_CLOUD_NAME
 );
 
+// Set up Multer with Cloudinary storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "elista-ecommerce", // Folder name in Cloudinary
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ width: 500, height: 500, crop: "limit" }],
+  },
+});
+
+const upload = multer({ storage: storage });
+
 const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT || 5000;
 const databaseURL = process.env.MONGODB_URI;
 
 // CORS configuration
-const allowedOrigins = process.env.FRONTEND_URL;
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",")
+  : [];
 
 app.use(
   cors({
@@ -230,4 +246,4 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
-export { app, server };
+export { app, server, upload };

@@ -12,48 +12,26 @@ import {
   resendVerificationEmail,
 } from "../controllers/AuthController.js";
 import { protect } from "../middleware/auth.js";
-import { body } from "express-validator";
+import {
+  validateRegistration,
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+  validatePasswordUpdate,
+} from "../middleware/validators.js";
 
 const router = express.Router();
 
-// Validation middleware
-const registerValidation = [
-  body("name").notEmpty().withMessage("Name is required"),
-  body("email").isEmail().withMessage("Please provide a valid email"),
-  body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters"),
-];
-
-const loginValidation = [
-  body("email").isEmail().withMessage("Please provide a valid email"),
-  body("password").notEmpty().withMessage("Password is required"),
-];
-
-const forgotPasswordValidation = [
-  body("email").isEmail().withMessage("Please provide a valid email"),
-];
-
-const resetPasswordValidation = [
-  body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters"),
-];
-
-// Public routes
-router.post("/register", registerValidation, register);
-router.post("/login", loginValidation, login);
+// Public routes with external validators
+router.post("/register", validateRegistration, register);
+router.post("/login", validateLogin, login);
 router.get("/logout", logout);
-router.post("/forgot-password", forgotPasswordValidation, forgotPassword);
-router.put(
-  "/reset-password/:resettoken",
-  resetPasswordValidation,
-  resetPassword
-);
+router.post("/forgot-password", validateForgotPassword, forgotPassword);
+router.put("/reset-password/:resettoken", validateResetPassword, resetPassword);
 router.get("/verify-email/:token", verifyEmail);
 router.post(
   "/resend-verification",
-  forgotPasswordValidation,
+  validateForgotPassword, // Using same validator as forgot password for email validation
   resendVerificationEmail
 );
 
@@ -61,6 +39,6 @@ router.post(
 router.use(protect);
 router.get("/me", getMe);
 router.put("/updatedetails", updateDetails);
-router.put("/updatepassword", updatePassword);
+router.put("/updatepassword", validatePasswordUpdate, updatePassword);
 
 export default router;

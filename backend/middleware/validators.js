@@ -723,15 +723,20 @@ export const validateOrder = [
   },
 ];
 
-// Cart validation
+// ================= CART VALIDATORS =================
+
+// Cart item validation (for adding to cart)
 export const validateCartItem = [
-  body("product")
+  body("productId")
     .notEmpty()
     .withMessage("Product ID is required")
     .isMongoId()
     .withMessage("Invalid product ID"),
 
-  body("quantity").isInt({ min: 1 }).withMessage("Quantity must be at least 1"),
+  body("quantity")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1"),
 
   body("color")
     .optional()
@@ -757,6 +762,111 @@ export const validateCartItem = [
   },
 ];
 
+// Cart update validation (for updating cart item)
+export const validateCartUpdate = [
+  body("quantity")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1"),
+
+  body("productId").optional().isMongoId().withMessage("Invalid product ID"),
+
+  body("operation")
+    .optional()
+    .isIn(["increment", "decrement", "set"])
+    .withMessage("Operation must be 'increment', 'decrement', or 'set'"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Coupon validation (for applying coupon)
+export const validateCoupon = [
+  body("couponCode")
+    .trim()
+    .notEmpty()
+    .withMessage("Coupon code is required")
+    .isLength({ min: 3, max: 20 })
+    .withMessage("Coupon code must be between 3 and 20 characters")
+    .matches(/^[A-Z0-9]+$/)
+    .withMessage("Coupon code can only contain uppercase letters and numbers"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Merge cart validation (for guest to user cart merging)
+export const validateMergeCart = [
+  body("guestCart")
+    .notEmpty()
+    .withMessage("Guest cart is required")
+    .isArray()
+    .withMessage("Guest cart must be an array"),
+
+  body("guestCart.*.productId")
+    .notEmpty()
+    .withMessage("Product ID is required for each item")
+    .isMongoId()
+    .withMessage("Invalid product ID"),
+
+  body("guestCart.*.quantity")
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Cart item quantity validation
+export const validateCartQuantity = [
+  body("quantity")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1"),
+
+  body("operation")
+    .optional()
+    .isIn(["increment", "decrement"])
+    .withMessage("Operation must be 'increment' or 'decrement'"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// ================= END CART VALIDATORS =================
+
 // Wishlist validation
 export const validateWishlistItem = [
   body("product")
@@ -776,3 +886,297 @@ export const validateWishlistItem = [
     next();
   },
 ];
+
+// Address validation (for adding/updating addresses)
+export const validateAddress = [
+  body("street")
+    .trim()
+    .notEmpty()
+    .withMessage("Street address is required")
+    .isLength({ max: 200 })
+    .withMessage("Street address cannot exceed 200 characters"),
+
+  body("city")
+    .trim()
+    .notEmpty()
+    .withMessage("City is required")
+    .isLength({ max: 100 })
+    .withMessage("City cannot exceed 100 characters"),
+
+  body("state")
+    .trim()
+    .notEmpty()
+    .withMessage("State is required")
+    .isLength({ max: 100 })
+    .withMessage("State cannot exceed 100 characters"),
+
+  body("zipCode")
+    .trim()
+    .notEmpty()
+    .withMessage("Zip code is required")
+    .matches(/^\d{5,10}$/)
+    .withMessage("Please provide a valid zip code (5-10 digits)"),
+
+  body("country")
+    .trim()
+    .notEmpty()
+    .withMessage("Country is required")
+    .isLength({ max: 100 })
+    .withMessage("Country cannot exceed 100 characters"),
+
+  body("addressType")
+    .optional()
+    .isIn(["home", "work", "other"])
+    .withMessage("Address type must be 'home', 'work', or 'other'"),
+
+  body("isDefault")
+    .optional()
+    .isBoolean()
+    .withMessage("isDefault must be a boolean"),
+
+  body("phone")
+    .optional()
+    .matches(/^\d{10,15}$/)
+    .withMessage("Please provide a valid phone number (10-15 digits)"),
+
+  body("fullName")
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Full name cannot exceed 100 characters"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Payment validation
+export const validatePayment = [
+  body("paymentMethod")
+    .notEmpty()
+    .withMessage("Payment method is required")
+    .isIn([
+      "credit_card",
+      "debit_card",
+      "paypal",
+      "stripe",
+      "cod",
+      "bank_transfer",
+    ])
+    .withMessage("Invalid payment method"),
+
+  body("amount")
+    .isFloat({ min: 0.01 })
+    .withMessage("Amount must be greater than 0"),
+
+  body("currency")
+    .optional()
+    .isIn(["USD", "EUR", "GBP", "CAD", "AUD"])
+    .withMessage("Invalid currency"),
+
+  body("cardNumber")
+    .if(
+      body("paymentMethod")
+        .equals("credit_card")
+        .or(body("paymentMethod").equals("debit_card"))
+    )
+    .notEmpty()
+    .withMessage("Card number is required for card payments")
+    .matches(/^\d{16}$/)
+    .withMessage("Card number must be 16 digits"),
+
+  body("cardExpiry")
+    .if(
+      body("paymentMethod")
+        .equals("credit_card")
+        .or(body("paymentMethod").equals("debit_card"))
+    )
+    .notEmpty()
+    .withMessage("Card expiry is required")
+    .matches(/^(0[1-9]|1[0-2])\/\d{2}$/)
+    .withMessage("Card expiry must be in MM/YY format"),
+
+  body("cardCVC")
+    .if(
+      body("paymentMethod")
+        .equals("credit_card")
+        .or(body("paymentMethod").equals("debit_card"))
+    )
+    .notEmpty()
+    .withMessage("CVC is required")
+    .matches(/^\d{3,4}$/)
+    .withMessage("CVC must be 3 or 4 digits"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Coupon creation validation (for admin)
+export const validateCouponCreation = [
+  body("code")
+    .trim()
+    .notEmpty()
+    .withMessage("Coupon code is required")
+    .isLength({ min: 3, max: 20 })
+    .withMessage("Coupon code must be between 3 and 20 characters")
+    .matches(/^[A-Z0-9]+$/)
+    .withMessage("Coupon code can only contain uppercase letters and numbers"),
+
+  body("discountType")
+    .notEmpty()
+    .withMessage("Discount type is required")
+    .isIn(["percentage", "fixed", "free_shipping"])
+    .withMessage(
+      "Discount type must be 'percentage', 'fixed', or 'free_shipping'"
+    ),
+
+  body("discountValue")
+    .isFloat({ min: 0 })
+    .withMessage("Discount value must be a positive number"),
+
+  body("maxDiscountAmount")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Max discount amount must be a positive number"),
+
+  body("minPurchaseAmount")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Minimum purchase amount must be a positive number"),
+
+  body("validFrom")
+    .optional()
+    .isISO8601()
+    .withMessage("Valid from must be a valid date"),
+
+  body("validUntil")
+    .optional()
+    .isISO8601()
+    .withMessage("Valid until must be a valid date"),
+
+  body("usageLimit")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Usage limit must be at least 1"),
+
+  body("perUserLimit")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Per user limit must be at least 1"),
+
+  body("description")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Description cannot exceed 500 characters"),
+
+  body("categories")
+    .optional()
+    .isArray()
+    .withMessage("Categories must be an array"),
+
+  body("products")
+    .optional()
+    .isArray()
+    .withMessage("Products must be an array"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Search validation
+export const validateSearch = [
+  body("query")
+    .trim()
+    .notEmpty()
+    .withMessage("Search query is required")
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Search query must be between 2 and 100 characters"),
+
+  body("category").optional().isMongoId().withMessage("Invalid category ID"),
+
+  body("minPrice")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Minimum price must be a positive number"),
+
+  body("maxPrice")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Maximum price must be a positive number"),
+
+  body("sort")
+    .optional()
+    .isIn(["price_asc", "price_desc", "newest", "popular", "rating"])
+    .withMessage("Invalid sort option"),
+
+  body("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be at least 1"),
+
+  body("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Common middleware to handle validation errors
+export const validateRequest = (validations) => {
+  return async (req, res, next) => {
+    // Run all validations
+    await Promise.all(validations.map((validation) => validation.run(req)));
+
+    const errors = validationResult(req);
+    if (errors.isEmpty()) {
+      return next();
+    }
+
+    // Format errors for consistent response
+    const formattedErrors = errors.array().map((error) => ({
+      field: error.path,
+      message: error.msg,
+      value: error.value,
+    }));
+
+    res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: formattedErrors,
+    });
+  };
+};

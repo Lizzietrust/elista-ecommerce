@@ -33,6 +33,7 @@ const couponSchema = new mongoose.Schema(
     },
     validUntil: {
       type: Date,
+      required: [true, "Valid until date is required"],
     },
     usageLimit: {
       type: Number,
@@ -79,14 +80,42 @@ const couponSchema = new mongoose.Schema(
   }
 );
 
-// Check if coupon is valid
-couponSchema.methods.isValid = function () {
+// Indexes
+couponSchema.index({ code: 1 }, { unique: true });
+couponSchema.index({ validUntil: 1 });
+couponSchema.index({ isActive: 1 });
+couponSchema.index({ createdBy: 1 });
+
+// Virtual for checking if coupon is valid
+couponSchema.virtual("isValid").get(function () {
+  const now = new Date();
+  return (
+    this.isActive &&
+    this.validUntil > now &&
+    (!this.validFrom || this.validFrom <= now) &&
+    (!this.usageLimit || this.usedCount < this.usageLimit)
+  );
+});
+
+// Check if coupon is valid (instance method)
+couponSchema.methods.isValidCoupon = function () {
   const now = new Date();
 
   if (!this.isActive) return false;
   if (this.validFrom && now < this.validFrom) return false;
   if (this.validUntil && now > this.validUntil) return false;
   if (this.usageLimit && this.usedCount >= this.usageLimit) return false;
+
+  return true;
+};
+
+// Check if coupon is valid for a specific subtotal
+couponSchema.methods.isValidForAmount = function (subtotal) {
+  if (!this.isValidCoupon()) return false;
+
+  if (this.minPurchaseAmount && subtotal < this.minPurchaseAmount) {
+    return false;
+  }
 
   return true;
 };
@@ -99,29 +128,71 @@ couponSchema.methods.incrementUsage = function () {
 
 // Check if user can use this coupon
 couponSchema.methods.canUserUse = async function (userId) {
+  if (!this.isValidCoupon()) return false;
+
   if (this.perUserLimit) {
     const Order = mongoose.model("Order");
     const userUsageCount = await Order.countDocuments({
       user: userId,
-      "coupon.code": this.code,
+      coupon: this._id,
     });
     return userUsageCount < this.perUserLimit;
   }
   return true;
 };
 
+// Check if coupon applies to specific products or categories
+couponSchema.methods.appliesToProduct = async function (productId) {
+  // If no restrictions, coupon applies to all products
+  if (
+    (!this.categories || this.categories.length === 0) &&
+    (!this.products || this.products.length === 0)
+  ) {
+    return true;
+  }
+
+  // Check specific products
+  if (this.products && this.products.length > 0) {
+    const productIds = this.products.map((id) => id.toString());
+    if (productIds.includes(productId.toString())) {
+      return true;
+    }
+  }
+
+  // Check categories
+  if (this.categories && this.categories.length > 0) {
+    const Product = mongoose.model("Product");
+    const product = await Product.findById(productId).select("category");
+
+    if (product && product.category) {
+      const categoryIds = this.categories.map((id) => id.toString());
+      if (categoryIds.includes(product.category.toString())) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
 // Get discount amount for a given subtotal
 couponSchema.methods.getDiscountAmount = function (subtotal) {
+  if (!this.isValidCoupon()) return 0;
+
+  if (this.minPurchaseAmount && subtotal < this.minPurchaseAmount) {
+    return 0;
+  }
+
   switch (this.discountType) {
     case "percentage":
       let discount = (subtotal * this.discountValue) / 100;
       if (this.maxDiscountAmount && discount > this.maxDiscountAmount) {
         discount = this.maxDiscountAmount;
       }
-      return discount;
+      return Math.max(0, discount);
 
     case "fixed":
-      return Math.min(this.discountValue, subtotal);
+      return Math.min(this.discountValue, Math.max(0, subtotal));
 
     case "free_shipping":
       return 0; // This is handled separately in shipping calculation
@@ -130,6 +201,180 @@ couponSchema.methods.getDiscountAmount = function (subtotal) {
       return 0;
   }
 };
+
+// Validate coupon for cart items
+couponSchema.methods.validateForCart = async function (cartItems) {
+  const validation = {
+    isValid: false,
+    discount: 0,
+    message: "",
+    appliesToItems: [],
+  };
+
+  if (!this.isValidCoupon()) {
+    validation.message = "Coupon is not valid";
+    return validation;
+  }
+
+  // Calculate subtotal for items this coupon applies to
+  let applicableSubtotal = 0;
+  const appliesToItems = [];
+
+  for (const item of cartItems) {
+    const applies = await this.appliesToProduct(
+      item.product._id || item.product
+    );
+    if (applies) {
+      const itemSubtotal = item.product.price * item.quantity;
+      applicableSubtotal += itemSubtotal;
+      appliesToItems.push({
+        product: item.product._id || item.product,
+        name: item.product.name,
+        applies: true,
+        subtotal: itemSubtotal,
+      });
+    } else {
+      appliesToItems.push({
+        product: item.product._id || item.product,
+        name: item.product.name,
+        applies: false,
+        subtotal: 0,
+      });
+    }
+  }
+
+  // Check minimum purchase amount
+  if (this.minPurchaseAmount && applicableSubtotal < this.minPurchaseAmount) {
+    validation.message = `Minimum purchase amount of $${this.minPurchaseAmount} required`;
+    validation.appliesToItems = appliesToItems;
+    return validation;
+  }
+
+  // Calculate discount
+  const discount = this.getDiscountAmount(applicableSubtotal);
+
+  validation.isValid = true;
+  validation.discount = discount;
+  validation.message = "Coupon applied successfully";
+  validation.appliesToItems = appliesToItems;
+  validation.applicableSubtotal = applicableSubtotal;
+
+  return validation;
+};
+
+// Static method to find valid coupon by code
+couponSchema.statics.findValidCoupon = async function (code, userId = null) {
+  const coupon = await this.findOne({
+    code: code.toUpperCase(),
+    isActive: true,
+  });
+
+  if (!coupon) return null;
+
+  // Check if coupon is valid
+  if (!coupon.isValidCoupon()) return null;
+
+  // Check user limit if userId is provided
+  if (userId && !(await coupon.canUserUse(userId))) {
+    return null;
+  }
+
+  return coupon;
+};
+
+// Static method to get active coupons
+couponSchema.statics.getActiveCoupons = function () {
+  const now = new Date();
+  return this.find({
+    isActive: true,
+    validUntil: { $gt: now },
+    $or: [{ validFrom: { $exists: false } }, { validFrom: { $lte: now } }],
+    $or: [
+      { usageLimit: { $exists: false } },
+      { usageLimit: 0 },
+      { $expr: { $lt: ["$usedCount", "$usageLimit"] } },
+    ],
+  }).sort({ validUntil: 1 });
+};
+
+// Static method to get expired coupons
+couponSchema.statics.getExpiredCoupons = function () {
+  const now = new Date();
+  return this.find({
+    $or: [{ validUntil: { $lt: now } }, { isActive: false }],
+  }).sort({ validUntil: -1 });
+};
+
+// Pre-save middleware to ensure code is uppercase
+couponSchema.pre("save", function (next) {
+  if (this.code) {
+    this.code = this.code.toUpperCase().trim();
+  }
+
+  // Ensure validUntil is after validFrom
+  if (this.validFrom && this.validUntil && this.validUntil <= this.validFrom) {
+    next(new Error("validUntil must be after validFrom"));
+    return;
+  }
+
+  // Ensure discount value is appropriate for type
+  if (this.discountType === "percentage" && this.discountValue > 100) {
+    next(new Error("Percentage discount cannot exceed 100%"));
+    return;
+  }
+
+  next();
+});
+
+// Pre-remove middleware to check if coupon is being used in orders
+couponSchema.pre("remove", async function (next) {
+  const Order = mongoose.model("Order");
+  const orderCount = await Order.countDocuments({ coupon: this._id });
+
+  if (orderCount > 0) {
+    next(
+      new Error(
+        `Cannot delete coupon. It is being used in ${orderCount} orders.`
+      )
+    );
+    return;
+  }
+
+  next();
+});
+
+// Virtual for formatted valid dates
+couponSchema.virtual("formattedValidFrom").get(function () {
+  return this.validFrom ? this.validFrom.toLocaleDateString() : "Immediately";
+});
+
+couponSchema.virtual("formattedValidUntil").get(function () {
+  return this.validUntil
+    ? this.validUntil.toLocaleDateString()
+    : "No expiration";
+});
+
+// Virtual for discount description
+couponSchema.virtual("discountDescription").get(function () {
+  switch (this.discountType) {
+    case "percentage":
+      return `${
+        this.discountValue
+      }% off${this.maxDiscountAmount ? ` (max $${this.maxDiscountAmount})` : ""}`;
+    case "fixed":
+      return `$${this.discountValue} off`;
+    case "free_shipping":
+      return "Free shipping";
+    default:
+      return "Discount";
+  }
+});
+
+// Virtual for remaining uses
+couponSchema.virtual("remainingUses").get(function () {
+  if (!this.usageLimit) return "Unlimited";
+  return Math.max(0, this.usageLimit - this.usedCount);
+});
 
 const Coupon = mongoose.model("Coupon", couponSchema);
 

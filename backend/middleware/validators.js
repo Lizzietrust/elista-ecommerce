@@ -698,7 +698,7 @@ export const validateOrder = [
   body("paymentMethod")
     .notEmpty()
     .withMessage("Payment method is required")
-    .isIn(["credit_card", "paypal", "stripe", "cod"])
+    .isIn(["stripe", "credit_card", "debit_card", "cod", "bank_transfer"])
     .withMessage("Invalid payment method"),
 
   body("shippingPrice")
@@ -957,19 +957,12 @@ export const validateAddress = [
   },
 ];
 
-// Payment validation
+// Payment validation (Stripe only)
 export const validatePayment = [
   body("paymentMethod")
     .notEmpty()
     .withMessage("Payment method is required")
-    .isIn([
-      "credit_card",
-      "debit_card",
-      "paypal",
-      "stripe",
-      "cod",
-      "bank_transfer",
-    ])
+    .isIn(["credit_card", "debit_card", "stripe", "cod", "bank_transfer"])
     .withMessage("Invalid payment method"),
 
   body("amount")
@@ -1013,6 +1006,68 @@ export const validatePayment = [
     .withMessage("CVC is required")
     .matches(/^\d{3,4}$/)
     .withMessage("CVC must be 3 or 4 digits"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Stripe payment validation
+export const validateStripePayment = [
+  body("orderId")
+    .notEmpty()
+    .withMessage("Order ID is required")
+    .isMongoId()
+    .withMessage("Invalid order ID"),
+
+  body("paymentMethodId")
+    .optional()
+    .isString()
+    .withMessage("Payment method ID must be a string"),
+
+  body("savePaymentMethod")
+    .optional()
+    .isBoolean()
+    .withMessage("savePaymentMethod must be a boolean"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Stripe checkout session validation
+export const validateStripeCheckoutSession = [
+  body("orderId")
+    .notEmpty()
+    .withMessage("Order ID is required")
+    .isMongoId()
+    .withMessage("Invalid order ID"),
+
+  body("successUrl")
+    .notEmpty()
+    .withMessage("Success URL is required")
+    .isURL()
+    .withMessage("Success URL must be a valid URL"),
+
+  body("cancelUrl")
+    .notEmpty()
+    .withMessage("Cancel URL is required")
+    .isURL()
+    .withMessage("Cancel URL must be a valid URL"),
 
   (req, res, next) => {
     const errors = validationResult(req);
@@ -1094,6 +1149,56 @@ export const validateCouponCreation = [
     .optional()
     .isArray()
     .withMessage("Products must be an array"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Payment method validation
+export const validatePaymentMethod = [
+  body("paymentMethodId")
+    .notEmpty()
+    .withMessage("Payment method ID is required")
+    .isString()
+    .withMessage("Payment method ID must be a string"),
+
+  body("type")
+    .optional()
+    .isIn(["card"])
+    .withMessage("Type must be 'card'"),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
+
+// Refund validation (admin only)
+export const validateRefund = [
+  body("amount")
+    .optional()
+    .isFloat({ min: 0.01 })
+    .withMessage("Amount must be greater than 0"),
+
+  body("reason")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Reason cannot exceed 500 characters"),
 
   (req, res, next) => {
     const errors = validationResult(req);

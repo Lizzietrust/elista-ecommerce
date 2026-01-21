@@ -104,6 +104,18 @@ const userSchema = new mongoose.Schema(
       },
     },
 
+    // Payment integration fields
+    stripeCustomerId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    defaultPaymentMethod: {
+      type: String,
+    },
+    // Removed PayPal field since we're not using PayPal
+
     dateOfBirth: Date,
     gender: {
       type: String,
@@ -271,6 +283,20 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      // Payment preferences
+      defaultPaymentMethodType: {
+        type: String,
+        enum: ["card", "bank_transfer"],
+        default: "card",
+      },
+      savePaymentMethods: {
+        type: Boolean,
+        default: true,
+      },
+      autoSavePaymentMethods: {
+        type: Boolean,
+        default: false,
+      },
     },
   },
   {
@@ -426,6 +452,18 @@ userSchema.virtual("cartTotalAmount").get(async function () {
   return subtotal - discount + shipping + tax;
 });
 
+// Virtual for checking if user has Stripe customer ID
+userSchema.virtual("hasStripeCustomer").get(function () {
+  return !!this.stripeCustomerId;
+});
+
+// Virtual for user's saved payment methods count (Stripe)
+userSchema.virtual("paymentMethodsCount").get(function () {
+  // This would require a separate query to Stripe
+  // For now, return 0 or 1 based on defaultPaymentMethod
+  return this.defaultPaymentMethod ? 1 : 0;
+});
+
 // ===========================
 // MIDDLEWARE
 // ===========================
@@ -551,6 +589,22 @@ userSchema.methods.getEmailVerificationToken = function () {
     .digest("hex");
   this.emailVerificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
   return verificationToken;
+};
+
+// Payment-related methods
+userSchema.methods.setStripeCustomerId = function (customerId) {
+  this.stripeCustomerId = customerId;
+  return this.save();
+};
+
+userSchema.methods.setDefaultPaymentMethod = function (paymentMethodId) {
+  this.defaultPaymentMethod = paymentMethodId;
+  return this.save();
+};
+
+userSchema.methods.clearDefaultPaymentMethod = function () {
+  this.defaultPaymentMethod = null;
+  return this.save();
 };
 
 // Wishlist methods
@@ -1164,6 +1218,23 @@ userSchema.statics.cleanupOldCarts = async function (days = 30) {
   };
 };
 
+// Static method to find users with Stripe customer IDs
+userSchema.statics.findUsersWithStripe = function () {
+  return this.find({
+    stripeCustomerId: { $exists: true, $ne: null },
+  }).select("name email stripeCustomerId");
+};
+
+// Static method to find users without Stripe customer IDs
+userSchema.statics.findUsersWithoutStripe = function () {
+  return this.find({
+    $or: [
+      { stripeCustomerId: { $exists: false } },
+      { stripeCustomerId: null },
+    ],
+  }).select("name email");
+};
+
 // ===========================
 // INDEXES
 // ===========================
@@ -1178,6 +1249,7 @@ userSchema.index({ "cart.couponCode": 1 });
 userSchema.index({ "cart.items.product": 1 });
 userSchema.index({ wishlist: 1 });
 userSchema.index({ recentlyViewed: 1 });
+userSchema.index({ stripeCustomerId: 1 }, { sparse: true });
 
 const User = mongoose.model("User", userSchema);
 

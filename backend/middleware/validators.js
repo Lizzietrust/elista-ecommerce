@@ -973,7 +973,7 @@ export const validateAddress = [
   },
 ];
 
-// Payment validation (Stripe only)
+// Payment validation (Stripe only) - FIXED
 export const validatePayment = [
   body("paymentMethod")
     .notEmpty()
@@ -990,38 +990,75 @@ export const validatePayment = [
     .isIn(["USD", "EUR", "GBP", "CAD", "AUD"])
     .withMessage("Invalid currency"),
 
+  // Use custom condition function instead of .or()
   body("cardNumber")
-    .if(
-      body("paymentMethod")
-        .equals("credit_card")
-        .or(body("paymentMethod").equals("debit_card")),
-    )
-    .notEmpty()
-    .withMessage("Card number is required for card payments")
-    .matches(/^\d{16}$/)
-    .withMessage("Card number must be 16 digits"),
+    .custom((value, { req }) => {
+      if (
+        (req.body.paymentMethod === "credit_card" ||
+          req.body.paymentMethod === "debit_card") &&
+        !value
+      ) {
+        throw new Error("Card number is required for card payments");
+      }
+      return true;
+    })
+    .custom((value, { req }) => {
+      if (
+        (req.body.paymentMethod === "credit_card" ||
+          req.body.paymentMethod === "debit_card") &&
+        value &&
+        !/^\d{16}$/.test(value)
+      ) {
+        throw new Error("Card number must be 16 digits");
+      }
+      return true;
+    }),
 
   body("cardExpiry")
-    .if(
-      body("paymentMethod")
-        .equals("credit_card")
-        .or(body("paymentMethod").equals("debit_card")),
-    )
-    .notEmpty()
-    .withMessage("Card expiry is required")
-    .matches(/^(0[1-9]|1[0-2])\/\d{2}$/)
-    .withMessage("Card expiry must be in MM/YY format"),
+    .custom((value, { req }) => {
+      if (
+        (req.body.paymentMethod === "credit_card" ||
+          req.body.paymentMethod === "debit_card") &&
+        !value
+      ) {
+        throw new Error("Card expiry is required");
+      }
+      return true;
+    })
+    .custom((value, { req }) => {
+      if (
+        (req.body.paymentMethod === "credit_card" ||
+          req.body.paymentMethod === "debit_card") &&
+        value &&
+        !/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)
+      ) {
+        throw new Error("Card expiry must be in MM/YY format");
+      }
+      return true;
+    }),
 
   body("cardCVC")
-    .if(
-      body("paymentMethod")
-        .equals("credit_card")
-        .or(body("paymentMethod").equals("debit_card")),
-    )
-    .notEmpty()
-    .withMessage("CVC is required")
-    .matches(/^\d{3,4}$/)
-    .withMessage("CVC must be 3 or 4 digits"),
+    .custom((value, { req }) => {
+      if (
+        (req.body.paymentMethod === "credit_card" ||
+          req.body.paymentMethod === "debit_card") &&
+        !value
+      ) {
+        throw new Error("CVC is required");
+      }
+      return true;
+    })
+    .custom((value, { req }) => {
+      if (
+        (req.body.paymentMethod === "credit_card" ||
+          req.body.paymentMethod === "debit_card") &&
+        value &&
+        !/^\d{3,4}$/.test(value)
+      ) {
+        throw new Error("CVC must be 3 or 4 digits");
+      }
+      return true;
+    }),
 
   (req, res, next) => {
     const errors = validationResult(req);

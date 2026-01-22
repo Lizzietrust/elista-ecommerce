@@ -2,7 +2,43 @@ import Category from "../models/Category.js";
 import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
-import { upload } from "../index.js";
+import multer from "multer";
+import path from "path";
+
+// Create a simple multer configuration for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/categories/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname),
+    );
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase(),
+  );
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed"));
+  }
+};
+
+// Create upload middleware
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileFilter,
+});
 
 // @desc    Get all categories
 // @route   GET /api/categories
@@ -67,7 +103,7 @@ export const getAllCategories = asyncHandler(async (req, res, next) => {
           ...category.toObject(),
           activeProductsCount: productsCount,
         };
-      })
+      }),
     );
 
     return res.status(200).json({
@@ -92,7 +128,7 @@ export const getCategoryById = asyncHandler(async (req, res, next) => {
 
   if (!category) {
     return next(
-      new ErrorResponse(`Category not found with id ${req.params.id}`, 404)
+      new ErrorResponse(`Category not found with id ${req.params.id}`, 404),
     );
   }
 
@@ -100,7 +136,7 @@ export const getCategoryById = asyncHandler(async (req, res, next) => {
   let parentCategory = null;
   if (category.parent) {
     parentCategory = await Category.findById(category.parent).select(
-      "name slug"
+      "name slug",
     );
   }
 
@@ -140,8 +176,8 @@ export const createCategory = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(
         `Category with name "${req.body.name}" already exists`,
-        400
-      )
+        400,
+      ),
     );
   }
 
@@ -193,7 +229,7 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
 
   if (!category) {
     return next(
-      new ErrorResponse(`Category not found with id ${req.params.id}`, 404)
+      new ErrorResponse(`Category not found with id ${req.params.id}`, 404),
     );
   }
 
@@ -208,8 +244,8 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
       return next(
         new ErrorResponse(
           `Category with name "${req.body.name}" already exists`,
-          400
-        )
+          400,
+        ),
       );
     }
   }
@@ -230,26 +266,19 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
     // Prevent circular references (check if new parent is a descendant of this category)
     const isDescendant = await checkDescendantCategories(
       req.body.parent,
-      req.params.id
+      req.params.id,
     );
     if (isDescendant) {
       return next(
-        new ErrorResponse("Cannot set a descendant category as parent", 400)
+        new ErrorResponse("Cannot set a descendant category as parent", 400),
       );
     }
   }
 
   // Handle image upload
   if (req.file) {
-    // Delete old image from Cloudinary if exists
-    if (category.image && category.image.publicId) {
-      try {
-        await cloudinary.uploader.destroy(category.image.publicId);
-      } catch (error) {
-        console.error("Failed to delete old image:", error.message);
-      }
-    }
-
+    // For now, just set the new image
+    // If you're using Cloudinary, you'll need to implement deletion of old images
     req.body.image = {
       url: req.file.path,
       publicId: req.file.filename,
@@ -257,13 +286,6 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
     };
   } else if (req.body.removeImage === "true") {
     // Remove image if requested
-    if (category.image && category.image.publicId) {
-      try {
-        await cloudinary.uploader.destroy(category.image.publicId);
-      } catch (error) {
-        console.error("Failed to delete image:", error.message);
-      }
-    }
     req.body.image = null;
   }
 
@@ -288,7 +310,7 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
 
   if (!category) {
     return next(
-      new ErrorResponse(`Category not found with id ${req.params.id}`, 404)
+      new ErrorResponse(`Category not found with id ${req.params.id}`, 404),
     );
   }
 
@@ -298,8 +320,8 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(
         `Cannot delete category with ${productCount} products. Remove products first or reassign them to another category.`,
-        400
-      )
+        400,
+      ),
     );
   }
 
@@ -311,19 +333,13 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(
         `Cannot delete category with ${subcategoryCount} subcategories. Remove subcategories first.`,
-        400
-      )
+        400,
+      ),
     );
   }
 
-  // Delete image from Cloudinary if exists
-  if (category.image && category.image.publicId) {
-    try {
-      await cloudinary.uploader.destroy(category.image.publicId);
-    } catch (error) {
-      console.error("Failed to delete image:", error.message);
-    }
-  }
+  // For now, skip Cloudinary deletion since we're using local storage
+  // If you're using Cloudinary, implement image deletion here
 
   // Delete category
   await category.deleteOne();
@@ -417,7 +433,7 @@ export const getCategoryTree = asyncHandler(async (req, res, next) => {
 
           // Enhance children recursively
           const enhancedChildren = await Promise.all(
-            cat.children.map((child) => enhanceCategory(child))
+            cat.children.map((child) => enhanceCategory(child)),
           );
 
           return {
@@ -428,7 +444,7 @@ export const getCategoryTree = asyncHandler(async (req, res, next) => {
         };
 
         return await enhanceCategory(category);
-      })
+      }),
     );
 
     return res.status(200).json({
@@ -525,7 +541,7 @@ export const getCategoryWithProducts = asyncHandler(async (req, res, next) => {
   let parentCategory = null;
   if (category.parent) {
     parentCategory = await Category.findById(category.parent).select(
-      "name slug"
+      "name slug",
     );
   }
 
@@ -587,7 +603,7 @@ export const getFeaturedCategories = asyncHandler(async (req, res, next) => {
         ...category.toObject(),
         featuredProducts,
       };
-    })
+    }),
   );
 
   res.status(200).json({
@@ -618,8 +634,8 @@ export const toggleCategoryActive = asyncHandler(async (req, res, next) => {
       return next(
         new ErrorResponse(
           `Cannot deactivate category with ${activeProductCount} active products. Deactivate products first or reassign them.`,
-          400
-        )
+          400,
+        ),
       );
     }
 
@@ -633,8 +649,8 @@ export const toggleCategoryActive = asyncHandler(async (req, res, next) => {
         return next(
           new ErrorResponse(
             "Cannot activate category with inactive parent. Activate parent category first.",
-            400
-          )
+            400,
+          ),
         );
       }
     }
@@ -857,6 +873,6 @@ const reorderCategories = async (parentId = null) => {
         category.sortOrder = index;
         await category.save();
       }
-    })
+    }),
   );
 };

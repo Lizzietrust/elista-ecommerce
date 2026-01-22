@@ -25,7 +25,7 @@ const validatePasswordStrength = (password) => {
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
   if (!passwordRegex.test(password)) {
     throw new Error(
-      "Password must be at least 6 characters with uppercase, lowercase, and number"
+      "Password must be at least 6 characters with uppercase, lowercase, and number",
     );
   }
   return true;
@@ -622,8 +622,14 @@ export const validateCategoryUpdate = [
   },
 ];
 
-// Review validation
+// Review validation - Enhanced version with more fields
 export const validateReview = [
+  body("product")
+    .notEmpty()
+    .withMessage("Product ID is required")
+    .isMongoId()
+    .withMessage("Invalid product ID"),
+
   body("rating")
     .isInt({ min: 1, max: 5 })
     .withMessage("Rating must be between 1 and 5"),
@@ -632,14 +638,24 @@ export const validateReview = [
     .trim()
     .notEmpty()
     .withMessage("Comment is required")
-    .isLength({ min: 10, max: 1000 })
-    .withMessage("Comment must be between 10 and 1000 characters"),
+    .isLength({ min: 10, max: 2000 })
+    .withMessage("Comment must be between 10 and 2000 characters"),
 
-  body("product")
-    .notEmpty()
-    .withMessage("Product ID is required")
-    .isMongoId()
-    .withMessage("Invalid product ID"),
+  body("title")
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage("Title cannot exceed 200 characters"),
+
+  body("images").optional().isArray().withMessage("Images must be an array"),
+
+  body("images.*.url").optional().isURL().withMessage("Invalid image URL"),
+
+  body("images.*.caption")
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Caption cannot exceed 100 characters"),
 
   (req, res, next) => {
     const errors = validationResult(req);
@@ -978,7 +994,7 @@ export const validatePayment = [
     .if(
       body("paymentMethod")
         .equals("credit_card")
-        .or(body("paymentMethod").equals("debit_card"))
+        .or(body("paymentMethod").equals("debit_card")),
     )
     .notEmpty()
     .withMessage("Card number is required for card payments")
@@ -989,7 +1005,7 @@ export const validatePayment = [
     .if(
       body("paymentMethod")
         .equals("credit_card")
-        .or(body("paymentMethod").equals("debit_card"))
+        .or(body("paymentMethod").equals("debit_card")),
     )
     .notEmpty()
     .withMessage("Card expiry is required")
@@ -1000,7 +1016,7 @@ export const validatePayment = [
     .if(
       body("paymentMethod")
         .equals("credit_card")
-        .or(body("paymentMethod").equals("debit_card"))
+        .or(body("paymentMethod").equals("debit_card")),
     )
     .notEmpty()
     .withMessage("CVC is required")
@@ -1097,7 +1113,7 @@ export const validateCouponCreation = [
     .withMessage("Discount type is required")
     .isIn(["percentage", "fixed", "free_shipping"])
     .withMessage(
-      "Discount type must be 'percentage', 'fixed', or 'free_shipping'"
+      "Discount type must be 'percentage', 'fixed', or 'free_shipping'",
     ),
 
   body("discountValue")
@@ -1170,10 +1186,7 @@ export const validatePaymentMethod = [
     .isString()
     .withMessage("Payment method ID must be a string"),
 
-  body("type")
-    .optional()
-    .isIn(["card"])
-    .withMessage("Type must be 'card'"),
+  body("type").optional().isIn(["card"]).withMessage("Type must be 'card'"),
 
   (req, res, next) => {
     const errors = validationResult(req);

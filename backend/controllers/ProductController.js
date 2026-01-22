@@ -3,9 +3,43 @@ import Category from "../models/Category.js";
 import Review from "../models/Review.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
+import multer from "multer";
+import path from "path";
 
-// Removed the problematic import from index.js
-// We'll define this directly or import from where upload is actually defined
+// Create a simple multer configuration for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/products/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname),
+    );
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase(),
+  );
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed"));
+  }
+};
+
+// Create upload middleware
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileFilter,
+});
 
 // Helper function to build product query
 const buildProductQuery = (queryParams, userId = null) => {
@@ -371,8 +405,10 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
   });
 });
 
-// REMOVED the problematic export - moved to a separate file or define inline
-// export const uploadProductImages = upload.array("images", 10); // Max 10 images
+// @desc    Upload product images middleware
+// @route   Middleware
+// @access  Private
+export const uploadProductImages = upload.array("images", 10); // Max 10 images
 
 // @desc    Process product images middleware
 // @route   Middleware

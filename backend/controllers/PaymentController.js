@@ -5,8 +5,40 @@ import Order from "../models/Order.js";
 import Payment from "../models/Payment.js";
 import User from "../models/User.js";
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Check if Stripe secret key exists
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error("STRIPE_SECRET_KEY is not set in environment variables");
+  // You could throw an error here or handle it gracefully
+  // For now, we'll create a dummy stripe instance that will fail gracefully
+}
+
+// Initialize Stripe with error handling
+let stripe;
+try {
+  stripe = new Stripe(
+    process.env.STRIPE_SECRET_KEY || "dummy_key_for_development",
+  );
+} catch (error) {
+  console.error("Failed to initialize Stripe:", error.message);
+  stripe = null;
+}
+
+// Helper function to check if Stripe is available
+const isStripeAvailable = () => {
+  if (!stripe) {
+    console.error(
+      "Stripe is not initialized. Check your STRIPE_SECRET_KEY in .env file",
+    );
+    return false;
+  }
+  if (process.env.STRIPE_SECRET_KEY === "dummy_key_for_development") {
+    console.warn(
+      "Using dummy Stripe key. Set STRIPE_SECRET_KEY in .env for production.",
+    );
+    return false;
+  }
+  return true;
+};
 
 // @desc    Create Stripe payment intent
 // @route   POST /api/payments/create-intent
@@ -38,6 +70,16 @@ export const createPaymentIntent = asyncHandler(async (req, res, next) => {
   // Check if order can be paid
   if (order.orderStatus === "cancelled") {
     return next(new ErrorResponse("Cannot pay a cancelled order", 400));
+  }
+
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return next(
+      new ErrorResponse(
+        "Payment processing is currently unavailable. Please try again later.",
+        503,
+      ),
+    );
   }
 
   try {
@@ -100,7 +142,7 @@ export const createPaymentIntent = asyncHandler(async (req, res, next) => {
   } catch (error) {
     console.error("Stripe payment intent error:", error);
     return next(
-      new ErrorResponse(`Payment processing error: ${error.message}`, 500)
+      new ErrorResponse(`Payment processing error: ${error.message}`, 500),
     );
   }
 });
@@ -116,8 +158,8 @@ export const createStripeCheckoutSession = asyncHandler(
       return next(
         new ErrorResponse(
           "Order ID, success URL, and cancel URL are required",
-          400
-        )
+          400,
+        ),
       );
     }
 
@@ -133,6 +175,16 @@ export const createStripeCheckoutSession = asyncHandler(
 
     if (order.isPaid) {
       return next(new ErrorResponse("Order is already paid", 400));
+    }
+
+    // Check if Stripe is available
+    if (!isStripeAvailable()) {
+      return next(
+        new ErrorResponse(
+          "Payment processing is currently unavailable. Please try again later.",
+          503,
+        ),
+      );
     }
 
     try {
@@ -206,23 +258,32 @@ export const createStripeCheckoutSession = asyncHandler(
     } catch (error) {
       console.error("Stripe checkout session error:", error);
       return next(
-        new ErrorResponse(`Checkout session error: ${error.message}`, 500)
+        new ErrorResponse(`Checkout session error: ${error.message}`, 500),
       );
     }
-  }
+  },
 );
 
 // @desc    Get user's payment methods
 // @route   GET /api/payments/methods
 // @access  Private
 export const getPaymentMethods = asyncHandler(async (req, res, next) => {
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return res.status(200).json({
+      success: true,
+      data: [],
+      message: "Payment methods unavailable. Stripe not configured.",
+    });
+  }
+
   try {
     let stripeMethods = [];
 
     if (req.user.stripeCustomerId) {
       const paymentMethods = await stripe.customers.listPaymentMethods(
         req.user.stripeCustomerId,
-        { type: "card" }
+        { type: "card" },
       );
 
       stripeMethods = paymentMethods.data.map((method) => ({
@@ -256,6 +317,16 @@ export const addPaymentMethod = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Payment method ID is required", 400));
   }
 
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return next(
+      new ErrorResponse(
+        "Payment processing is currently unavailable. Please try again later.",
+        503,
+      ),
+    );
+  }
+
   try {
     if (type === "card") {
       // Attach payment method to Stripe customer
@@ -286,7 +357,7 @@ export const addPaymentMethod = asyncHandler(async (req, res, next) => {
   } catch (error) {
     console.error("Add payment method error:", error);
     return next(
-      new ErrorResponse(`Failed to add payment method: ${error.message}`, 500)
+      new ErrorResponse(`Failed to add payment method: ${error.message}`, 500),
     );
   }
 });
@@ -296,6 +367,16 @@ export const addPaymentMethod = asyncHandler(async (req, res, next) => {
 // @access  Private
 export const removePaymentMethod = asyncHandler(async (req, res, next) => {
   const { methodId } = req.params;
+
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return next(
+      new ErrorResponse(
+        "Payment processing is currently unavailable. Please try again later.",
+        503,
+      ),
+    );
+  }
 
   try {
     await stripe.paymentMethods.detach(methodId);
@@ -309,8 +390,8 @@ export const removePaymentMethod = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(
         `Failed to remove payment method: ${error.message}`,
-        500
-      )
+        500,
+      ),
     );
   }
 });
@@ -320,6 +401,16 @@ export const removePaymentMethod = asyncHandler(async (req, res, next) => {
 // @access  Private
 export const setDefaultPaymentMethod = asyncHandler(async (req, res, next) => {
   const { methodId } = req.params;
+
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return next(
+      new ErrorResponse(
+        "Payment processing is currently unavailable. Please try again later.",
+        503,
+      ),
+    );
+  }
 
   try {
     await stripe.customers.update(req.user.stripeCustomerId, {
@@ -342,8 +433,8 @@ export const setDefaultPaymentMethod = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(
         `Failed to set default payment method: ${error.message}`,
-        500
-      )
+        500,
+      ),
     );
   }
 });
@@ -437,12 +528,22 @@ export const refundPayment = asyncHandler(async (req, res, next) => {
 
   if (payment.status !== "succeeded") {
     return next(
-      new ErrorResponse("Only succeeded payments can be refunded", 400)
+      new ErrorResponse("Only succeeded payments can be refunded", 400),
     );
   }
 
   if (payment.refunded) {
     return next(new ErrorResponse("Payment is already refunded", 400));
+  }
+
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return next(
+      new ErrorResponse(
+        "Payment processing is currently unavailable. Please try again later.",
+        503,
+      ),
+    );
   }
 
   try {
@@ -456,7 +557,7 @@ export const refundPayment = asyncHandler(async (req, res, next) => {
       });
     } else {
       return next(
-        new ErrorResponse("Cannot process refund for this payment method", 400)
+        new ErrorResponse("Cannot process refund for this payment method", 400),
       );
     }
 
@@ -503,6 +604,12 @@ export const refundPayment = asyncHandler(async (req, res, next) => {
 export const handleStripeWebhook = asyncHandler(async (req, res, next) => {
   const sig = req.headers["stripe-signature"];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    console.error("Stripe webhook received but Stripe not configured");
+    return res.status(400).send("Stripe not configured");
+  }
 
   let event;
 
@@ -552,7 +659,7 @@ const handleSuccessfulPayment = async (paymentIntent) => {
         capturedAt: new Date(),
         transactionId: paymentIntent.charges.data[0]?.id,
       },
-      { new: true }
+      { new: true },
     ).populate("order");
 
     if (payment && payment.order) {
@@ -575,7 +682,7 @@ const handleSuccessfulPayment = async (paymentIntent) => {
 const handleFailedPayment = async (paymentIntent) => {
   await Payment.findOneAndUpdate(
     { paymentIntentId: paymentIntent.id },
-    { status: "failed", error: paymentIntent.last_payment_error?.message }
+    { status: "failed", error: paymentIntent.last_payment_error?.message },
   );
 };
 
@@ -592,7 +699,7 @@ const handleCheckoutSessionCompleted = async (session) => {
 
       await Payment.findOneAndUpdate(
         { checkoutSessionId: session.id },
-        { status: "succeeded", capturedAt: new Date() }
+        { status: "succeeded", capturedAt: new Date() },
       );
     }
   }
@@ -633,6 +740,16 @@ export const createCartPayment = asyncHandler(async (req, res, next) => {
   const totalAmount = items.reduce((total, item) => {
     return total + item.price * item.quantity;
   }, 0);
+
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return next(
+      new ErrorResponse(
+        "Payment processing is currently unavailable. Please try again later.",
+        503,
+      ),
+    );
+  }
 
   try {
     // Create or retrieve Stripe customer
@@ -679,7 +796,7 @@ export const createCartPayment = asyncHandler(async (req, res, next) => {
   } catch (error) {
     console.error("Cart payment intent error:", error);
     return next(
-      new ErrorResponse(`Payment processing error: ${error.message}`, 500)
+      new ErrorResponse(`Payment processing error: ${error.message}`, 500),
     );
   }
 });
@@ -692,6 +809,16 @@ export const confirmPayment = asyncHandler(async (req, res, next) => {
 
   if (!paymentIntentId) {
     return next(new ErrorResponse("Payment intent ID is required", 400));
+  }
+
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return next(
+      new ErrorResponse(
+        "Payment processing is currently unavailable. Please try again later.",
+        503,
+      ),
+    );
   }
 
   try {
@@ -735,7 +862,7 @@ export const confirmPayment = asyncHandler(async (req, res, next) => {
   } catch (error) {
     console.error("Confirm payment error:", error);
     return next(
-      new ErrorResponse(`Failed to confirm payment: ${error.message}`, 500)
+      new ErrorResponse(`Failed to confirm payment: ${error.message}`, 500),
     );
   }
 });
@@ -744,6 +871,15 @@ export const confirmPayment = asyncHandler(async (req, res, next) => {
 // @route   GET /api/payments/test
 // @access  Public
 export const testStripeConnection = asyncHandler(async (req, res, next) => {
+  // Check if Stripe is available
+  if (!isStripeAvailable()) {
+    return res.status(503).json({
+      success: false,
+      message:
+        "Stripe is not configured. Please add STRIPE_SECRET_KEY to your .env file.",
+    });
+  }
+
   try {
     // Simple test to check Stripe API key
     const balance = await stripe.balance.retrieve();
@@ -760,8 +896,10 @@ export const testStripeConnection = asyncHandler(async (req, res, next) => {
     });
   } catch (error) {
     console.error("Stripe connection test failed:", error);
-    return next(
-      new ErrorResponse(`Stripe connection failed: ${error.message}`, 500)
-    );
+    return res.status(500).json({
+      success: false,
+      message: `Stripe connection failed: ${error.message}`,
+      hint: "Make sure you have set the correct STRIPE_SECRET_KEY in your .env file",
+    });
   }
 });

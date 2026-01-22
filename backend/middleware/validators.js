@@ -973,7 +973,7 @@ export const validateAddress = [
   },
 ];
 
-// Payment validation (Stripe only) - FIXED
+// Payment validation (Stripe only) - COMPLETELY FIXED VERSION
 export const validatePayment = [
   body("paymentMethod")
     .notEmpty()
@@ -990,12 +990,12 @@ export const validatePayment = [
     .isIn(["USD", "EUR", "GBP", "CAD", "AUD"])
     .withMessage("Invalid currency"),
 
-  // Use custom condition function instead of .or()
+  // Custom validation for card number
   body("cardNumber")
     .custom((value, { req }) => {
+      const paymentMethod = req.body.paymentMethod;
       if (
-        (req.body.paymentMethod === "credit_card" ||
-          req.body.paymentMethod === "debit_card") &&
+        (paymentMethod === "credit_card" || paymentMethod === "debit_card") &&
         !value
       ) {
         throw new Error("Card number is required for card payments");
@@ -1003,9 +1003,9 @@ export const validatePayment = [
       return true;
     })
     .custom((value, { req }) => {
+      const paymentMethod = req.body.paymentMethod;
       if (
-        (req.body.paymentMethod === "credit_card" ||
-          req.body.paymentMethod === "debit_card") &&
+        (paymentMethod === "credit_card" || paymentMethod === "debit_card") &&
         value &&
         !/^\d{16}$/.test(value)
       ) {
@@ -1014,11 +1014,12 @@ export const validatePayment = [
       return true;
     }),
 
+  // Custom validation for card expiry
   body("cardExpiry")
     .custom((value, { req }) => {
+      const paymentMethod = req.body.paymentMethod;
       if (
-        (req.body.paymentMethod === "credit_card" ||
-          req.body.paymentMethod === "debit_card") &&
+        (paymentMethod === "credit_card" || paymentMethod === "debit_card") &&
         !value
       ) {
         throw new Error("Card expiry is required");
@@ -1026,9 +1027,9 @@ export const validatePayment = [
       return true;
     })
     .custom((value, { req }) => {
+      const paymentMethod = req.body.paymentMethod;
       if (
-        (req.body.paymentMethod === "credit_card" ||
-          req.body.paymentMethod === "debit_card") &&
+        (paymentMethod === "credit_card" || paymentMethod === "debit_card") &&
         value &&
         !/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)
       ) {
@@ -1037,11 +1038,12 @@ export const validatePayment = [
       return true;
     }),
 
+  // Custom validation for CVC
   body("cardCVC")
     .custom((value, { req }) => {
+      const paymentMethod = req.body.paymentMethod;
       if (
-        (req.body.paymentMethod === "credit_card" ||
-          req.body.paymentMethod === "debit_card") &&
+        (paymentMethod === "credit_card" || paymentMethod === "debit_card") &&
         !value
       ) {
         throw new Error("CVC is required");
@@ -1049,9 +1051,9 @@ export const validatePayment = [
       return true;
     })
     .custom((value, { req }) => {
+      const paymentMethod = req.body.paymentMethod;
       if (
-        (req.body.paymentMethod === "credit_card" ||
-          req.body.paymentMethod === "debit_card") &&
+        (paymentMethod === "credit_card" || paymentMethod === "debit_card") &&
         value &&
         !/^\d{3,4}$/.test(value)
       ) {

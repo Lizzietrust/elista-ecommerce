@@ -137,24 +137,8 @@ const productSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    ratings: [
-      {
-        user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        rating: {
-          type: Number,
-          min: 1,
-          max: 5,
-        },
-        review: String,
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+
+    // Rating fields - Already have these!
     averageRating: {
       type: Number,
       default: 0,
@@ -165,6 +149,10 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // Remove embedded ratings array since we're using external Review model
+    // ratings: [...],
+
     salesCount: {
       type: Number,
       default: 0,
@@ -269,7 +257,7 @@ const productSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Generate slug before saving
@@ -358,59 +346,179 @@ productSchema.pre(
     }
 
     next();
-  }
+  },
 );
 
-// Update average rating when reviews change
-productSchema.methods.updateAverageRating = async function () {
-  const reviews = this.ratings;
+// ========== UPDATED RATING METHODS ==========
 
-  if (reviews.length === 0) {
-    this.averageRating = 0;
-    this.totalReviews = 0;
-  } else {
-    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-    this.averageRating = Math.round((totalRating / reviews.length) * 10) / 10; // Round to 1 decimal
-    this.totalReviews = reviews.length;
-  }
+// Update average rating from external Review model
+productSchema.methods.updateAverageRatingFromReviews = async function () {
+  try {
+    const Review = mongoose.model("Review");
 
-  await this.save();
-};
-
-// Add rating and review
-productSchema.methods.addRating = async function (userId, rating, review = "") {
-  // Check if user already rated this product
-  const existingRatingIndex = this.ratings.findIndex(
-    (r) => r.user.toString() === userId.toString()
-  );
-
-  if (existingRatingIndex >= 0) {
-    // Update existing rating
-    this.ratings[existingRatingIndex].rating = rating;
-    this.ratings[existingRatingIndex].review = review;
-    this.ratings[existingRatingIndex].createdAt = Date.now();
-  } else {
-    // Add new rating
-    this.ratings.push({
-      user: userId,
-      rating,
-      review,
-      createdAt: Date.now(),
+    // Get all reviews for this product
+    const reviews = await Review.find({
+      product: this._id,
+      status: "active", // Only count active reviews
     });
-  }
 
-  await this.updateAverageRating();
-  return this;
+    if (reviews.length === 0) {
+      this.averageRating = 0;
+      this.totalReviews = 0;
+    } else {
+      // Calculate average rating
+      const totalRating = reviews.reduce(
+        (sum, review) => sum + review.rating,
+        0,
+      );
+      this.averageRating = Math.round((totalRating / reviews.length) * 10) / 10; // Round to 1 decimal
+      this.totalReviews = reviews.length;
+    }
+
+    await this.save();
+    return this;
+  } catch (error) {
+    console.error("Error updating average rating from reviews:", error);
+    throw error;
+  }
 };
 
-// Remove rating
-productSchema.methods.removeRating = async function (userId) {
-  this.ratings = this.ratings.filter(
-    (r) => r.user.toString() !== userId.toString()
-  );
+// Check if user has reviewed this product
+productSchema.methods.hasUserReviewed = async function (userId) {
+  try {
+    const Review = mongoose.model("Review");
+    const review = await Review.findOne({
+      user: userId,
+      product: this._id,
+    });
+    return !!review;
+  } catch (error) {
+    console.error("Error checking user review:", error);
+    return false;
+  }
+};
 
-  await this.updateAverageRating();
-  return this;
+// Get user's review for this product
+productSchema.methods.getUserReview = async function (userId) {
+  try {
+    const Review = mongoose.model("Review");
+    return await Review.findOne({
+      user: userId,
+      product: this._id,
+    }).populate("user", "name avatar");
+  } catch (error) {
+    console.error("Error getting user review:", error);
+    return null;
+  }
+};
+
+// Get product rating summary
+productSchema.methods.getRatingSummary = async function () {
+  try {
+    const Review = mongoose.model("Review");
+
+    const summary = await Review.aggregate([
+      {
+        $match: {
+          product: mongoose.Types.ObjectId(this._id),
+          status: "active",
+        },
+      },
+      {
+        $group: {
+          _id: "$product",
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+          ratingCounts: {
+            $push: "$rating",
+          },
+        },
+      },
+    ]);
+
+    if (summary.length === 0) {
+      return {
+        averageRating: 0,
+        totalReviews: 0,
+        ratingDistribution: {
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+          5: 0,
+        },
+      };
+    }
+
+    // Calculate rating distribution
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    summary[0].ratingCounts.forEach((rating) => {
+      distribution[rating] = (distribution[rating] || 0) + 1;
+    });
+
+    // Calculate percentages
+    Object.keys(distribution).forEach((key) => {
+      distribution[key] = {
+        count: distribution[key],
+        percentage: Math.round(
+          (distribution[key] / summary[0].totalReviews) * 100,
+        ),
+      };
+    });
+
+    return {
+      averageRating: summary[0].averageRating.toFixed(1),
+      totalReviews: summary[0].totalReviews,
+      ratingDistribution: distribution,
+    };
+  } catch (error) {
+    console.error("Error getting rating summary:", error);
+    return {
+      averageRating: 0,
+      totalReviews: 0,
+      ratingDistribution: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+      },
+    };
+  }
+};
+
+// Get recent reviews for this product
+productSchema.methods.getRecentReviews = async function (limit = 5) {
+  try {
+    const Review = mongoose.model("Review");
+    return await Review.find({
+      product: this._id,
+      status: "active",
+    })
+      .populate("user", "name avatar")
+      .sort("-createdAt")
+      .limit(limit);
+  } catch (error) {
+    console.error("Error getting recent reviews:", error);
+    return [];
+  }
+};
+
+// Get helpful reviews for this product
+productSchema.methods.getHelpfulReviews = async function (limit = 5) {
+  try {
+    const Review = mongoose.model("Review");
+    return await Review.find({
+      product: this._id,
+      status: "active",
+    })
+      .populate("user", "name avatar")
+      .sort("-helpfulCount")
+      .limit(limit);
+  } catch (error) {
+    console.error("Error getting helpful reviews:", error);
+    return [];
+  }
 };
 
 // Check if product is in low stock
@@ -430,7 +538,7 @@ productSchema.virtual("totalStock").get(function () {
   if (this.variants && this.variants.length > 0) {
     total += this.variants.reduce(
       (sum, variant) => sum + (variant.stock || 0),
-      0
+      0,
     );
   }
 
@@ -441,7 +549,7 @@ productSchema.virtual("totalStock").get(function () {
 productSchema.virtual("discountPercentage").get(function () {
   if (this.comparePrice && this.comparePrice > this.price) {
     return Math.round(
-      ((this.comparePrice - this.price) / this.comparePrice) * 100
+      ((this.comparePrice - this.price) / this.comparePrice) * 100,
     );
   }
   return 0;
@@ -453,8 +561,8 @@ productSchema.virtual("defaultImage").get(function () {
   return defaultImg
     ? defaultImg.url
     : this.images[0]
-    ? this.images[0].url
-    : null;
+      ? this.images[0].url
+      : null;
 });
 
 // Get thumbnail image
@@ -463,8 +571,8 @@ productSchema.virtual("thumbnailImage").get(function () {
   return defaultImg
     ? defaultImg.thumbnail
     : this.images[0]
-    ? this.images[0].thumbnail
-    : null;
+      ? this.images[0].thumbnail
+      : null;
 });
 
 // Increment view count
@@ -522,18 +630,7 @@ productSchema.methods.toggleVariantActive = function (variantId) {
   return this.save();
 };
 
-// Method to check if user has reviewed this product
-productSchema.methods.hasUserReviewed = function (userId) {
-  return this.ratings.some((r) => r.user.toString() === userId.toString());
-};
-
-// Method to get user's rating
-productSchema.methods.getUserRating = function (userId) {
-  const rating = this.ratings.find(
-    (r) => r.user.toString() === userId.toString()
-  );
-  return rating ? rating.rating : null;
-};
+// ========== STATIC METHODS ==========
 
 // Static method to find products by category
 productSchema.statics.findByCategory = function (categoryId, options = {}) {
@@ -587,6 +684,17 @@ productSchema.statics.findNewArrivals = function (limit = 10, days = 30) {
     .limit(limit);
 };
 
+// Static method to find top rated products
+productSchema.statics.findTopRated = function (limit = 10, minReviews = 5) {
+  return this.find({
+    isActive: true,
+    stock: { $gt: 0 },
+    totalReviews: { $gte: minReviews },
+  })
+    .sort("-averageRating")
+    .limit(limit);
+};
+
 // Static method to search products
 productSchema.statics.searchProducts = function (searchTerm, options = {}) {
   const { limit = 20, skip = 0 } = options;
@@ -604,6 +712,92 @@ productSchema.statics.searchProducts = function (searchTerm, options = {}) {
     .limit(limit);
 };
 
+// Static method to update product rating when review is added/changed/deleted
+productSchema.statics.updateProductRating = async function (productId) {
+  try {
+    const Review = mongoose.model("Review");
+
+    const stats = await Review.aggregate([
+      {
+        $match: {
+          product: mongoose.Types.ObjectId(productId),
+          status: "active",
+        },
+      },
+      {
+        $group: {
+          _id: "$product",
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const updateData = {
+      averageRating: 0,
+      totalReviews: 0,
+    };
+
+    if (stats.length > 0) {
+      updateData.averageRating = Math.round(stats[0].averageRating * 10) / 10;
+      updateData.totalReviews = stats[0].totalReviews;
+    }
+
+    await this.findByIdAndUpdate(productId, updateData);
+    return updateData;
+  } catch (error) {
+    console.error("Error updating product rating:", error);
+    throw error;
+  }
+};
+
+// Static method to get products with reviews
+productSchema.statics.getProductsWithReviews = async function (
+  query = {},
+  options = {},
+) {
+  const {
+    page = 1,
+    limit = 10,
+    sort = "-createdAt",
+    populateReviews = false,
+    reviewsLimit = 3,
+  } = options;
+
+  const skip = (page - 1) * limit;
+
+  const products = await this.find(query).sort(sort).skip(skip).limit(limit);
+
+  if (populateReviews) {
+    const Review = mongoose.model("Review");
+
+    // Get reviews for each product
+    const productsWithReviews = await Promise.all(
+      products.map(async (product) => {
+        const reviews = await Review.find({
+          product: product._id,
+          status: "active",
+        })
+          .populate("user", "name avatar")
+          .limit(reviewsLimit)
+          .sort("-createdAt");
+
+        const ratingSummary = await product.getRatingSummary();
+
+        return {
+          ...product.toObject(),
+          recentReviews: reviews,
+          ratingSummary,
+        };
+      }),
+    );
+
+    return productsWithReviews;
+  }
+
+  return products;
+};
+
 // Add pagination plugin
 productSchema.plugin(mongoosePaginate);
 
@@ -616,6 +810,7 @@ productSchema.index({
 });
 productSchema.index({ price: 1 });
 productSchema.index({ averageRating: -1 });
+productSchema.index({ totalReviews: -1 });
 productSchema.index({ salesCount: -1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ category: 1, isActive: 1 });
@@ -623,6 +818,9 @@ productSchema.index({ seller: 1, isActive: 1 });
 productSchema.index({ subCategory: 1, isActive: 1 });
 productSchema.index({ "variants.sku": 1 });
 productSchema.index({ "variants.isActive": 1 });
+
+// Compound index for rating filtering
+productSchema.index({ averageRating: -1, totalReviews: -1 });
 
 const Product = mongoose.model("Product", productSchema);
 

@@ -19,8 +19,8 @@ import paymentRoutes from "./routes/PaymentRoutes.js";
 import reviewRoutes from "./routes/ReviewRoutes.js";
 import wishlistRoutes from "./routes/WishlistRoutes.js";
 
-// Import middleware
-import { errorHandler } from "./middleware/errorHandler.js";
+// Import error handler middleware
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 // Import socket (if needed for real-time features like notifications)
 // import setupSocket from "./socket.js";
@@ -36,7 +36,7 @@ cloudinary.config({
 
 console.log(
   "Cloudinary configured for ecommerce with cloud_name:",
-  process.env.CLOUDINARY_CLOUD_NAME
+  process.env.CLOUDINARY_CLOUD_NAME,
 );
 
 // Set up Multer with Cloudinary storage
@@ -77,7 +77,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     credentials: true,
     exposedHeaders: ["set-cookie"],
-  })
+  }),
 );
 
 // Basic middleware
@@ -157,6 +157,36 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
+// Add test error handling endpoints (development only)
+if (process.env.NODE_ENV === "development") {
+  app.get("/api/test/error/validation", (req, res, next) => {
+    const error = new Error("Validation error test");
+    error.name = "ValidationError";
+    error.errors = {
+      email: { message: "Email is required" },
+      password: { message: "Password must be at least 6 characters" },
+    };
+    next(error);
+  });
+
+  app.get("/api/test/error/not-found", (req, res, next) => {
+    const error = new Error("Resource not found");
+    error.statusCode = 404;
+    next(error);
+  });
+
+  app.get("/api/test/error/server", (req, res, next) => {
+    const error = new Error("Internal server error");
+    error.statusCode = 500;
+    next(error);
+  });
+
+  app.get("/api/test/error/async", async (req, res, next) => {
+    // This will be caught by asyncHandler
+    throw new Error("Async error test");
+  });
+}
+
 // Setup Socket.IO (optional - for real-time notifications)
 // const io = setupSocket(server);
 // app.set("io", io);
@@ -165,16 +195,11 @@ app.get("/api/test-db", async (req, res) => {
 //   next();
 // });
 
+// Handle 404 routes - Use the imported notFoundHandler
+app.use(notFoundHandler);
+
 // Error handling middleware (should be last)
 app.use(errorHandler);
-
-// Handle 404 routes
-app.use("*", (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`,
-  });
-});
 
 // Graceful shutdown
 process.on("SIGTERM", () => {
@@ -213,19 +238,28 @@ mongoose
     server.listen(port, () => {
       console.log(`🚀 Ecommerce server is running at http://localhost:${port}`);
       console.log(
-        `📚 API Documentation available at http://localhost:${port}/api-docs`
+        `📚 API Documentation available at http://localhost:${port}/api-docs`,
       );
       console.log(
-        `🌐 Frontend: ${process.env.FRONTEND_URL || "http://localhost:3000"}`
+        `🌐 Frontend: ${process.env.FRONTEND_URL || "http://localhost:3000"}`,
       );
       console.log(`📦 Environment: ${process.env.NODE_ENV || "development"}`);
+
+      // Log test endpoints in development
+      if (process.env.NODE_ENV === "development") {
+        console.log("\n🧪 Test Error Endpoints (Development Only):");
+        console.log(`GET  http://localhost:${port}/api/test/error/validation`);
+        console.log(`GET  http://localhost:${port}/api/test/error/not-found`);
+        console.log(`GET  http://localhost:${port}/api/test/error/server`);
+        console.log(`GET  http://localhost:${port}/api/test/error/async`);
+      }
     });
   })
   .catch((err) => {
     console.error("❌ Failed to connect to database:", err.message);
     console.error(
       "Database URL used:",
-      databaseURL?.replace(/\/\/[^:]+:[^@]+@/, "//***:***@")
+      databaseURL?.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"),
     );
     process.exit(1);
   });

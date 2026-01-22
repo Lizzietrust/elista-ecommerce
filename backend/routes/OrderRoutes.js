@@ -13,7 +13,7 @@ import {
   processOrderWebhook,
 } from "../controllers/OrderController.js";
 import { protect, authorize } from "../middleware/auth.js";
-import { validateOrder } from "../validators/validators.js";
+import { validateOrder } from "../middleware/validators.js";
 
 const router = express.Router();
 

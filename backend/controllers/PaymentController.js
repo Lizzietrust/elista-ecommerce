@@ -4,6 +4,9 @@ import ErrorResponse from "../utils/ErrorResponse.js";
 import Order from "../models/Order.js";
 import Payment from "../models/Payment.js";
 import User from "../models/User.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Check if Stripe secret key exists
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -11,6 +14,8 @@ if (!process.env.STRIPE_SECRET_KEY) {
   // You could throw an error here or handle it gracefully
   // For now, we'll create a dummy stripe instance that will fail gracefully
 }
+
+console.log("STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY);
 
 // Initialize Stripe with error handling
 let stripe;

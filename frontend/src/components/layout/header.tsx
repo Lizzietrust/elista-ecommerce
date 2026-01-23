@@ -14,7 +14,8 @@ import {
 import { useCart } from "@/lib/hooks/use-cart";
 
 export default function Header() {
-  const { itemCount } = useCart();
+  const cart = useCart();
+  const { itemCount } = cart;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -60,10 +61,7 @@ export default function Header() {
           <div className="hidden md:flex items-center">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                className="w-75 pl-10"
-              />
+              <Input placeholder="Search products..." className="w-75 pl-10" />
             </div>
           </div>
 
@@ -71,15 +69,16 @@ export default function Header() {
             <Search className="h-5 w-5" />
           </Button>
 
-          <Link href="/cart">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {itemCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {itemCount}
-                </span>
-              )}
-            </Button>
+          <Link
+            href="/cart"
+            className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cart.itemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cart.itemCount}
+              </span>
+            )}
           </Link>
 
           <DropdownMenu>

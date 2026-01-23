@@ -56,6 +56,8 @@ const server = http.createServer(app);
 const port = process.env.PORT || 5000;
 const databaseURL = process.env.MONGODB_URI;
 
+console.log("databasesURL:", databaseURL);
+
 // CORS configuration
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",")
@@ -241,7 +243,7 @@ mongoose
         `📚 API Documentation available at http://localhost:${port}/api-docs`,
       );
       console.log(
-        `🌐 Frontend: ${process.env.FRONTEND_URL || "http://localhost:3000"}`,
+        `🌐 Frontend: ${process.env.FRONTEND_URL}`,
       );
       console.log(`📦 Environment: ${process.env.NODE_ENV || "development"}`);
 

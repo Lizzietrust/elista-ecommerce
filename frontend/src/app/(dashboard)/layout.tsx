@@ -1,4 +1,7 @@
+"use client";
+
 import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   User,
@@ -8,28 +11,59 @@ import {
   CreditCard,
   LogOut,
   ChevronRight,
+  Home,
+  Heart,
+  ShoppingBag,
 } from "lucide-react";
-import { auth } from "@/lib/auth"; 
+import { useAuth } from "@/components/providers/auth-provider";
 
 const navigation = [
   { name: "Account", href: "/dashboard/account", icon: User },
   { name: "Orders", href: "/dashboard/orders", icon: Package },
+  { name: "Wishlist", href: "/wishlist", icon: Heart },
+  { name: "Cart", href: "/cart", icon: ShoppingBag },
   { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
   { name: "Payment Methods", href: "/dashboard/payments", icon: CreditCard },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  // In a real app, get the user from your auth system
-  // const session = await auth();
-  const user = {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const { user, isLoading, logout } = useAuth();
+
+  // If you want to redirect non-authenticated users
+  // useEffect(() => {
+  //   if (!isLoading && !user) {
+  //     router.push('/login');
+  //   }
+  // }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Use auth user or fallback to mock
+  const displayUser = user || {
     name: "John Doe",
     email: "john@example.com",
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+    memberSince: "Jan 2024",
+    totalOrders: 12,
+    totalSpent: 1245.89,
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    // router.push('/login'); // Redirect after logout
   };
 
   return (
@@ -48,19 +82,20 @@ export default async function DashboardLayout({
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
-                Back to Store
+                <Home size={16} />
+                <span className="hidden sm:inline">Back to Store</span>
               </Link>
               {/* User avatar */}
               <div className="flex items-center gap-3">
                 <img
-                  src={user.avatar}
-                  alt={user.name}
+                  src={displayUser.avatar}
+                  alt={displayUser.name}
                   className="h-8 w-8 rounded-full"
                 />
                 <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {user.name}
+                  {displayUser.name}
                 </span>
               </div>
             </div>
@@ -76,17 +111,20 @@ export default async function DashboardLayout({
               {/* User Info */}
               <div className="flex items-center gap-4 mb-8 pb-6 border-b dark:border-gray-800">
                 <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="h-12 w-12 rounded-full"
+                  src={displayUser.avatar}
+                  alt={displayUser.name}
+                  className="h-12 w-12 rounded-full border-2 border-white dark:border-gray-800"
                 />
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-white">
-                    {user.name}
+                    {displayUser.name}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {user.email}
+                    {displayUser.email}
                   </p>
+                  <span className="inline-block mt-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">
+                    Premium Member
+                  </span>
                 </div>
               </div>
 
@@ -113,23 +151,18 @@ export default async function DashboardLayout({
                 })}
               </nav>
 
-              {/* Logout Button */}
+              {/* Quick Stats */}
               <div className="mt-8 pt-6 border-t dark:border-gray-800">
-                <button className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                  <LogOut size={20} />
-                  <span className="font-medium">Log out</span>
-                </button>
-              </div>
-
-              {/* Stats */}
-              <div className="mt-8 pt-6 border-t dark:border-gray-800">
+                <h4 className="font-bold text-gray-900 dark:text-white mb-4">
+                  Quick Stats
+                </h4>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       Member since
                     </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      Jan 2024
+                      {displayUser.memberSince}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -137,7 +170,7 @@ export default async function DashboardLayout({
                       Total orders
                     </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      12
+                      {displayUser.totalOrders}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -145,11 +178,46 @@ export default async function DashboardLayout({
                       Total spent
                     </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      $1,245.89
+                      ${displayUser.totalSpent.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Saved items
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      8
                     </span>
                   </div>
                 </div>
               </div>
+
+              {/* Logout Button */}
+              <div className="mt-8 pt-6 border-t dark:border-gray-800">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <LogOut size={20} />
+                  <span className="font-medium">Log out</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Support Card */}
+            <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6">
+              <h4 className="font-bold text-gray-900 dark:text-white mb-3">
+                Need Help?
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Our support team is here to help you.
+              </p>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              >
+                Contact Support →
+              </Link>
             </div>
           </aside>
 

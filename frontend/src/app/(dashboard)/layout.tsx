@@ -27,6 +27,16 @@ const navigation = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
+// Extended interface for dashboard user data
+interface DashboardUser {
+  name: string;
+  email: string;
+  avatar: string;
+  memberSince: string;
+  totalOrders: number;
+  totalSpent: number;
+}
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
@@ -51,14 +61,31 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Use auth user or fallback to mock
-  const displayUser = user || {
+  // Use auth user or fallback to mock dashboard data
+  const authUser = user || {
+    id: "1",
     name: "John Doe",
     email: "john@example.com",
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-    memberSince: "Jan 2024",
-    totalOrders: 12,
-    totalSpent: 1245.89,
+    role: "user",
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+  };
+
+  // Dashboard-specific user data (could come from a separate API)
+  const dashboardUserData: DashboardUser = {
+    name: authUser.name,
+    email: authUser.email,
+    avatar:
+      authUser.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+    memberSince: authUser.createdAt
+      ? new Date(authUser.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        })
+      : "Jan 2024",
+    totalOrders: 12, // This would come from orders API
+    totalSpent: 1245.89, // This would come from orders API
   };
 
   const handleLogout = async () => {
@@ -90,12 +117,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               {/* User avatar */}
               <div className="flex items-center gap-3">
                 <img
-                  src={displayUser.avatar}
-                  alt={displayUser.name}
+                  src={dashboardUserData.avatar}
+                  alt={dashboardUserData.name}
                   className="h-8 w-8 rounded-full"
                 />
                 <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {displayUser.name}
+                  {dashboardUserData.name}
                 </span>
               </div>
             </div>
@@ -111,16 +138,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               {/* User Info */}
               <div className="flex items-center gap-4 mb-8 pb-6 border-b dark:border-gray-800">
                 <img
-                  src={displayUser.avatar}
-                  alt={displayUser.name}
+                  src={dashboardUserData.avatar}
+                  alt={dashboardUserData.name}
                   className="h-12 w-12 rounded-full border-2 border-white dark:border-gray-800"
                 />
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-white">
-                    {displayUser.name}
+                    {dashboardUserData.name}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {displayUser.email}
+                    {dashboardUserData.email}
                   </p>
                   <span className="inline-block mt-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">
                     Premium Member
@@ -162,7 +189,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       Member since
                     </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {displayUser.memberSince}
+                      {dashboardUserData.memberSince}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -170,7 +197,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       Total orders
                     </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {displayUser.totalOrders}
+                      {dashboardUserData.totalOrders}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -178,7 +205,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       Total spent
                     </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${displayUser.totalSpent.toFixed(2)}
+                      ${dashboardUserData.totalSpent.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

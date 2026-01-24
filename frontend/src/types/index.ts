@@ -53,12 +53,14 @@ export interface Category {
   image?: {
     url: string;
     altText: string;
-  };
+  } | string;
   parent?: string;
-  productCount: number;
+  productCount?: number;
   featured: boolean;
   isActive: boolean;
   sortOrder: number;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export interface CartItem {

@@ -16,13 +16,45 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
+import { Product, Category } from "@/types"; // Import your types
 
-// Mock data - updated to match Product type
-const categories = [
+// Define the structure for category data
+interface CategoryData {
+  slug: string;
+  name: string;
+  description: string;
+  category: Category;
+  products: Product[];
+  filters: {
+    price: { min: number; max: number };
+    brands: string[];
+    features: string[];
+  };
+  stats: {
+    averageRating: number;
+    totalProducts: number;
+    newArrivals: number;
+  };
+}
+
+// Mock data with proper Category objects
+const categories: CategoryData[] = [
   {
     slug: "electronics",
     name: "Electronics",
     description: "Latest gadgets and tech devices",
+    category: {
+      _id: "cat-1",
+      slug: "electronics",
+      name: "Electronics",
+      description: "Latest gadgets and tech devices",
+      image: "/images/categories/electronics.jpg",
+      isActive: true,
+      featured: true,
+      sortOrder: 1,
+      createdAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z",
+    },
     products: [
       {
         _id: "1",
@@ -35,15 +67,33 @@ const categories = [
         comparePrice: 199.99,
         averageRating: 4.5,
         reviewCount: 128,
-        images: [{ url: "/images/products/headphones.jpg" }],
-        category: "Electronics",
+        images: [
+          {
+            url: "/images/products/headphones.jpg",
+            publicId: "headphones-001",
+            thumbnail: "/images/products/headphones-thumb.jpg",
+            alt: "Wireless Headphones",
+          },
+        ],
+        category: {
+          _id: "cat-1",
+          slug: "electronics",
+          name: "Electronics",
+          description: "Latest gadgets and tech devices",
+          image: "/images/categories/electronics.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 1,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 15,
         isFeatured: true,
         isActive: true,
         tags: ["Wireless", "Noise Cancelling"],
         brand: "Sony",
-        createdAt: new Date("2024-01-15"),
-        updatedAt: new Date("2024-01-15"),
+        createdAt: "2024-01-15T00:00:00.000Z",
+        updatedAt: "2024-01-15T00:00:00.000Z",
       },
       {
         _id: "2",
@@ -55,15 +105,33 @@ const categories = [
         comparePrice: 299.99,
         averageRating: 4.7,
         reviewCount: 89,
-        images: [{ url: "/images/products/watch.jpg" }],
-        category: "Electronics",
+        images: [
+          {
+            url: "/images/products/watch.jpg",
+            publicId: "watch-001",
+            thumbnail: "/images/products/watch-thumb.jpg",
+            alt: "Smart Watch",
+          },
+        ],
+        category: {
+          _id: "cat-1",
+          slug: "electronics",
+          name: "Electronics",
+          description: "Latest gadgets and tech devices",
+          image: "/images/categories/electronics.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 1,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 8,
         isFeatured: false,
         isActive: true,
         tags: ["Fitness", "Smart"],
         brand: "Apple",
-        createdAt: new Date("2024-01-20"),
-        updatedAt: new Date("2024-01-20"),
+        createdAt: "2024-01-20T00:00:00.000Z",
+        updatedAt: "2024-01-20T00:00:00.000Z",
       },
       {
         _id: "3",
@@ -75,15 +143,33 @@ const categories = [
         comparePrice: 49.99,
         averageRating: 4.3,
         reviewCount: 56,
-        images: [{ url: "/images/products/laptop-stand.jpg" }],
-        category: "Electronics",
+        images: [
+          {
+            url: "/images/products/laptop-stand.jpg",
+            publicId: "laptop-stand-001",
+            thumbnail: "/images/products/laptop-stand-thumb.jpg",
+            alt: "Laptop Stand",
+          },
+        ],
+        category: {
+          _id: "cat-1",
+          slug: "electronics",
+          name: "Electronics",
+          description: "Latest gadgets and tech devices",
+          image: "/images/categories/electronics.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 1,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 25,
         isFeatured: true,
         isActive: true,
         tags: ["Ergonomic", "Adjustable"],
         brand: "Rain Design",
-        createdAt: new Date("2024-01-10"),
-        updatedAt: new Date("2024-01-10"),
+        createdAt: "2024-01-10T00:00:00.000Z",
+        updatedAt: "2024-01-10T00:00:00.000Z",
       },
       {
         _id: "4",
@@ -95,15 +181,33 @@ const categories = [
         price: 59.99,
         averageRating: 4.6,
         reviewCount: 42,
-        images: [{ url: "/images/products/usb-hub.jpg" }],
-        category: "Electronics",
+        images: [
+          {
+            url: "/images/products/usb-hub.jpg",
+            publicId: "usb-hub-001",
+            thumbnail: "/images/products/usb-hub-thumb.jpg",
+            alt: "USB-C Hub",
+          },
+        ],
+        category: {
+          _id: "cat-1",
+          slug: "electronics",
+          name: "Electronics",
+          description: "Latest gadgets and tech devices",
+          image: "/images/categories/electronics.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 1,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 30,
         isFeatured: false,
         isActive: true,
         tags: ["7-in-1", "4K"],
         brand: "Anker",
-        createdAt: new Date("2024-01-05"),
-        updatedAt: new Date("2024-01-05"),
+        createdAt: "2024-01-05T00:00:00.000Z",
+        updatedAt: "2024-01-05T00:00:00.000Z",
       },
       {
         _id: "5",
@@ -115,15 +219,33 @@ const categories = [
         comparePrice: 119.99,
         averageRating: 4.4,
         reviewCount: 73,
-        images: [{ url: "/images/products/speaker.jpg" }],
-        category: "Electronics",
+        images: [
+          {
+            url: "/images/products/speaker.jpg",
+            publicId: "speaker-001",
+            thumbnail: "/images/products/speaker-thumb.jpg",
+            alt: "Portable Speaker",
+          },
+        ],
+        category: {
+          _id: "cat-1",
+          slug: "electronics",
+          name: "Electronics",
+          description: "Latest gadgets and tech devices",
+          image: "/images/categories/electronics.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 1,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 12,
         isFeatured: true,
         isActive: true,
         tags: ["Waterproof", "Bluetooth"],
         brand: "JBL",
-        createdAt: new Date("2024-01-12"),
-        updatedAt: new Date("2024-01-12"),
+        createdAt: "2024-01-12T00:00:00.000Z",
+        updatedAt: "2024-01-12T00:00:00.000Z",
       },
       {
         _id: "6",
@@ -134,15 +256,33 @@ const categories = [
         price: 79.99,
         averageRating: 4.8,
         reviewCount: 31,
-        images: [{ url: "/images/products/keyboard.jpg" }],
-        category: "Electronics",
+        images: [
+          {
+            url: "/images/products/keyboard.jpg",
+            publicId: "keyboard-001",
+            thumbnail: "/images/products/keyboard-thumb.jpg",
+            alt: "Mechanical Keyboard",
+          },
+        ],
+        category: {
+          _id: "cat-1",
+          slug: "electronics",
+          name: "Electronics",
+          description: "Latest gadgets and tech devices",
+          image: "/images/categories/electronics.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 1,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 18,
         isFeatured: false,
         isActive: true,
         tags: ["Mechanical", "RGB"],
         brand: "Logitech",
-        createdAt: new Date("2024-01-18"),
-        updatedAt: new Date("2024-01-18"),
+        createdAt: "2024-01-18T00:00:00.000Z",
+        updatedAt: "2024-01-18T00:00:00.000Z",
       },
     ],
     filters: {
@@ -167,6 +307,18 @@ const categories = [
     slug: "fashion",
     name: "Fashion",
     description: "Stylish clothing and accessories for every occasion",
+    category: {
+      _id: "cat-2",
+      slug: "fashion",
+      name: "Fashion",
+      description: "Stylish clothing and accessories for every occasion",
+      image: "/images/categories/fashion.jpg",
+      isActive: true,
+      featured: true,
+      sortOrder: 2,
+      createdAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z",
+    },
     products: [
       {
         _id: "7",
@@ -177,15 +329,33 @@ const categories = [
         price: 24.99,
         averageRating: 4.2,
         reviewCount: 94,
-        images: [{ url: "/images/products/t-shirt.jpg" }],
-        category: "Fashion",
+        images: [
+          {
+            url: "/images/products/t-shirt.jpg",
+            publicId: "t-shirt-001",
+            thumbnail: "/images/products/t-shirt-thumb.jpg",
+            alt: "Organic Cotton T-Shirt",
+          },
+        ],
+        category: {
+          _id: "cat-2",
+          slug: "fashion",
+          name: "Fashion",
+          description: "Stylish clothing and accessories for every occasion",
+          image: "/images/categories/fashion.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 2,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 50,
         isFeatured: true,
         isActive: true,
         tags: ["Organic", "Slim Fit"],
         brand: "Patagonia",
-        createdAt: new Date("2024-01-08"),
-        updatedAt: new Date("2024-01-08"),
+        createdAt: "2024-01-08T00:00:00.000Z",
+        updatedAt: "2024-01-08T00:00:00.000Z",
       },
       {
         _id: "8",
@@ -197,15 +367,33 @@ const categories = [
         comparePrice: 119.99,
         averageRating: 4.5,
         reviewCount: 67,
-        images: [{ url: "/images/products/jeans.jpg" }],
-        category: "Fashion",
+        images: [
+          {
+            url: "/images/products/jeans.jpg",
+            publicId: "jeans-001",
+            thumbnail: "/images/products/jeans-thumb.jpg",
+            alt: "Slim Fit Denim Jeans",
+          },
+        ],
+        category: {
+          _id: "cat-2",
+          slug: "fashion",
+          name: "Fashion",
+          description: "Stylish clothing and accessories for every occasion",
+          image: "/images/categories/fashion.jpg",
+          isActive: true,
+          featured: true,
+          sortOrder: 2,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 22,
         isFeatured: false,
         isActive: true,
         tags: ["Denim", "Slim Fit"],
         brand: "Levi's",
-        createdAt: new Date("2024-01-14"),
-        updatedAt: new Date("2024-01-14"),
+        createdAt: "2024-01-14T00:00:00.000Z",
+        updatedAt: "2024-01-14T00:00:00.000Z",
       },
     ],
     filters: {
@@ -231,6 +419,18 @@ const categories = [
     slug: "home",
     name: "Home & Garden",
     description: "Everything you need to make your house a home",
+    category: {
+      _id: "cat-3",
+      slug: "home",
+      name: "Home & Garden",
+      description: "Everything you need to make your house a home",
+      image: "/images/categories/home.jpg",
+      isActive: true,
+      featured: false,
+      sortOrder: 3,
+      createdAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z",
+    },
     products: [
       {
         _id: "9",
@@ -241,15 +441,33 @@ const categories = [
         price: 18.99,
         averageRating: 4.7,
         reviewCount: 128,
-        images: [{ url: "/images/products/mug.jpg" }],
-        category: "Home",
+        images: [
+          {
+            url: "/images/products/mug.jpg",
+            publicId: "mug-001",
+            thumbnail: "/images/products/mug-thumb.jpg",
+            alt: "Handmade Ceramic Mug",
+          },
+        ],
+        category: {
+          _id: "cat-3",
+          slug: "home",
+          name: "Home & Garden",
+          description: "Everything you need to make your house a home",
+          image: "/images/categories/home.jpg",
+          isActive: true,
+          featured: false,
+          sortOrder: 3,
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+        },
         stock: 100,
         isFeatured: true,
         isActive: true,
         tags: ["Handmade", "Artisan"],
         brand: "Local Artisan",
-        createdAt: new Date("2024-01-03"),
-        updatedAt: new Date("2024-01-03"),
+        createdAt: "2024-01-03T00:00:00.000Z",
+        updatedAt: "2024-01-03T00:00:00.000Z",
       },
     ],
     filters: {
@@ -333,9 +551,9 @@ export default async function CategoryPage({
   const { slug } = await params;
   const searchParamsObj = searchParams ? await searchParams : {};
 
-  const category = categories.find((cat) => cat.slug === slug);
+  const categoryData = categories.find((cat) => cat.slug === slug);
 
-  if (!category) {
+  if (!categoryData) {
     notFound();
   }
 
@@ -346,10 +564,10 @@ export default async function CategoryPage({
       : "featured";
   const minPrice = searchParamsObj.min
     ? Number(searchParamsObj.min)
-    : category.filters.price.min;
+    : categoryData.filters.price.min;
   const maxPrice = searchParamsObj.max
     ? Number(searchParamsObj.max)
-    : category.filters.price.max;
+    : categoryData.filters.price.max;
   const selectedBrands =
     typeof searchParamsObj.brands === "string"
       ? searchParamsObj.brands.split(",")
@@ -362,7 +580,7 @@ export default async function CategoryPage({
     typeof searchParamsObj.view === "string" ? searchParamsObj.view : "grid";
 
   // Filter products based on search params
-  let filteredProducts = [...category.products];
+  let filteredProducts = [...categoryData.products];
 
   // Apply price filter
   filteredProducts = filteredProducts.filter(
@@ -376,10 +594,10 @@ export default async function CategoryPage({
     );
   }
 
-  // Apply feature/tag filter
+  // Apply feature/tag filter with proper typing
   if (selectedFeatures.length > 0 && selectedFeatures[0] !== "") {
     filteredProducts = filteredProducts.filter((product) =>
-      product.tags?.some((tag) => selectedFeatures.includes(tag)),
+      product.tags?.some((tag: string) => selectedFeatures.includes(tag)),
     );
   }
 
@@ -439,38 +657,40 @@ export default async function CategoryPage({
                 Categories
               </Link>
               <ChevronDown size={14} className="rotate-270" />
-              <span className="font-medium text-white">{category.name}</span>
+              <span className="font-medium text-white">
+                {categoryData.name}
+              </span>
             </nav>
 
             {/* Category Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-3xl md:text-5xl font-bold mb-4">
-                  {category.name}
+                  {categoryData.name}
                 </h1>
                 <p className="text-xl text-blue-100 mb-6 max-w-2xl">
-                  {category.description}
+                  {categoryData.description}
                 </p>
 
                 {/* Category Stats */}
                 <div className="flex flex-wrap gap-4">
                   <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
                     <span className="font-medium">
-                      {category.stats.totalProducts} Products
+                      {categoryData.stats.totalProducts} Products
                     </span>
                   </div>
                   <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
                     <Star size={16} />
-                    <span>{category.stats.averageRating} Avg Rating</span>
+                    <span>{categoryData.stats.averageRating} Avg Rating</span>
                   </div>
                   <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
                     <Tag size={16} />
                     <span>Free Shipping Over $50</span>
                   </div>
-                  {category.stats.newArrivals > 0 && (
+                  {categoryData.stats.newArrivals > 0 && (
                     <div className="bg-green-500/30 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
                       <span className="font-medium">
-                        {category.stats.newArrivals} New Arrivals
+                        {categoryData.stats.newArrivals} New Arrivals
                       </span>
                     </div>
                   )}
@@ -517,8 +737,8 @@ export default async function CategoryPage({
                   <Sliders size={20} />
                   Filters
                 </h2>
-                {(minPrice > category.filters.price.min ||
-                  maxPrice < category.filters.price.max ||
+                {(minPrice > categoryData.filters.price.min ||
+                  maxPrice < categoryData.filters.price.max ||
                   selectedBrands.length > 0 ||
                   selectedFeatures.length > 0) && (
                   <Link
@@ -561,8 +781,8 @@ export default async function CategoryPage({
                         <Link
                           key={range.label}
                           href={`/categories/${slug}?${createQueryString({
-                            min: range.min || category.filters.price.min,
-                            max: range.max || category.filters.price.max,
+                            min: range.min || categoryData.filters.price.min,
+                            max: range.max || categoryData.filters.price.max,
                             brands: selectedBrands.join(","),
                             features: selectedFeatures.join(","),
                             sort: selectedSort,
@@ -588,7 +808,7 @@ export default async function CategoryPage({
                   Brands
                 </h3>
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                  {category.filters.brands.map((brand) => {
+                  {categoryData.filters.brands.map((brand) => {
                     const isSelected = selectedBrands.includes(brand);
                     const brandProductCount = filteredProducts.filter(
                       (p) => p.brand === brand,
@@ -643,16 +863,16 @@ export default async function CategoryPage({
               </div>
 
               {/* Features Filter */}
-              {category.filters.features.length > 0 && (
+              {categoryData.filters.features.length > 0 && (
                 <div className="mb-8">
                   <h3 className="font-bold text-gray-900 dark:text-white mb-4">
                     Features
                   </h3>
                   <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                    {category.filters.features.map((feature) => {
+                    {categoryData.filters.features.map((feature) => {
                       const isSelected = selectedFeatures.includes(feature);
                       const featureProductCount = filteredProducts.filter((p) =>
-                        p.tags?.includes(feature),
+                        p.tags?.some((tag: string) => tag === feature),
                       ).length;
 
                       return (
@@ -808,21 +1028,21 @@ export default async function CategoryPage({
                     <span className="font-bold text-gray-900 dark:text-white">
                       {filteredProducts.length}
                     </span>{" "}
-                    of {category.products.length} products
+                    of {categoryData.products.length} products
                   </span>
 
                   {/* Active Filters */}
-                  {(minPrice > category.filters.price.min ||
-                    maxPrice < category.filters.price.max ||
+                  {(minPrice > categoryData.filters.price.min ||
+                    maxPrice < categoryData.filters.price.max ||
                     selectedBrands.length > 0 ||
                     selectedFeatures.length > 0) && (
                     <div className="flex flex-wrap gap-2">
-                      {(minPrice > category.filters.price.min ||
-                        maxPrice < category.filters.price.max) && (
+                      {(minPrice > categoryData.filters.price.min ||
+                        maxPrice < categoryData.filters.price.max) && (
                         <Link
                           href={`/categories/${slug}?${createQueryString({
-                            min: category.filters.price.min,
-                            max: category.filters.price.max,
+                            min: categoryData.filters.price.min,
+                            max: categoryData.filters.price.max,
                             brands: selectedBrands.join(","),
                             features: selectedFeatures.join(","),
                             sort: selectedSort,
@@ -984,7 +1204,7 @@ export default async function CategoryPage({
                           <div>
                             <div className="mb-2">
                               <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                                {product.category}
+                                {product.category.name}
                               </span>
                               {product.brand && (
                                 <span className="text-sm text-gray-600 dark:text-gray-400 ml-3">
@@ -1009,7 +1229,7 @@ export default async function CategoryPage({
                             {/* Tags */}
                             {product.tags && product.tags.length > 0 && (
                               <div className="flex flex-wrap gap-2 mb-4">
-                                {product.tags.map((tag) => (
+                                {product.tags.map((tag: string) => (
                                   <span
                                     key={tag}
                                     className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-full"

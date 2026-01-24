@@ -13,6 +13,7 @@ export interface Product {
   name: string;
   slug: string;
   description: string;
+  longDescription?: string;
   price: number;
   comparePrice?: number;
   images: Array<{
@@ -40,6 +41,8 @@ export interface Product {
   seller?: User;
   createdAt: string;
   updatedAt: string;
+  specifications?: Record<string, string>;
+  relatedProducts?: string[];
 }
 
 export interface Category {

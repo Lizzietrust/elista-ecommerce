@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
 
-// Mock data - replace with your API
+// Mock data - updated to match Product type
 const categories = [
   {
     slug: "electronics",
@@ -26,6 +26,7 @@ const categories = [
     products: [
       {
         _id: "1",
+        sku: "ELEC-001",
         slug: "wireless-headphones",
         name: "Wireless Headphones",
         description:
@@ -38,11 +39,15 @@ const categories = [
         category: "Electronics",
         stock: 15,
         isFeatured: true,
+        isActive: true,
         tags: ["Wireless", "Noise Cancelling"],
         brand: "Sony",
+        createdAt: new Date("2024-01-15"),
+        updatedAt: new Date("2024-01-15"),
       },
       {
         _id: "2",
+        sku: "ELEC-002",
         slug: "smart-watch",
         name: "Smart Watch",
         description: "Fitness tracking and smart notifications",
@@ -54,11 +59,15 @@ const categories = [
         category: "Electronics",
         stock: 8,
         isFeatured: false,
+        isActive: true,
         tags: ["Fitness", "Smart"],
         brand: "Apple",
+        createdAt: new Date("2024-01-20"),
+        updatedAt: new Date("2024-01-20"),
       },
       {
         _id: "3",
+        sku: "ELEC-003",
         slug: "laptop-stand",
         name: "Laptop Stand",
         description: "Adjustable aluminum laptop stand for ergonomic working",
@@ -70,11 +79,15 @@ const categories = [
         category: "Electronics",
         stock: 25,
         isFeatured: true,
+        isActive: true,
         tags: ["Ergonomic", "Adjustable"],
         brand: "Rain Design",
+        createdAt: new Date("2024-01-10"),
+        updatedAt: new Date("2024-01-10"),
       },
       {
         _id: "4",
+        sku: "ELEC-004",
         slug: "usb-c-hub",
         name: "USB-C Hub",
         description:
@@ -86,11 +99,15 @@ const categories = [
         category: "Electronics",
         stock: 30,
         isFeatured: false,
+        isActive: true,
         tags: ["7-in-1", "4K"],
         brand: "Anker",
+        createdAt: new Date("2024-01-05"),
+        updatedAt: new Date("2024-01-05"),
       },
       {
         _id: "5",
+        sku: "ELEC-005",
         slug: "portable-speaker",
         name: "Portable Speaker",
         description: "Waterproof Bluetooth speaker with 20hr battery",
@@ -102,11 +119,15 @@ const categories = [
         category: "Electronics",
         stock: 12,
         isFeatured: true,
+        isActive: true,
         tags: ["Waterproof", "Bluetooth"],
         brand: "JBL",
+        createdAt: new Date("2024-01-12"),
+        updatedAt: new Date("2024-01-12"),
       },
       {
         _id: "6",
+        sku: "ELEC-006",
         slug: "mechanical-keyboard",
         name: "Mechanical Keyboard",
         description: "RGB mechanical keyboard with customizable switches",
@@ -117,8 +138,11 @@ const categories = [
         category: "Electronics",
         stock: 18,
         isFeatured: false,
+        isActive: true,
         tags: ["Mechanical", "RGB"],
         brand: "Logitech",
+        createdAt: new Date("2024-01-18"),
+        updatedAt: new Date("2024-01-18"),
       },
     ],
     filters: {
@@ -146,6 +170,7 @@ const categories = [
     products: [
       {
         _id: "7",
+        sku: "FASH-001",
         slug: "cotton-t-shirt",
         name: "Organic Cotton T-Shirt",
         description: "Premium organic cotton t-shirt with slim fit design",
@@ -156,11 +181,15 @@ const categories = [
         category: "Fashion",
         stock: 50,
         isFeatured: true,
+        isActive: true,
         tags: ["Organic", "Slim Fit"],
         brand: "Patagonia",
+        createdAt: new Date("2024-01-08"),
+        updatedAt: new Date("2024-01-08"),
       },
       {
         _id: "8",
+        sku: "FASH-002",
         slug: "denim-jeans",
         name: "Slim Fit Denim Jeans",
         description: "Classic denim jeans with modern slim fit",
@@ -172,8 +201,11 @@ const categories = [
         category: "Fashion",
         stock: 22,
         isFeatured: false,
+        isActive: true,
         tags: ["Denim", "Slim Fit"],
         brand: "Levi's",
+        createdAt: new Date("2024-01-14"),
+        updatedAt: new Date("2024-01-14"),
       },
     ],
     filters: {
@@ -202,6 +234,7 @@ const categories = [
     products: [
       {
         _id: "9",
+        sku: "HOME-001",
         slug: "ceramic-mug",
         name: "Handmade Ceramic Mug",
         description: "Artisan ceramic mug with unique hand-painted design",
@@ -212,8 +245,11 @@ const categories = [
         category: "Home",
         stock: 100,
         isFeatured: true,
+        isActive: true,
         tags: ["Handmade", "Artisan"],
         brand: "Local Artisan",
+        createdAt: new Date("2024-01-03"),
+        updatedAt: new Date("2024-01-03"),
       },
     ],
     filters: {
@@ -357,8 +393,10 @@ export default async function CategoryPage({
       case "rating":
         return (b.averageRating || 0) - (a.averageRating || 0);
       case "newest":
-        // Assuming newer products have higher IDs (simplified)
-        return parseInt(b._id) - parseInt(a._id);
+        // Using createdAt for newest sorting
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       default: // 'featured'
         // Featured products first, then by rating
         if (a.isFeatured && !b.isFeatured) return -1;

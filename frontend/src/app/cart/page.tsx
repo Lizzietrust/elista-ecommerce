@@ -16,7 +16,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart } from "@/lib/hooks/use-cart";
+import { useCartContext } from "@/components/providers/cart-provider";
 import { toast } from "react-hot-toast";
 
 const promoCodes = [
@@ -66,20 +66,16 @@ const sampleItems = [
 ];
 
 export default function CartPage() {
-  const cart = useCart();
+  const cart = useCartContext();
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<
     (typeof promoCodes)[0] | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Use actual cart items or sample data for demonstration
-  const cartItems = cart.items.length > 0 ? cart.items : sampleItems;
-  const subtotal =
-    cart.totalPrice ||
-    cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount =
-    cart.itemCount || cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartItems = cart.items;
+  const itemCount = cart.itemCount;
+  const subtotal = cart.totalPrice;
 
   const shipping = subtotal > 50 ? 0 : 9.99;
   const tax = subtotal * 0.08;

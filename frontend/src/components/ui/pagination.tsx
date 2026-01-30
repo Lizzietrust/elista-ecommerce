@@ -48,9 +48,7 @@ export default function Pagination({
     const maxVisible = 5;
     const sidePages = Math.floor(maxVisible / 2);
 
-    // Always show first and last page
     if (totalPages <= maxVisible + 2) {
-      // Show all pages if total pages are small
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }

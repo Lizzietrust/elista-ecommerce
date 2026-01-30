@@ -1,7 +1,41 @@
+
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL;
 
+
+export interface ErrorResponseData {
+  success: boolean;
+  message?: string;
+  error?: string;
+  errors?: any[];
+  [key: string]: any;
+}
+
+// Define base API response type
+export interface BaseApiResponse<T = any> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+  [key: string]: any;
+}
+
+export interface PaginatedApiResponse<T = any> {
+  success: boolean;
+  count: number;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  data: T[];
+  filters?: any;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
+  [key: string]: any;
+}
+
+// Create axios instance with proper typing
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -11,11 +45,14 @@ export const apiClient = axios.create({
   timeout: 30000,
 });
 
+// Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
 
     if (config.method?.toLowerCase() === "get") {
@@ -32,20 +69,22 @@ apiClient.interceptors.request.use(
   },
 );
 
+// Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    return response.data; // Return only the data part
+    // Return the data part - we need to cast it to maintain TypeScript types
+    return response.data;
   },
-  (error: AxiosError) => {
+  (error: AxiosError<ErrorResponseData>) => {
     const { response } = error;
 
-    // Handle different error statuses
     if (response) {
       switch (response.status) {
         case 401:
-          // Handle unauthorized access
-          // You might want to redirect to login
           console.error("Unauthorized access");
+          if (typeof window !== "undefined") {
+            window.location.href = "/login";
+          }
           break;
         case 403:
           console.error("Forbidden access");
@@ -64,30 +103,61 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Return error in a consistent format
+    const errorMessage =
+      response?.data?.message ||
+      response?.data?.error ||
+      error.message ||
+      "An unknown error occurred";
+
     return Promise.reject({
       status: response?.status,
-      message: response?.data?.message || error.message,
+      message: errorMessage,
       data: response?.data,
     });
   },
 );
 
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
+// Generic API request function with proper typing
+export async function apiRequest<T = any>(
+  config: AxiosRequestConfig,
+): Promise<T> {
+  const response = await apiClient(config);
+  return response as T;
 }
 
-export interface PaginatedResponse<T = any> {
-  success: boolean;
-  count: number;
-  total: number;
-  totalPages: number;
-  currentPage: number;
-  data: T[];
-  filters?: any;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
+// Typed API client that preserves types through the interceptor
+export const typedApiClient = {
+  get: async <T = any>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<T> => {
+    return apiRequest<T>({ method: "GET", url, ...config });
+  },
+  post: async <T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<T> => {
+    return apiRequest<T>({ method: "POST", url, data, ...config });
+  },
+  put: async <T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<T> => {
+    return apiRequest<T>({ method: "PUT", url, data, ...config });
+  },
+  patch: async <T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<T> => {
+    return apiRequest<T>({ method: "PATCH", url, data, ...config });
+  },
+  delete: async <T = any>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<T> => {
+    return apiRequest<T>({ method: "DELETE", url, ...config });
+  },
+};

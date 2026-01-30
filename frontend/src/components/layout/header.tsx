@@ -20,11 +20,10 @@ export default function Header() {
   const wishlist = useWishlist();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b bg-background backdrop-blur supports-backdrop-filter:bg-background/60">
+      <div className="container flex h-16 items-center justify-between md:px-8 px-4 mx-auto">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary" />
             <span className="text-xl font-bold">Elista</span>
           </Link>
 

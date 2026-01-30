@@ -1,6 +1,6 @@
 // lib/data/products.ts
-import { productsApi } from "@/lib/api/products";
-import { Product } from "@/lib/types";
+import { productApi } from "@/lib/api/products";
+import { Product } from "@/types";
 
 interface GetProductsParams {
   category?: string;
@@ -30,7 +30,7 @@ export async function getProducts(params: GetProductsParams = {}) {
   } = params;
 
   try {
-    const response = await productsApi.getProducts({
+    const response = await productApi.getProducts({
       category,
       sort: mapSortToBackendSort(sort),
       minPrice,
@@ -43,8 +43,7 @@ export async function getProducts(params: GetProductsParams = {}) {
       featured,
     });
 
-    // Transform response to match your frontend types
-    const products: Product[] = response.products.map((product) => ({
+    const products: Product[] = response.data.map((product: any) => ({
       id: product._id,
       slug: product.slug || product._id,
       name: product.name,
@@ -55,7 +54,7 @@ export async function getProducts(params: GetProductsParams = {}) {
             ((product.price - product.discountPrice) / product.price) * 100,
           )
         : 0,
-      images: product.images.map((img) => img.url),
+      images: product.images.map((img: any) => img.url),
       category: product.category?.name || "Uncategorized",
       brand: product.brand || "Unknown",
       rating: product.averageRating || 0,
@@ -71,11 +70,18 @@ export async function getProducts(params: GetProductsParams = {}) {
     // Extract unique categories and brands
     const categories = [
       ...new Set(
-        response.products.map((p) => p.category?.name).filter(Boolean),
+        response.data
+          .map((p: any) => p.category?.name)
+          .filter((name: any): name is string => Boolean(name)),
       ),
     ];
+
     const brands = [
-      ...new Set(response.products.map((p) => p.brand).filter(Boolean)),
+      ...new Set(
+        response.data
+          .map((p: any) => p.brand)
+          .filter((brand: any): brand is string => Boolean(brand)),
+      ),
     ];
 
     return {
@@ -86,8 +92,6 @@ export async function getProducts(params: GetProductsParams = {}) {
     };
   } catch (error) {
     console.error("Error fetching products:", error);
-
-    // Return fallback data or re-throw the error
     throw new Error("Failed to fetch products");
   }
 }

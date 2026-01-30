@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Lock,
   ChevronLeft,
@@ -156,17 +155,32 @@ export default function CheckoutPage() {
   const tax = subtotal * 0.08;
   const total = subtotal + shippingCost + tax;
 
-  const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // FIXED: Update handler to accept both input and select elements
+  const handleShippingChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setShippingInfo((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setPaymentInfo((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  // FIXED: Update payment handler to accept both input and select elements
+  const handlePaymentChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value, type } = e.target;
+
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setPaymentInfo((prev) => ({
+        ...prev,
+        [name]: checked,
+      }));
+    } else {
+      setPaymentInfo((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const validateShipping = () => {
@@ -519,6 +533,9 @@ export default function CheckoutPage() {
                               United Kingdom
                             </option>
                             <option value="Australia">Australia</option>
+                            <option value="Germany">Germany</option>
+                            <option value="France">France</option>
+                            <option value="Japan">Japan</option>
                           </select>
                         </div>
                       </div>

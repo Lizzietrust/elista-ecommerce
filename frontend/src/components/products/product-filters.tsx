@@ -1,6 +1,7 @@
+// components/products/product-filters.tsx
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { X, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +23,12 @@ export default function ProductFilters({
   selectedMaxPrice,
 }: ProductFiltersProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleFilterChange = (key: string, value: string | number) => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(searchParams.toString());
 
-    if (value) {
+    if (value && value.toString().trim() !== "") {
       params.set(key, value.toString());
     } else {
       params.delete(key);
@@ -39,6 +41,16 @@ export default function ProductFilters({
   const clearFilters = () => {
     router.push("/products");
   };
+
+  // Parse price values for slider
+  const minPriceValue = parseInt(selectedMinPrice || "0");
+  const maxPriceValue = parseInt(selectedMaxPrice || "1000");
+
+  // Ensure values are within reasonable bounds
+  const sliderValue = [
+    isNaN(minPriceValue) ? 0 : Math.max(0, minPriceValue),
+    isNaN(maxPriceValue) ? 1000 : Math.min(1000, maxPriceValue),
+  ];
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800">
@@ -70,6 +82,8 @@ export default function ProductFilters({
             <Input
               type="number"
               placeholder="Min"
+              min={0}
+              max={1000}
               value={selectedMinPrice || ""}
               onChange={(e) => handleFilterChange("minPrice", e.target.value)}
               className="h-9"
@@ -77,25 +91,30 @@ export default function ProductFilters({
             <Input
               type="number"
               placeholder="Max"
+              min={0}
+              max={1000}
               value={selectedMaxPrice || ""}
               onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
               className="h-9"
             />
           </div>
-          <Slider
-            defaultValue={[0, 1000]}
-            value={[
-              parseInt(selectedMinPrice || "0"),
-              parseInt(selectedMaxPrice || "1000"),
-            ]}
-            min={0}
-            max={1000}
-            step={10}
-            onValueChange={(value) => {
-              handleFilterChange("minPrice", value[0]);
-              handleFilterChange("maxPrice", value[1]);
-            }}
-          />
+          <div className="px-2">
+            <Slider
+              defaultValue={[0, 1000]}
+              value={sliderValue}
+              min={0}
+              max={1000}
+              step={10}
+              onValueChange={(value: number[]) => {
+                handleFilterChange("minPrice", value[0]);
+                handleFilterChange("maxPrice", value[1]);
+              }}
+            />
+          </div>
+          <div className="flex justify-between text-sm text-gray-500">
+            <span>$0</span>
+            <span>$1000</span>
+          </div>
         </div>
       </div>
 
@@ -146,7 +165,19 @@ export default function ProductFilters({
                 <input
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300"
-                  onChange={(e) => handleFilterChange("brand", brand)}
+                  checked={searchParams.get("brand") === brand}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      handleFilterChange("brand", brand);
+                    } else {
+                      const params = new URLSearchParams(
+                        searchParams.toString(),
+                      );
+                      params.delete("brand");
+                      params.delete("page");
+                      router.push(`/products?${params.toString()}`);
+                    }
+                  }}
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {brand}

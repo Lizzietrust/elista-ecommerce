@@ -9,45 +9,21 @@ export interface User {
 }
 
 export interface Product {
-  _id: string;
-  name: string;
+  id: string;
   slug: string;
+  name: string;
   description: string;
-  longDescription?: string;
   price: number;
   discountPercentage: number;
-  comparePrice?: number;
-  images:
-    | Array<{
-        url: string;
-        publicId: string;
-        thumbnail: string;
-        alt?: string;
-      }>
-    | string[];
-  category: Category | string;
-  brand?: string;
+  images: string[];
+  category: string;
+  brand: string;
   rating: number;
-  stock: number;
-  sku: string;
-  tags: string[];
-  colors?: string[];
-  sizes?: string[];
-  weight?: {
-    value: number;
-    unit: "g" | "kg" | "lb" | "oz";
-  };
-  isNew: boolean;
-  features?: string[];
-  isFeatured: boolean;
-  isActive: boolean;
-  averageRating: number;
   reviewCount: number;
-  seller?: User;
-  createdAt: string;
-  updatedAt: string;
-  specifications?: Record<string, string>;
-  relatedProducts?: string[];
+  stock: number;
+  isNew: boolean;
+  features: string[];
+  specifications: Record<string, string>;
 }
 
 export interface Category {
@@ -55,10 +31,12 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
-  image?: {
-    url: string;
-    altText: string;
-  } | string;
+  image?:
+    | {
+        url: string;
+        altText: string;
+      }
+    | string;
   parent?: string;
   productCount?: number;
   featured: boolean;
@@ -69,7 +47,7 @@ export interface Category {
 }
 
 export interface CartItem {
-  id?: string; 
+  id?: string;
   product: Product;
   quantity: number;
   color?: string;

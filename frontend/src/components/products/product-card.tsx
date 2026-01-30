@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Star, ShoppingCart, Heart } from "lucide-react";
-import { Product } from "@/types";
+import { Product, Category } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useCart } from "@/lib/hooks/use-cart";
@@ -46,6 +46,15 @@ export function ProductCard({ product }: ProductCardProps) {
 
   // Check if product is in wishlist
   const productInWishlist = isInWishlist(product._id);
+
+  // Helper function to get category name
+  const getCategoryName = (): string => {
+    if (typeof product.category === "string") {
+      return product.category;
+    } else {
+      return (product.category as Category).name;
+    }
+  };
 
   return (
     <Link href={`/products/${product.slug}`}>
@@ -157,9 +166,9 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
 
-          {/* Category Tag */}
+          {/* Category Tag - Fixed to handle both string and Category object */}
           <span className="text-xs text-muted-foreground">
-            {product.category}
+            {getCategoryName()}
           </span>
         </CardFooter>
       </Card>

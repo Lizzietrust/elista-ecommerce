@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCart } from "@/lib/hooks/use-cart";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
+import { useCartContext } from "../providers/cart-provider";
 
 export default function Header() {
-  const cart = useCart();
+  const cart = useCartContext();
   const wishlist = useWishlist();
 
   return (

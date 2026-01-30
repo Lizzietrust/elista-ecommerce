@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Star,
   ShoppingCart,
@@ -15,12 +14,10 @@ import {
   Package,
   Clock,
   Award,
-  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
-import { AddToCart } from "@/components/products/add-to-cart";
-import { ProductReviews } from "@/components/products/product-reviews";
+import { Product } from "@/types";
 
 // Mock data - replace with your API
 const products = [
@@ -48,10 +45,30 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     averageRating: 4.7,
     reviewCount: 128,
     images: [
-      { url: "/api/placeholder/800/800", alt: "Wireless Headphones Front" },
-      { url: "/api/placeholder/800/800", alt: "Wireless Headphones Side" },
-      { url: "/api/placeholder/800/800", alt: "Wireless Headphones Case" },
-      { url: "/api/placeholder/800/800", alt: "Wireless Headphones In Use" },
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "wireless-headphones-1",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Wireless Headphones Front",
+      },
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "wireless-headphones-2",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Wireless Headphones Side",
+      },
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "wireless-headphones-3",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Wireless Headphones Case",
+      },
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "wireless-headphones-4",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Wireless Headphones In Use",
+      },
     ],
     category: "Electronics",
     stock: 25,
@@ -78,6 +95,10 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
       "Carrying case included",
     ],
     relatedProducts: ["2", "3", "4"],
+    sku: "HP-001-BLK",
+    isActive: true,
+    createdAt: "2024-01-15",
+    updatedAt: "2024-01-15",
   },
   {
     slug: "smart-watch-pro",
@@ -89,7 +110,14 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     comparePrice: 399.99,
     averageRating: 4.6,
     reviewCount: 89,
-    images: [{ url: "/api/placeholder/800/800", alt: "Smart Watch" }],
+    images: [
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "smart-watch-1",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Smart Watch",
+      },
+    ],
     category: "Electronics",
     stock: 15,
     isFeatured: false,
@@ -98,6 +126,10 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     colors: ["Black", "Silver", "Rose Gold"],
     sizes: ["Standard"],
     relatedProducts: ["1", "3", "5"],
+    sku: "SW-002-BLK",
+    isActive: true,
+    createdAt: "2024-01-16",
+    updatedAt: "2024-01-16",
   },
   {
     slug: "laptop-stand-premium",
@@ -109,7 +141,14 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     comparePrice: 119.99,
     averageRating: 4.5,
     reviewCount: 156,
-    images: [{ url: "/api/placeholder/800/800", alt: "Laptop Stand" }],
+    images: [
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "laptop-stand-1",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Laptop Stand",
+      },
+    ],
     category: "Electronics",
     stock: 50,
     isFeatured: true,
@@ -118,6 +157,10 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     colors: ["Silver", "Space Gray"],
     sizes: ["13-16 inch"],
     relatedProducts: ["1", "2", "4"],
+    sku: "LS-003-SIL",
+    isActive: true,
+    createdAt: "2024-01-17",
+    updatedAt: "2024-01-17",
   },
   {
     slug: "portable-speaker",
@@ -129,7 +172,14 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     comparePrice: 159.99,
     averageRating: 4.4,
     reviewCount: 203,
-    images: [{ url: "/api/placeholder/800/800", alt: "Portable Speaker" }],
+    images: [
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "speaker-1",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Portable Speaker",
+      },
+    ],
     category: "Electronics",
     stock: 30,
     isFeatured: false,
@@ -138,6 +188,10 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     colors: ["Black", "Blue", "Red"],
     sizes: ["Standard"],
     relatedProducts: ["1", "3", "5"],
+    sku: "SP-004-BLK",
+    isActive: true,
+    createdAt: "2024-01-18",
+    updatedAt: "2024-01-18",
   },
   {
     slug: "mechanical-keyboard",
@@ -148,7 +202,14 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     price: 149.99,
     averageRating: 4.8,
     reviewCount: 67,
-    images: [{ url: "/api/placeholder/800/800", alt: "Mechanical Keyboard" }],
+    images: [
+      {
+        url: "/api/placeholder/800/800",
+        publicId: "keyboard-1",
+        thumbnail: "/api/placeholder/200/200",
+        alt: "Mechanical Keyboard",
+      },
+    ],
     category: "Electronics",
     stock: 20,
     isFeatured: true,
@@ -157,10 +218,12 @@ Perfect for travel, work, or relaxation, these headphones provide exceptional au
     colors: ["Black", "White"],
     sizes: ["Full Size", "Tenkeyless"],
     relatedProducts: ["1", "2", "3"],
+    sku: "KB-005-BLK",
+    isActive: true,
+    createdAt: "2024-01-19",
+    updatedAt: "2024-01-19",
   },
-];
-
-const relatedProducts = products.slice(0, 4);
+] satisfies Product[];
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -184,8 +247,16 @@ export async function generateMetadata({
     openGraph: {
       title: product.name,
       description: product.description,
+      images: product.images.map((img) => ({
+        url: img.url,
+        alt: img.alt,
+      })),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description: product.description,
       images: product.images.map((img) => img.url),
-      type: "product",
     },
     keywords: [...product.tags, product.category, product.brand],
   };
@@ -219,6 +290,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
           p.category === product.category),
     )
     .slice(0, 4);
+
+  // AddToCart component
+  const AddToCart = ({ product }: { product: Product }) => {
+    // This would be your client component logic
+    return (
+      <Button className="flex-1 py-3 text-lg gap-3">
+        <ShoppingCart size={20} />
+        Add to Cart
+      </Button>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -262,13 +344,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 mb-4">
               <div className="aspect-square rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
                 <div className="text-8xl">🎧</div>
-                {/* <Image
-                  src={product.images[0].url}
-                  alt={product.images[0].alt || product.name}
-                  fill
-                  className="object-cover"
-                  priority
-                /> */}
               </div>
             </div>
 
@@ -519,10 +594,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
 
                   {/* Add to Cart Button */}
-                  <Button className="flex-1 py-3 text-lg gap-3">
-                    <ShoppingCart size={20} />
-                    Add to Cart
-                  </Button>
+                  <AddToCart product={product} />
 
                   {/* Wishlist Button */}
                   <Button variant="outline" size="icon" className="h-12 w-12">
@@ -612,7 +684,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
               </div>
 
-              {/* Features List (could be conditional based on active tab) */}
+              {/* Features List */}
               {product.features && (
                 <div className="mt-8">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
@@ -631,7 +703,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
               )}
 
-              {/* Specifications Table (could be conditional based on active tab) */}
+              {/* Specifications Table */}
               {product.specifications && (
                 <div className="mt-8">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">

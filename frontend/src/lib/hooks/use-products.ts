@@ -1,22 +1,26 @@
-// lib/hooks/use-products.ts
 import {
   useQuery,
   useInfiniteQuery,
   UseQueryOptions,
   UseInfiniteQueryOptions,
+  InfiniteData,
 } from "@tanstack/react-query";
 import {
-  productsApi,
-  GetProductsParams,
+  productApi,
+  categoryApi,
+  ProductQueryParams,
+  ProductListResponse,
   Product,
-  GetProductsResponse,
+  ProductFiltersResponseData,
+  ProductDetailsResponseData,
+  Category,
 } from "@/lib/api/products";
+import { BaseApiResponse } from "../api/client";
 
-// Query keys for caching
 export const productKeys = {
   all: ["products"] as const,
   lists: () => [...productKeys.all, "list"] as const,
-  list: (filters: GetProductsParams) =>
+  list: (filters: ProductQueryParams) =>
     [...productKeys.lists(), filters] as const,
   details: () => [...productKeys.all, "detail"] as const,
   detail: (id: string) => [...productKeys.details(), id] as const,
@@ -24,44 +28,75 @@ export const productKeys = {
   newArrivals: () => [...productKeys.all, "new-arrivals"] as const,
   bestSellers: () => [...productKeys.all, "best-sellers"] as const,
   search: (query: string) => [...productKeys.all, "search", query] as const,
-  byCategory: (categoryId: string, filters: GetProductsParams) =>
-    [...productKeys.all, "category", categoryId, filters] as const,
+  byCategory: (
+    categoryId: string,
+    filters: Omit<ProductQueryParams, "category">,
+  ) => [...productKeys.all, "category", categoryId, filters] as const,
   filters: () => [...productKeys.all, "filters"] as const,
 };
 
 // Main products query hook
 export const useProducts = (
-  params: GetProductsParams = {},
-  options?: UseQueryOptions<GetProductsResponse, Error>,
+  params: ProductQueryParams = {},
+  options?: Omit<
+    UseQueryOptions<ProductListResponse, Error>,
+    "queryKey" | "queryFn"
+  >,
 ) => {
-  return useQuery<GetProductsResponse, Error>({
+  return useQuery<ProductListResponse, Error>({
     queryKey: productKeys.list(params),
-    queryFn: () => productsApi.getProducts(params),
-    keepPreviousData: true, // Smooth pagination
+    queryFn: () => productApi.getProducts(params),
+    placeholderData: (previousData) => previousData,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
     ...options,
   });
 };
 
-// Infinite scroll products hook
+// Fixed: Simplified infinite scroll products hook
 export const useInfiniteProducts = (
-  params: Omit<GetProductsParams, "page"> = {},
-  options?: UseInfiniteQueryOptions<GetProductsResponse, Error>,
+  params: Omit<ProductQueryParams, "page"> = {},
+  options?: Omit<
+    UseInfiniteQueryOptions<
+      ProductListResponse,
+      Error,
+      InfiniteData<ProductListResponse>,
+      readonly unknown[],
+      number
+    >,
+    | "queryKey"
+    | "queryFn"
+    | "initialPageParam"
+    | "getNextPageParam"
+    | "getPreviousPageParam"
+  >,
 ) => {
-  return useInfiniteQuery<GetProductsResponse, Error>({
+  return useInfiniteQuery<
+    ProductListResponse,
+    Error,
+    InfiniteData<ProductListResponse>,
+    readonly unknown[],
+    number
+  >({
     queryKey: productKeys.list(params),
     queryFn: ({ pageParam = 1 }) =>
-      productsApi.getProducts({ ...params, page: pageParam }),
+      productApi.getProducts({ ...params, page: pageParam }),
+    initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       if (lastPage.currentPage < lastPage.totalPages) {
         return lastPage.currentPage + 1;
       }
       return undefined;
     },
-    keepPreviousData: true,
+    getPreviousPageParam: (firstPage) => {
+      if (firstPage.currentPage > 1) {
+        return firstPage.currentPage - 1;
+      }
+      return undefined;
+    },
+    placeholderData: (previousData) => previousData,
     staleTime: 1000 * 60 * 5,
-    cacheTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 30,
     ...options,
   });
 };
@@ -69,16 +104,17 @@ export const useInfiniteProducts = (
 // Single product hook
 export const useProduct = (
   id: string,
-  options?: UseQueryOptions<Product, Error>,
+  options?: Omit<UseQueryOptions<Product, Error>, "queryKey" | "queryFn">,
 ) => {
   return useQuery<Product, Error>({
     queryKey: productKeys.detail(id),
     queryFn: async () => {
-      const response = await productsApi.getProductById(id);
+      const response = await productApi.getById(id);
       return response.data.product;
     },
-    enabled: !!id, // Only run if id exists
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    enabled: !!id,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 60,
     ...options,
   });
 };
@@ -86,16 +122,38 @@ export const useProduct = (
 // Product by slug hook
 export const useProductBySlug = (
   slug: string,
-  options?: UseQueryOptions<Product, Error>,
+  options?: Omit<UseQueryOptions<Product, Error>, "queryKey" | "queryFn">,
 ) => {
   return useQuery<Product, Error>({
     queryKey: productKeys.detail(slug),
     queryFn: async () => {
-      const response = await productsApi.getProductBySlug(slug);
+      const response = await productApi.getBySlug(slug);
       return response.data.product;
     },
     enabled: !!slug,
     staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
+};
+
+// Product details with related products
+export const useProductDetails = (
+  id: string,
+  options?: Omit<
+    UseQueryOptions<ProductDetailsResponseData, Error>,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  return useQuery<ProductDetailsResponseData, Error>({
+    queryKey: [...productKeys.detail(id), "details"],
+    queryFn: async () => {
+      const response = await productApi.getById(id);
+      return response.data;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 60,
     ...options,
   });
 };
@@ -103,13 +161,16 @@ export const useProductBySlug = (
 // Featured products hook
 export const useFeaturedProducts = (
   limit: number = 8,
-  options?: UseQueryOptions<Product[], Error>,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
 ) => {
   return useQuery<Product[], Error>({
-    queryKey: productKeys.featured(),
-    queryFn: () =>
-      productsApi.getFeaturedProducts(limit).then((res) => res.data),
-    staleTime: 1000 * 60 * 15, // 15 minutes
+    queryKey: [...productKeys.featured(), { limit }],
+    queryFn: async () => {
+      const response = await productApi.getFeatured(limit);
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 60,
     ...options,
   });
 };
@@ -118,13 +179,16 @@ export const useFeaturedProducts = (
 export const useNewArrivals = (
   limit: number = 12,
   days: number = 30,
-  options?: UseQueryOptions<Product[], Error>,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
 ) => {
   return useQuery<Product[], Error>({
-    queryKey: productKeys.newArrivals(),
-    queryFn: () =>
-      productsApi.getNewArrivals(limit, days).then((res) => res.data),
+    queryKey: [...productKeys.newArrivals(), { limit, days }],
+    queryFn: async () => {
+      const response = await productApi.getNewArrivals(limit, days);
+      return response.data;
+    },
     staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 60,
     ...options,
   });
 };
@@ -132,12 +196,16 @@ export const useNewArrivals = (
 // Best sellers hook
 export const useBestSellers = (
   limit: number = 12,
-  options?: UseQueryOptions<Product[], Error>,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
 ) => {
   return useQuery<Product[], Error>({
-    queryKey: productKeys.bestSellers(),
-    queryFn: () => productsApi.getBestSellers(limit).then((res) => res.data),
+    queryKey: [...productKeys.bestSellers(), { limit }],
+    queryFn: async () => {
+      const response = await productApi.getBestSellers(limit);
+      return response.data;
+    },
     staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 60,
     ...options,
   });
 };
@@ -146,14 +214,17 @@ export const useBestSellers = (
 export const useSearchProducts = (
   query: string,
   limit: number = 20,
-  options?: UseQueryOptions<Product[], Error>,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
 ) => {
   return useQuery<Product[], Error>({
     queryKey: productKeys.search(query),
-    queryFn: () =>
-      productsApi.searchProducts(query, limit).then((res) => res.data),
-    enabled: query.length > 0, // Only run if there's a query
+    queryFn: async () => {
+      const response = await productApi.search(query, limit);
+      return response.data;
+    },
+    enabled: query.trim().length > 0,
     staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
     ...options,
   });
 };
@@ -161,24 +232,111 @@ export const useSearchProducts = (
 // Products by category hook
 export const useProductsByCategory = (
   categoryId: string,
-  params: Omit<GetProductsParams, "category"> = {},
-  options?: UseQueryOptions<any, Error>,
+  params: Omit<ProductQueryParams, "category"> = {},
+  options?: Omit<
+    UseQueryOptions<ProductListResponse & { category: Category }, Error>,
+    "queryKey" | "queryFn"
+  >,
 ) => {
-  return useQuery<any, Error>({
+  return useQuery<ProductListResponse & { category: Category }, Error>({
     queryKey: productKeys.byCategory(categoryId, params),
-    queryFn: () => productsApi.getProductsByCategory(categoryId, params),
+    queryFn: () => productApi.getProductsByCategory(categoryId, params),
     enabled: !!categoryId,
     staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
     ...options,
   });
 };
 
 // Product filters hook
-export const useProductFilters = (options?: UseQueryOptions<any, Error>) => {
-  return useQuery<any, Error>({
+export const useProductFilters = (
+  options?: Omit<
+    UseQueryOptions<BaseApiResponse<ProductFiltersResponseData>, Error>,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  return useQuery<BaseApiResponse<ProductFiltersResponseData>, Error>({
     queryKey: productKeys.filters(),
-    queryFn: () => productsApi.getProductFilters(),
-    staleTime: 1000 * 60 * 60, // 1 hour
+    queryFn: () => productApi.getProductFilters(),
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 120,
     ...options,
   });
 };
+
+// Related products hook
+export const useRelatedProducts = (
+  productId: string,
+  limit: number = 4,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
+) => {
+  return useQuery<Product[], Error>({
+    queryKey: [...productKeys.detail(productId), "related", { limit }],
+    queryFn: async () => {
+      const response = await productApi.getRelated(productId, limit);
+      return response.data;
+    },
+    enabled: !!productId,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    ...options,
+  });
+};
+
+// Category hooks
+export const useCategories = (
+  params?: {
+    featured?: boolean;
+    parent?: string;
+    limit?: number;
+  },
+  options?: Omit<
+    UseQueryOptions<BaseApiResponse<Category[]>, Error>,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  return useQuery<BaseApiResponse<Category[]>, Error>({
+    queryKey: ["categories", "list", params],
+    queryFn: () => categoryApi.getAll(params),
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
+};
+
+export const useCategoryTree = (
+  options?: Omit<
+    UseQueryOptions<BaseApiResponse<Category[]>, Error>,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  return useQuery<BaseApiResponse<Category[]>, Error>({
+    queryKey: ["categories", "tree"],
+    queryFn: () => categoryApi.getTree(),
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
+};
+
+export const useCategoryBySlug = (
+  slug: string,
+  options?: Omit<
+    UseQueryOptions<BaseApiResponse<Category>, Error>,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  return useQuery<BaseApiResponse<Category>, Error>({
+    queryKey: ["categories", "detail", slug],
+    queryFn: () => categoryApi.getBySlug(slug),
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
+};
+
+// Export aliases for backward compatibility
+export { productKeys as productQueryKeys };
+export type { ProductQueryParams as GetProductsParams };
+export type { ProductListResponse as GetProductsResponse };

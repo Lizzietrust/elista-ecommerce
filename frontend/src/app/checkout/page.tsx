@@ -18,7 +18,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart } from "@/lib/hooks/use-cart";
+import { useCartContext } from "@/components/providers/cart-provider";
 import { toast } from "react-hot-toast";
 
 const paymentMethods = [
@@ -78,10 +78,10 @@ const shippingMethods = [
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const cart = useCart();
+  const cart = useCartContext();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [activeStep, setActiveStep] = useState(1); // 1: Shipping, 2: Payment, 3: Review
+  const [activeStep, setActiveStep] = useState(1);
 
   // Form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -108,44 +108,9 @@ export default function CheckoutPage() {
   const [selectedShipping, setSelectedShipping] = useState("standard");
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
 
-  // Use cart data or sample data
-  const cartItems =
-    cart.items.length > 0
-      ? cart.items
-      : [
-          {
-            id: "1",
-            product: {
-              _id: "1",
-              name: "Wireless Headphones",
-              price: 129.99,
-              images: [""],
-              category: "Electronics",
-              stock: 10,
-            },
-            quantity: 1,
-            price: 129.99,
-          },
-          {
-            id: "2",
-            product: {
-              _id: "2",
-              name: "Organic Cotton T-Shirt",
-              price: 24.99,
-              images: [""],
-              category: "Fashion",
-              stock: 25,
-            },
-            quantity: 2,
-            price: 24.99,
-          },
-        ];
-
-  const subtotal =
-    cart.totalPrice ||
-    cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount =
-    cart.itemCount || cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartItems = cart.items;
+  const itemCount = cart.itemCount;
+  const subtotal = cart.totalPrice;
 
   const shippingMethod =
     shippingMethods.find((m) => m.id === selectedShipping) ||
@@ -155,7 +120,6 @@ export default function CheckoutPage() {
   const tax = subtotal * 0.08;
   const total = subtotal + shippingCost + tax;
 
-  // FIXED: Update handler to accept both input and select elements
   const handleShippingChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -163,7 +127,6 @@ export default function CheckoutPage() {
     setShippingInfo((prev) => ({ ...prev, [name]: value }));
   };
 
-  // FIXED: Update payment handler to accept both input and select elements
   const handlePaymentChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {

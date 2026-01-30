@@ -2,16 +2,22 @@
 "use client";
 
 import { useCart } from "@/lib/hooks/use-cart";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
+import { CartItem } from "@/types";
 
 interface CartContextType {
-  items: ReturnType<typeof useCart>["items"];
-  addItem: ReturnType<typeof useCart>["addItem"];
-  removeItem: ReturnType<typeof useCart>["removeItem"];
-  updateQuantity: ReturnType<typeof useCart>["updateQuantity"];
-  clearCart: ReturnType<typeof useCart>["clearCart"];
-  getItemCount: () => number;
-  getTotalPrice: () => number;
+  items: CartItem[];
+  addItem: (item: Omit<CartItem, "id">) => void;
+  removeItem: (productId: string, color?: string, size?: string) => void;
+  updateQuantity: (
+    productId: string,
+    quantity: number,
+    color?: string,
+    size?: string,
+  ) => void;
+  clearCart: () => void;
+  itemCount: number;
+  totalPrice: number;
   isLoading: boolean;
 }
 
@@ -25,27 +31,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const getItemCount = () => {
-    return cart.items.reduce((total, item) => total + item.quantity, 0);
-  };
+  // Compute derived values
+  const itemCount = useMemo(
+    () => cart.items.reduce((total, item) => total + item.quantity, 0),
+    [cart.items],
+  );
 
-  const getTotalPrice = () => {
-    return cart.items.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0,
-    );
-  };
+  const totalPrice = useMemo(
+    () =>
+      cart.items.reduce((total, item) => total + item.price * item.quantity, 0),
+    [cart.items],
+  );
 
   return (
     <CartContext.Provider
       value={{
         items: cart.items,
-        addItem: cart.addItem,
+        addItem: (item) => cart.addItem(item as any),
         removeItem: cart.removeItem,
         updateQuantity: cart.updateQuantity,
         clearCart: cart.clearCart,
-        getItemCount,
-        getTotalPrice,
+        itemCount,
+        totalPrice,
         isLoading,
       }}
     >

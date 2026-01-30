@@ -1,4 +1,3 @@
-// components/products/product-sort.tsx
 "use client";
 
 import { useRouter } from "next/navigation";

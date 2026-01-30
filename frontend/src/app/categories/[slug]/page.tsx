@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
-import { Product, Category } from "@/types"; // Import your types
+import { Product, Category } from "@/types";
 
 // Define the structure for category data
 interface CategoryData {
@@ -37,6 +37,34 @@ interface CategoryData {
   };
 }
 
+// Helper function to get category name safely
+const getCategoryName = (category: Category | string): string => {
+  if (typeof category === "string") {
+    return category;
+  } else {
+    return category.name;
+  }
+};
+
+// Helper function to get category object safely
+const getCategoryObject = (category: Category | string): Category | null => {
+  if (typeof category === "string") {
+    // Return a minimal category object for string categories
+    return {
+      _id: "",
+      name: category,
+      slug: category.toLowerCase().replace(/\s+/g, "-"),
+      featured: false,
+      isActive: true,
+      sortOrder: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  } else {
+    return category;
+  }
+};
+
 // Mock data with proper Category objects
 const categories: CategoryData[] = [
   {
@@ -48,7 +76,10 @@ const categories: CategoryData[] = [
       slug: "electronics",
       name: "Electronics",
       description: "Latest gadgets and tech devices",
-      image: "/images/categories/electronics.jpg",
+      image: {
+        url: "/images/categories/electronics.jpg",
+        altText: "Electronics Category",
+      },
       isActive: true,
       featured: true,
       sortOrder: 1,
@@ -80,7 +111,10 @@ const categories: CategoryData[] = [
           slug: "electronics",
           name: "Electronics",
           description: "Latest gadgets and tech devices",
-          image: "/images/categories/electronics.jpg",
+          image: {
+            url: "/images/categories/electronics.jpg",
+            altText: "Electronics Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 1,
@@ -118,7 +152,10 @@ const categories: CategoryData[] = [
           slug: "electronics",
           name: "Electronics",
           description: "Latest gadgets and tech devices",
-          image: "/images/categories/electronics.jpg",
+          image: {
+            url: "/images/categories/electronics.jpg",
+            altText: "Electronics Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 1,
@@ -156,7 +193,10 @@ const categories: CategoryData[] = [
           slug: "electronics",
           name: "Electronics",
           description: "Latest gadgets and tech devices",
-          image: "/images/categories/electronics.jpg",
+          image: {
+            url: "/images/categories/electronics.jpg",
+            altText: "Electronics Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 1,
@@ -194,7 +234,10 @@ const categories: CategoryData[] = [
           slug: "electronics",
           name: "Electronics",
           description: "Latest gadgets and tech devices",
-          image: "/images/categories/electronics.jpg",
+          image: {
+            url: "/images/categories/electronics.jpg",
+            altText: "Electronics Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 1,
@@ -232,7 +275,10 @@ const categories: CategoryData[] = [
           slug: "electronics",
           name: "Electronics",
           description: "Latest gadgets and tech devices",
-          image: "/images/categories/electronics.jpg",
+          image: {
+            url: "/images/categories/electronics.jpg",
+            altText: "Electronics Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 1,
@@ -269,7 +315,10 @@ const categories: CategoryData[] = [
           slug: "electronics",
           name: "Electronics",
           description: "Latest gadgets and tech devices",
-          image: "/images/categories/electronics.jpg",
+          image: {
+            url: "/images/categories/electronics.jpg",
+            altText: "Electronics Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 1,
@@ -312,7 +361,10 @@ const categories: CategoryData[] = [
       slug: "fashion",
       name: "Fashion",
       description: "Stylish clothing and accessories for every occasion",
-      image: "/images/categories/fashion.jpg",
+      image: {
+        url: "/images/categories/fashion.jpg",
+        altText: "Fashion Category",
+      },
       isActive: true,
       featured: true,
       sortOrder: 2,
@@ -342,7 +394,10 @@ const categories: CategoryData[] = [
           slug: "fashion",
           name: "Fashion",
           description: "Stylish clothing and accessories for every occasion",
-          image: "/images/categories/fashion.jpg",
+          image: {
+            url: "/images/categories/fashion.jpg",
+            altText: "Fashion Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 2,
@@ -380,7 +435,10 @@ const categories: CategoryData[] = [
           slug: "fashion",
           name: "Fashion",
           description: "Stylish clothing and accessories for every occasion",
-          image: "/images/categories/fashion.jpg",
+          image: {
+            url: "/images/categories/fashion.jpg",
+            altText: "Fashion Category",
+          },
           isActive: true,
           featured: true,
           sortOrder: 2,
@@ -424,7 +482,10 @@ const categories: CategoryData[] = [
       slug: "home",
       name: "Home & Garden",
       description: "Everything you need to make your house a home",
-      image: "/images/categories/home.jpg",
+      image: {
+        url: "/images/categories/home.jpg",
+        altText: "Home & Garden Category",
+      },
       isActive: true,
       featured: false,
       sortOrder: 3,
@@ -454,7 +515,10 @@ const categories: CategoryData[] = [
           slug: "home",
           name: "Home & Garden",
           description: "Everything you need to make your house a home",
-          image: "/images/categories/home.jpg",
+          image: {
+            url: "/images/categories/home.jpg",
+            altText: "Home & Garden Category",
+          },
           isActive: true,
           featured: false,
           sortOrder: 3,
@@ -1183,114 +1247,120 @@ export default async function CategoryPage({
             ) : view === "list" ? (
               // List View
               <div className="space-y-4">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product._id}
-                    className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6"
-                  >
-                    <div className="flex flex-col md:flex-row gap-6">
-                      {/* Product Image */}
-                      <div className="md:w-48 flex-shrink-0">
-                        <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden">
-                          <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-900">
-                            <span className="text-5xl">🛒</span>
+                {filteredProducts.map((product) => {
+                  const category = getCategoryObject(product.category);
+                  const categoryName = getCategoryName(product.category);
+
+                  return (
+                    <div
+                      key={product._id}
+                      className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6"
+                    >
+                      <div className="flex flex-col md:flex-row gap-6">
+                        {/* Product Image */}
+                        <div className="md:w-48 flex-shrink-0">
+                          <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden">
+                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-900">
+                              <span className="text-5xl">🛒</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Product Info */}
-                      <div className="flex-1">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                          <div>
-                            <div className="mb-2">
-                              <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                                {product.category.name}
-                              </span>
-                              {product.brand && (
-                                <span className="text-sm text-gray-600 dark:text-gray-400 ml-3">
-                                  by {product.brand}
+                        {/* Product Info */}
+                        <div className="flex-1">
+                          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                            <div>
+                              <div className="mb-2">
+                                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                                  {categoryName}
                                 </span>
-                              )}
-                            </div>
-
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                              <Link
-                                href={`/products/${product.slug}`}
-                                className="hover:text-blue-600 dark:hover:text-blue-400"
-                              >
-                                {product.name}
-                              </Link>
-                            </h3>
-
-                            <p className="text-gray-600 dark:text-gray-400 mb-4">
-                              {product.description}
-                            </p>
-
-                            {/* Tags */}
-                            {product.tags && product.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mb-4">
-                                {product.tags.map((tag: string) => (
-                                  <span
-                                    key={tag}
-                                    className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-full"
-                                  >
-                                    {tag}
+                                {product.brand && (
+                                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-3">
+                                    by {product.brand}
                                   </span>
-                                ))}
+                                )}
                               </div>
-                            )}
 
-                            {/* Rating */}
-                            <div className="flex items-center gap-2 mb-4">
-                              <div className="flex text-amber-500">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    size={16}
-                                    fill={
-                                      i < Math.floor(product.averageRating || 0)
-                                        ? "currentColor"
-                                        : "none"
-                                    }
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                {product.averageRating?.toFixed(1)} (
-                                {product.reviewCount} reviews)
-                              </span>
-                            </div>
-                          </div>
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                <Link
+                                  href={`/products/${product.slug}`}
+                                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                                >
+                                  {product.name}
+                                </Link>
+                              </h3>
 
-                          {/* Price & Actions */}
-                          <div className="flex-shrink-0">
-                            <div className="text-right mb-4">
-                              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                                ${product.price.toFixed(2)}
-                              </div>
-                              {product.comparePrice && (
-                                <div className="text-lg line-through text-gray-400 dark:text-gray-600">
-                                  ${product.comparePrice.toFixed(2)}
+                              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                {product.description}
+                              </p>
+
+                              {/* Tags */}
+                              {product.tags && product.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                  {product.tags.map((tag: string) => (
+                                    <span
+                                      key={tag}
+                                      className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-full"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
                                 </div>
                               )}
+
+                              {/* Rating */}
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="flex text-amber-500">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      size={16}
+                                      fill={
+                                        i <
+                                        Math.floor(product.averageRating || 0)
+                                          ? "currentColor"
+                                          : "none"
+                                      }
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                  {product.averageRating?.toFixed(1)} (
+                                  {product.reviewCount} reviews)
+                                </span>
+                              </div>
                             </div>
 
-                            <div className="flex flex-col gap-2">
-                              <Link href={`/products/${product.slug}`}>
-                                <Button variant="outline" className="w-full">
-                                  View Details
+                            {/* Price & Actions */}
+                            <div className="flex-shrink-0">
+                              <div className="text-right mb-4">
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                  ${product.price.toFixed(2)}
+                                </div>
+                                {product.comparePrice && (
+                                  <div className="text-lg line-through text-gray-400 dark:text-gray-600">
+                                    ${product.comparePrice.toFixed(2)}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                <Link href={`/products/${product.slug}`}>
+                                  <Button variant="outline" className="w-full">
+                                    View Details
+                                  </Button>
+                                </Link>
+                                <Button className="w-full gap-2">
+                                  <span>Add to Cart</span>
                                 </Button>
-                              </Link>
-                              <Button className="w-full gap-2">
-                                <span>Add to Cart</span>
-                              </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               // Grid View (using your ProductCard)

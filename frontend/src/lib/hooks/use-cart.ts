@@ -1,3 +1,4 @@
+// /lib/hooks/use-cart.ts
 "use client";
 
 import { create } from "zustand";
@@ -6,9 +7,7 @@ import { CartItem, Product } from "@/types";
 
 interface CartStore {
   items: CartItem[];
-  itemCount: number;
-  totalPrice: number;
-  addItem: (item: Omit<CartItem, "product"> & { product: Product }) => void;
+  addItem: (item: Omit<CartItem, "id"> & { product: Product }) => void;
   removeItem: (productId: string, color?: string, size?: string) => void;
   updateQuantity: (
     productId: string,
@@ -23,15 +22,6 @@ export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
-      get itemCount() {
-        return get().items.reduce((total, item) => total + item.quantity, 0);
-      },
-      get totalPrice() {
-        return get().items.reduce(
-          (total, item) => total + item.price * item.quantity,
-          0,
-        );
-      },
 
       addItem: (item) => {
         set((state) => {
@@ -48,7 +38,12 @@ export const useCart = create<CartStore>()(
             return { items: updatedItems };
           }
 
-          return { items: [...state.items, item] };
+          return {
+            items: [
+              ...state.items,
+              { ...item, id: `${item.product._id}-${Date.now()}` },
+            ],
+          };
         });
       },
 

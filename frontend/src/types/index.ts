@@ -15,15 +15,19 @@ export interface Product {
   description: string;
   longDescription?: string;
   price: number;
+  discountPercentage: number;
   comparePrice?: number;
-  images: Array<{
-    url: string;
-    publicId: string;
-    thumbnail: string;
-    alt?: string;
-  }>;
+  images:
+    | Array<{
+        url: string;
+        publicId: string;
+        thumbnail: string;
+        alt?: string;
+      }>
+    | string[];
   category: Category | string;
   brand?: string;
+  rating: number;
   stock: number;
   sku: string;
   tags: string[];
@@ -33,6 +37,7 @@ export interface Product {
     value: number;
     unit: "g" | "kg" | "lb" | "oz";
   };
+  isNew: boolean;
   features?: string[];
   isFeatured: boolean;
   isActive: boolean;

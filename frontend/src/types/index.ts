@@ -22,7 +22,7 @@ export interface Product {
     thumbnail: string;
     alt?: string;
   }>;
-  category: Category;
+  category: Category | string;
   brand?: string;
   stock: number;
   sku: string;

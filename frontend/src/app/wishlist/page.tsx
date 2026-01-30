@@ -11,7 +11,6 @@ import {
   Eye,
   AlertCircle,
   ShoppingCart,
-  X,
   Filter,
   SortAsc,
   Grid,
@@ -20,9 +19,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
 import { toast } from "react-hot-toast";
+import { Product, Category } from "@/types";
 
-// Mock wishlist data - in real app, this would come from your backend
-const initialWishlistItems = [
+// Define a WishlistItem interface
+interface WishlistItem {
+  id: string;
+  product: Product;
+  addedDate: string;
+}
+
+// Mock wishlist data with complete Product structure
+const initialWishlistItems: WishlistItem[] = [
   {
     id: "1",
     product: {
@@ -34,12 +41,25 @@ const initialWishlistItems = [
       comparePrice: 299.99,
       averageRating: 4.7,
       reviewCount: 128,
-      images: [{ url: "/api/placeholder/400/400" }],
+      images: [
+        {
+          url: "/api/placeholder/400/400",
+          publicId: "wireless-headphones-1",
+          thumbnail: "/api/placeholder/200/200",
+          alt: "Wireless Headphones",
+        },
+      ],
       category: "Electronics",
       stock: 25,
       isFeatured: true,
       tags: ["Wireless", "Noise Cancelling"],
       brand: "AudioMaster",
+      sku: "HP-001-BLK",
+      isActive: true,
+      createdAt: "2024-01-15",
+      updatedAt: "2024-01-15",
+      specifications: {},
+      features: [],
     },
     addedDate: "2024-01-15",
   },
@@ -54,12 +74,25 @@ const initialWishlistItems = [
       comparePrice: 399.99,
       averageRating: 4.6,
       reviewCount: 89,
-      images: [{ url: "/api/placeholder/400/400" }],
+      images: [
+        {
+          url: "/api/placeholder/400/400",
+          publicId: "smart-watch-1",
+          thumbnail: "/api/placeholder/200/200",
+          alt: "Smart Watch Pro",
+        },
+      ],
       category: "Electronics",
       stock: 15,
       isFeatured: false,
       tags: ["Smartwatch", "Fitness"],
       brand: "TechWear",
+      sku: "SW-002-BLK",
+      isActive: true,
+      createdAt: "2024-01-10",
+      updatedAt: "2024-01-10",
+      specifications: {},
+      features: [],
     },
     addedDate: "2024-01-10",
   },
@@ -74,12 +107,25 @@ const initialWishlistItems = [
       comparePrice: 119.99,
       averageRating: 4.5,
       reviewCount: 156,
-      images: [{ url: "/api/placeholder/400/400" }],
+      images: [
+        {
+          url: "/api/placeholder/400/400",
+          publicId: "laptop-stand-1",
+          thumbnail: "/api/placeholder/200/200",
+          alt: "Laptop Stand",
+        },
+      ],
       category: "Electronics",
       stock: 50,
       isFeatured: true,
       tags: ["Ergonomic", "Adjustable"],
       brand: "ErgoTech",
+      sku: "LS-003-SIL",
+      isActive: true,
+      createdAt: "2024-01-05",
+      updatedAt: "2024-01-05",
+      specifications: {},
+      features: [],
     },
     addedDate: "2024-01-05",
   },
@@ -94,12 +140,25 @@ const initialWishlistItems = [
       comparePrice: 159.99,
       averageRating: 4.4,
       reviewCount: 203,
-      images: [{ url: "/api/placeholder/400/400" }],
+      images: [
+        {
+          url: "/api/placeholder/400/400",
+          publicId: "speaker-1",
+          thumbnail: "/api/placeholder/200/200",
+          alt: "Portable Speaker",
+        },
+      ],
       category: "Electronics",
       stock: 30,
       isFeatured: false,
       tags: ["Waterproof", "Portable"],
       brand: "SoundWave",
+      sku: "SP-004-BLK",
+      isActive: true,
+      createdAt: "2024-01-02",
+      updatedAt: "2024-01-02",
+      specifications: {},
+      features: [],
     },
     addedDate: "2024-01-02",
   },
@@ -113,12 +172,25 @@ const initialWishlistItems = [
       price: 149.99,
       averageRating: 4.8,
       reviewCount: 67,
-      images: [{ url: "/api/placeholder/400/400" }],
+      images: [
+        {
+          url: "/api/placeholder/400/400",
+          publicId: "keyboard-1",
+          thumbnail: "/api/placeholder/200/200",
+          alt: "Mechanical Keyboard",
+        },
+      ],
       category: "Electronics",
       stock: 20,
       isFeatured: true,
       tags: ["Mechanical", "RGB"],
       brand: "GameMaster",
+      sku: "KB-005-BLK",
+      isActive: true,
+      createdAt: "2023-12-28",
+      updatedAt: "2023-12-28",
+      specifications: {},
+      features: [],
     },
     addedDate: "2023-12-28",
   },
@@ -132,12 +204,25 @@ const initialWishlistItems = [
       price: 24.99,
       averageRating: 4.2,
       reviewCount: 94,
-      images: [{ url: "/api/placeholder/400/400" }],
+      images: [
+        {
+          url: "/api/placeholder/400/400",
+          publicId: "tshirt-1",
+          thumbnail: "/api/placeholder/200/200",
+          alt: "Organic Cotton T-Shirt",
+        },
+      ],
       category: "Fashion",
       stock: 50,
       isFeatured: true,
       tags: ["Organic", "Cotton"],
       brand: "EcoWear",
+      sku: "TS-006-WHT",
+      isActive: true,
+      createdAt: "2023-12-20",
+      updatedAt: "2023-12-20",
+      specifications: {},
+      features: [],
     },
     addedDate: "2023-12-20",
   },
@@ -163,12 +248,22 @@ const categories = [
 ];
 
 export default function WishlistPage() {
-  const [wishlistItems, setWishlistItems] = useState(initialWishlistItems);
+  const [wishlistItems, setWishlistItems] =
+    useState<WishlistItem[]>(initialWishlistItems);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("date-new");
   const [filterCategory, setFilterCategory] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Helper function to get category name
+  const getCategoryName = (category: string | Category): string => {
+    if (typeof category === "string") {
+      return category;
+    } else {
+      return category.name;
+    }
+  };
 
   // Calculate totals
   const totalItems = wishlistItems.length;
@@ -183,7 +278,8 @@ export default function WishlistPage() {
   // Filter items by category
   const filteredItems = wishlistItems.filter(
     (item) =>
-      filterCategory === "All" || item.product.category === filterCategory,
+      filterCategory === "All" ||
+      getCategoryName(item.product.category) === filterCategory,
   );
 
   // Sort items
@@ -574,10 +670,10 @@ export default function WishlistPage() {
                             <div>
                               <div className="flex items-center gap-3 mb-2">
                                 <Link
-                                  href={`/categories/${item.product.category.toLowerCase()}`}
+                                  href={`/categories/${getCategoryName(item.product.category).toLowerCase()}`}
                                   className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                                 >
-                                  {item.product.category}
+                                  {getCategoryName(item.product.category)}
                                 </Link>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
                                   Added{" "}
@@ -833,7 +929,7 @@ export default function WishlistPage() {
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-amber-500 mt=2"></div>
+                    <div className="h-2 w-2 rounded-full bg-amber-500 mt-2"></div>
                     <span className="text-sm text-gray-700 dark:text-gray-300">
                       Get notified when items go on sale
                     </span>

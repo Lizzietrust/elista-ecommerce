@@ -8,15 +8,40 @@ export interface User {
   updatedAt: string;
 }
 
+export interface ProductImage {
+  url: string;
+  publicId: string;
+  thumbnail?: string;
+  alt?: string;
+}
+
+export interface CategoryImage {
+  url: string;
+  altText: string;
+}
+
+export interface ProductCategory {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: CategoryImage;
+  isActive: boolean;
+  featured: boolean;
+  sortOrder: number;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 export interface Product {
-  id: string;
+  _id: string;
   slug: string;
   name: string;
   description: string;
   price: number;
   discountPercentage: number;
-  images: string[];
-  category: string;
+  images: ProductImage[];
+  category: ProductCategory | string;
   brand: string;
   rating: number;
   reviewCount: number;

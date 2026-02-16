@@ -30,10 +30,12 @@ export default async function ProductsPage({
     maxPrice: searchParams.maxPrice
       ? parseInt(searchParams.maxPrice)
       : undefined,
-    searchQuery: searchParams.q,
+    searchQuery: searchParams.q, 
     page,
-    pageSize,
+    pageSize, 
   });
+    
+  console.log({ products });
 
   const totalPages = Math.ceil(totalCount / pageSize);
 

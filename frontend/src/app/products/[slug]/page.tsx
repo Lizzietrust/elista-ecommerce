@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
 import { Product } from "@/types";
 
-// Mock data - replace with your API
 const products = [
   {
     slug: "wireless-headphones",
@@ -293,7 +292,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   // AddToCart component
   const AddToCart = ({ product }: { product: Product }) => {
-    // This would be your client component logic
     return (
       <Button className="flex-1 py-3 text-lg gap-3">
         <ShoppingCart size={20} />

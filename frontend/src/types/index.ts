@@ -11,7 +11,7 @@ export interface User {
 export interface ProductImage {
   url: string;
   publicId: string;
-  thumbnail?: string;
+  thumbnail: string;
   alt?: string;
 }
 
@@ -35,20 +35,23 @@ export interface ProductCategory {
 
 export interface Product {
   _id: string;
+  sku: string;
   slug: string;
   name: string;
   description: string;
   price: number;
-  discountPercentage: number;
+  comparePrice?: number;
   images: ProductImage[];
   category: ProductCategory | string;
   brand: string;
-  rating: number;
+  averageRating: number;
   reviewCount: number;
   stock: number;
-  isNew: boolean;
-  features: string[];
-  specifications: Record<string, string>;
+  isFeatured: boolean;
+  isActive: boolean;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Category {

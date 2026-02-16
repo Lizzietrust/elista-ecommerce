@@ -39,11 +39,14 @@ export interface Product {
   slug: string;
   name: string;
   description: string;
+  longDescription?: string;
   price: number;
   comparePrice?: number;
   images: ProductImage[];
   category: ProductCategory | string;
   brand: string;
+  colors?: string[];
+  sizes?: string[];
   averageRating: number;
   reviewCount: number;
   stock: number;
@@ -52,6 +55,9 @@ export interface Product {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  specifications?: Record<string, string>;
+  features?: string[];
+  relatedProducts?: Array<Product | string>;
 }
 
 export interface Category {

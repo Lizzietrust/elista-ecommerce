@@ -303,7 +303,7 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // ===========================
@@ -548,11 +548,7 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// ===========================
-// INSTANCE METHODS
-// ===========================
 
-// Authentication methods
 userSchema.methods.getSignedJwtToken = function () {
   return jwt.sign(
     {
@@ -562,8 +558,8 @@ userSchema.methods.getSignedJwtToken = function () {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: process.env.JWT_EXPIRE || "30d",
-    }
+      expiresIn: process.env.JWT_EXPIRE,
+    },
   );
 };
 
@@ -617,7 +613,7 @@ userSchema.methods.addToWishlist = function (productId) {
 
 userSchema.methods.removeFromWishlist = function (productId) {
   this.wishlist = this.wishlist.filter(
-    (id) => id.toString() !== productId.toString()
+    (id) => id.toString() !== productId.toString(),
   );
   return this.save();
 };
@@ -629,7 +625,7 @@ userSchema.methods.isInWishlist = function (productId) {
 // Recently viewed methods
 userSchema.methods.addToRecentlyViewed = function (productId) {
   this.recentlyViewed = this.recentlyViewed.filter(
-    (id) => id.toString() !== productId.toString()
+    (id) => id.toString() !== productId.toString(),
   );
   this.recentlyViewed.unshift(productId);
   if (this.recentlyViewed.length > 20) {
@@ -644,7 +640,7 @@ userSchema.methods.addToRecentlyViewed = function (productId) {
 userSchema.methods.addToCart = async function (
   productId,
   quantity = 1,
-  options = {}
+  options = {},
 ) {
   const { color, size, variantId, note } = options;
 
@@ -695,7 +691,7 @@ userSchema.methods.addToCart = async function (
 // Method to update cart item quantity
 userSchema.methods.updateCartItemQuantity = function (itemId, quantity) {
   const itemIndex = this.cart.items.findIndex(
-    (item) => item._id.toString() === itemId.toString()
+    (item) => item._id.toString() === itemId.toString(),
   );
 
   if (itemIndex === -1) {
@@ -717,7 +713,7 @@ userSchema.methods.updateCartItemQuantity = function (itemId, quantity) {
 // Method to update cart item attributes
 userSchema.methods.updateCartItemAttributes = function (itemId, updates) {
   const itemIndex = this.cart.items.findIndex(
-    (item) => item._id.toString() === itemId.toString()
+    (item) => item._id.toString() === itemId.toString(),
   );
 
   if (itemIndex === -1) {
@@ -743,7 +739,7 @@ userSchema.methods.updateCartItemAttributes = function (itemId, updates) {
 // Method to remove item from cart
 userSchema.methods.removeFromCart = function (itemId) {
   const itemIndex = this.cart.items.findIndex(
-    (item) => item._id.toString() === itemId.toString()
+    (item) => item._id.toString() === itemId.toString(),
   );
 
   if (itemIndex === -1) {
@@ -828,7 +824,7 @@ userSchema.methods.getCartSummary = async function (shippingAddress = null) {
 
   // Filter out invalid or inactive products
   const validCartItems = this.cart.items.filter(
-    (item) => item.product && item.product.isActive
+    (item) => item.product && item.product.isActive,
   );
 
   // Calculate subtotal using stored prices or current prices
@@ -1093,7 +1089,7 @@ userSchema.methods.updateAddress = function (addressId, updateData) {
 
 userSchema.methods.deleteAddress = function (addressId) {
   const addressIndex = this.addresses.findIndex(
-    (addr) => addr._id.toString() === addressId
+    (addr) => addr._id.toString() === addressId,
   );
   if (addressIndex === -1) throw new Error("Address not found");
 
@@ -1209,7 +1205,7 @@ userSchema.statics.cleanupOldCarts = async function (days = 30) {
         "cart.discountAmount": 0,
         "cart.updatedAt": new Date(),
       },
-    }
+    },
   );
 
   return {
@@ -1228,10 +1224,7 @@ userSchema.statics.findUsersWithStripe = function () {
 // Static method to find users without Stripe customer IDs
 userSchema.statics.findUsersWithoutStripe = function () {
   return this.find({
-    $or: [
-      { stripeCustomerId: { $exists: false } },
-      { stripeCustomerId: null },
-    ],
+    $or: [{ stripeCustomerId: { $exists: false } }, { stripeCustomerId: null }],
   }).select("name email");
 };
 

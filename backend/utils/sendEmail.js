@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 
 const sendEmail = async (options) => {
-  // Development mode - log to console
   if (process.env.NODE_ENV === "development" && !process.env.SMTP_HOST) {
     console.log("📧 ====== DEVELOPMENT EMAIL ======");
     console.log("To:", options.email);
@@ -18,7 +17,6 @@ const sendEmail = async (options) => {
 
     console.log("📧 ===============================");
 
-    // Simulate successful send
     return {
       messageId: "dev-mode-simulated-id",
       previewUrl: null,
@@ -26,46 +24,42 @@ const sendEmail = async (options) => {
     };
   }
 
-  // Check if SMTP is configured
   if (
     !process.env.SMTP_HOST ||
     !process.env.SMTP_USER ||
-    !process.env.SMTP_PASS
+    !process.env.SMTP_PASSWORD
   ) {
     console.error("❌ SMTP configuration is missing in .env file");
     throw new Error("Email service is not configured");
   }
 
-  // Create transporter with enhanced options
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
+    secure: parseInt(process.env.SMTP_PORT) === 465,
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      pass: process.env.SMTP_PASSWORD,
     },
     tls: {
-      rejectUnauthorized: process.env.NODE_ENV === "production", // Only reject in production
+      rejectUnauthorized: process.env.NODE_ENV === "production",
     },
-    pool: true, // Use pooled connections
-    maxConnections: 5, // Max simultaneous connections
-    maxMessages: 100, // Max messages per connection
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
   });
 
-  // Test the connection
   try {
     await transporter.verify();
-    console.log("✅ SMTP connection verified successfully");
+    console.log("SMTP connection verified successfully");
   } catch (error) {
     console.error("❌ SMTP connection failed:", error.message);
     throw new Error(`Failed to connect to email server: ${error.message}`);
   }
 
-  // Define email options
   const mailOptions = {
-    from: `"${process.env.EMAIL_FROM_NAME || "Elista Ecommerce"}" <${
-      process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER
+    from: `"${process.env.EMAIL_FROM_NAME}" <${
+      process.env.EMAIL_FROM_ADDRESS
     }>`,
     to: options.email,
     subject: options.subject,
@@ -79,24 +73,21 @@ const sendEmail = async (options) => {
             .trim()
         : ""),
     replyTo: options.replyTo || process.env.EMAIL_REPLY_TO,
-    // Attachments if provided
     ...(options.attachments && { attachments: options.attachments }),
-    // CC/BCC if provided
     ...(options.cc && { cc: options.cc }),
     ...(options.bcc && { bcc: options.bcc }),
   };
 
-  // Send email
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log(
-      `✅ Email sent to ${options.email} - Message ID: ${info.messageId}`
+      `Email sent to ${options.email} - Message ID: ${info.messageId}`,
     );
 
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info), // Only works with test accounts
+      previewUrl: nodemailer.getTestMessageUrl(info),
       response: info.response,
     };
   } catch (error) {

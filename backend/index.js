@@ -22,8 +22,7 @@ import wishlistRoutes from "./routes/WishlistRoutes.js";
 // Import error handler middleware
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
-// Import socket (if needed for real-time features like notifications)
-// import setupSocket from "./socket.js";
+
 
 dotenv.config();
 
@@ -242,9 +241,7 @@ mongoose
       console.log(
         `📚 API Documentation available at http://localhost:${port}/api-docs`,
       );
-      console.log(
-        `🌐 Frontend: ${process.env.FRONTEND_URL}`,
-      );
+      console.log(`🌐 Frontend: ${process.env.FRONTEND_URL}`);
       console.log(`📦 Environment: ${process.env.NODE_ENV || "development"}`);
 
       // Log test endpoints in development

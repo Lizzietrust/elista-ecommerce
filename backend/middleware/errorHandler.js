@@ -23,17 +23,11 @@ class ErrorResponse extends Error {
   }
 }
 
-/**
- * Error handler middleware
- * This should be the LAST middleware in the chain
- */
 export const errorHandler = (err, req, res, next) => {
-  // Set default values
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
   err.message = err.message || "Something went wrong!";
 
-  // Log error for development
   if (process.env.NODE_ENV === "development") {
     console.error("🔥 ERROR DETAILS:");
     console.error(`🔴 Status: ${err.status}`);
@@ -51,7 +45,6 @@ export const errorHandler = (err, req, res, next) => {
     }
   }
 
-  // Log error for production (structured logging)
   if (process.env.NODE_ENV === "production") {
     console.error(
       JSON.stringify({
@@ -144,22 +137,16 @@ export const errorHandler = (err, req, res, next) => {
     return sendErrorResponse(error, req, res);
   }
 
-  // Send generic error response for unhandled errors
   return sendErrorResponse(error, req, res);
 };
 
-/**
- * Send formatted error response
- */
 const sendErrorResponse = (error, req, res) => {
-  // Determine if we should send detailed error in production
   const isProduction = process.env.NODE_ENV === "production";
   const isDevelopment = process.env.NODE_ENV === "development";
   const isApiClient =
     req.get("Content-Type") === "application/json" ||
     req.path.startsWith("/api");
 
-  // Base error response
   const errorResponse = {
     success: false,
     status: error.status || "error",
@@ -276,7 +263,7 @@ const handleValidationError = (err) => {
 const handleMulterError = (err) => {
   switch (err.code) {
     case "LIMIT_FILE_SIZE":
-      return `File is too large. Maximum size is ${process.env.MAX_FILE_SIZE || "5MB"}.`;
+      return `File is too large. Maximum size is ${process.env.MAX_FILE_SIZE}.`;
 
     case "LIMIT_FILE_COUNT":
       return "Too many files uploaded.";

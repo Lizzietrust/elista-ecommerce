@@ -4,9 +4,6 @@ import Wishlist from "../models/Wishlist.js";
 import Product from "../models/Product.js";
 import User from "../models/User.js";
 
-// @desc    Get user's wishlist
-// @route   GET /api/wishlist
-// @access  Private
 export const getWishlist = asyncHandler(async (req, res, next) => {
   const { populate = "true", sort = "-addedAt" } = req.query;
 
@@ -95,9 +92,6 @@ export const getWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Add item to wishlist
-// @route   POST /api/wishlist
-// @access  Private
 export const addToWishlist = asyncHandler(async (req, res, next) => {
   const { productId, notes, priority, variant } = req.body;
 
@@ -152,9 +146,6 @@ export const addToWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Remove item from wishlist
-// @route   DELETE /api/wishlist/:productId
-// @access  Private
 export const removeFromWishlist = asyncHandler(async (req, res, next) => {
   const { productId } = req.params;
 
@@ -181,9 +172,6 @@ export const removeFromWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Clear wishlist
-// @route   DELETE /api/wishlist/clear
-// @access  Private
 export const clearWishlist = asyncHandler(async (req, res, next) => {
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
@@ -205,9 +193,6 @@ export const clearWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Check if product is in wishlist
-// @route   GET /api/wishlist/check/:productId
-// @access  Private
 export const checkInWishlist = asyncHandler(async (req, res, next) => {
   const { productId } = req.params;
 
@@ -228,9 +213,6 @@ export const checkInWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update wishlist item
-// @route   PUT /api/wishlist/:productId
-// @access  Private
 export const updateWishlistItem = asyncHandler(async (req, res, next) => {
   const { productId } = req.params;
   const { notes, priority } = req.body;
@@ -275,9 +257,6 @@ export const updateWishlistItem = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Move wishlist item to cart
-// @route   POST /api/wishlist/:productId/move-to-cart
-// @access  Private
 export const moveToCart = asyncHandler(async (req, res, next) => {
   const { productId } = req.params;
   const { quantity = 1 } = req.body;
@@ -302,11 +281,6 @@ export const moveToCart = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Here you would add to cart
-  // This requires your Cart model and controller
-  // For now, we'll just remove from wishlist and return success
-
-  // Remove from wishlist
   await wishlist.removeItem(productId);
 
   res.status(200).json({
@@ -323,9 +297,6 @@ export const moveToCart = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Generate shareable link for wishlist
-// @route   POST /api/wishlist/share
-// @access  Private
 export const generateShareLink = asyncHandler(async (req, res, next) => {
   const { expiryDays = 7 } = req.body;
 
@@ -351,9 +322,6 @@ export const generateShareLink = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get wishlist by share token (public)
-// @route   GET /api/wishlist/share/:token
-// @access  Public
 export const getSharedWishlist = asyncHandler(async (req, res, next) => {
   const { token } = req.params;
 
@@ -385,9 +353,6 @@ export const getSharedWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Revoke share link
-// @route   DELETE /api/wishlist/share
-// @access  Private
 export const revokeShareLink = asyncHandler(async (req, res, next) => {
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
@@ -409,9 +374,6 @@ export const revokeShareLink = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get wishlist items count
-// @route   GET /api/wishlist/count
-// @access  Private
 export const getWishlistCount = asyncHandler(async (req, res, next) => {
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
@@ -424,9 +386,6 @@ export const getWishlistCount = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get recently added to wishlist
-// @route   GET /api/wishlist/recent
-// @access  Private
 export const getRecentWishlistItems = asyncHandler(async (req, res, next) => {
   const { limit = 5 } = req.query;
 
@@ -452,7 +411,7 @@ export const getRecentWishlistItems = asyncHandler(async (req, res, next) => {
       );
       return populatedItem || item;
     })
-    .filter((item) => item.product); // Filter out items with null products
+    .filter((item) => item.product);
 
   res.status(200).json({
     success: true,
@@ -463,9 +422,6 @@ export const getRecentWishlistItems = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get wishlist statistics
-// @route   GET /api/wishlist/stats
-// @access  Private
 export const getWishlistStats = asyncHandler(async (req, res, next) => {
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
@@ -489,7 +445,6 @@ export const getWishlistStats = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Populate products for statistics
   await wishlist.populate({
     path: "items.product",
     select: "name price averageRating stock category",

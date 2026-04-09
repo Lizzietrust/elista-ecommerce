@@ -43,7 +43,6 @@ const sendWelcomeEmail = async (userEmail, userName) => {
   });
 };
 
-// Send password reset email
 const sendPasswordResetEmail = async (userEmail, resetToken) => {
   const resetUrl = `${
     process.env.FRONTEND_URL || "http://localhost:3000"
@@ -148,9 +147,8 @@ const sendContactFormEmail = async (formData) => {
     </html>
   `;
 
-  // Send to admin
   await sendEmail({
-    email: process.env.ADMIN_EMAIL || process.env.SMTP_USER,
+    email: process.env.ADMIN_EMAIL,
     subject: emailSubject,
     html,
   });
@@ -178,7 +176,7 @@ const sendContactFormEmail = async (formData) => {
 const sendOrderShippedEmail = async (
   userEmail,
   orderDetails,
-  trackingNumber
+  trackingNumber,
 ) => {
   const subject = `Your Order #${orderDetails.orderId} Has Been Shipped!`;
   const html = `

@@ -1,4 +1,3 @@
-// lib/data/products.ts
 import { productApi } from "@/lib/api/products";
 import { Product } from "@/types";
 

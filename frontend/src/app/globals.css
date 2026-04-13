@@ -1,36 +1,111 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: oklch(100% 0 0);
-  --color-foreground: oklch(9.8% 0.039 285.88);
-  --color-card: oklch(100% 0 0);
-  --color-card-foreground: oklch(9.8% 0.039 285.88);
-  --color-popover: oklch(100% 0 0);
-  --color-popover-foreground: oklch(9.8% 0.039 285.88);
-  --color-primary: oklch(53.3% 0.177 264.48);
-  --color-primary-foreground: oklch(98% 0.016 264.48);
-  --color-secondary: oklch(96.1% 0.016 264.48);
-  --color-secondary-foreground: oklch(11.2% 0.112 285.88);
-  --color-muted: oklch(96.1% 0.016 264.48);
-  --color-muted-foreground: oklch(46.9% 0.033 264.48);
-  --color-accent: oklch(96.1% 0.016 264.48);
-  --color-accent-foreground: oklch(11.2% 0.112 285.88);
-  --color-destructive: oklch(60.2% 0.177 29.23);
-  --color-destructive-foreground: oklch(98% 0.016 264.48);
-  --color-border: oklch(91.4% 0.027 264.48);
-  --color-input: oklch(91.4% 0.027 264.48);
-  --color-ring: oklch(53.3% 0.177 264.48);
-  --radius: 0.5rem;
+  /* Backgrounds - Warm and inviting */
+  --color-background: #fdf8f5; /* Warm cream - main background */
+  --color-background-secondary: #f4efea; /* Slightly darker cream */
+
+  /* Foreground/Text Colors - Soft and readable */
+  --color-foreground: #2c2c2c; /* Soft black - primary text */
+  --color-foreground-muted: #6b6b6b; /* Muted gray - secondary text */
+  --color-foreground-light: #ffffff; /* White text for dark backgrounds */
+
+  /* Card & Surface Colors */
+  --color-card: #ffffff; /* Pure white for cards */
+  --color-card-foreground: #2c2c2c; /* Dark text on cards */
+  --color-popover: #ffffff; /* White for popups/modals */
+  --color-popover-foreground: #2c2c2c;
+
+  /* Primary - Deep Forest Green */
+  --color-primary: #2c3e3e; /* Deep forest green - headers, nav, buttons */
+  --color-primary-foreground: #ffffff; /* White text on primary */
+  --color-primary-light: #4a6b6b; /* Lighter forest green for hover */
+  --color-primary-dark: #1a2a2a; /* Darker for active states */
+
+  /* Secondary - Warm Beige */
+  --color-secondary: #d4c4b7; /* Warm beige - backgrounds, cards */
+  --color-secondary-foreground: #2c2c2c; /* Dark text on secondary */
+  --color-secondary-light: #e8ded5; /* Lighter beige */
+  --color-secondary-dark: #b8a99a; /* Darker beige for borders */
+
+  /* Muted/Subtle Elements */
+  --color-muted: #f4efea; /* Muted cream backgrounds */
+  --color-muted-foreground: #6b6b6b; /* Muted text */
+
+  /* Accent - Terracotta */
+  --color-accent: #c17b4d; /* Terracotta - CTAs, highlights */
+  --color-accent-foreground: #ffffff; /* White text on accent */
+  --color-accent-light: #d49a6a; /* Lighter terracotta for hover */
+  --color-accent-dark: #a05e38; /* Darker for active states */
+
+  /* Destructive/Error - Muted Terracotta */
+  --color-destructive: #c17b7b; /* Muted terracotta for errors */
+  --color-destructive-foreground: #ffffff;
+
+  /* Success - Sage Green */
+  --color-success: #6b8e6b; /* Sage green for success messages */
+  --color-success-foreground: #ffffff;
+
+  /* Borders & Inputs - Soft and natural */
+  --color-border: #e8e0d8; /* Soft beige border */
+  --color-input: #ffffff; /* White input backgrounds */
+  --color-input-border: #e8e0d8; /* Border color for inputs */
+  --color-ring: #c17b4d; /* Terracotta focus rings */
+
+  /* Additional Earthy Accents */
+  --color-earth-warm: #c17b4d; /* Terracotta */
+  --color-earth-clay: #8b6b4d; /* Clay brown */
+  --color-earth-stone: #9ca3af; /* Stone gray */
+  --color-forest: #2c3e3e; /* Forest green */
+  --color-sage: #6b8e6b; /* Sage green */
+  --color-sand: #d4c4b7; /* Warm sand */
+  --color-cream: #fdf8f5; /* Cream */
+
+  /* Border Radius - Keep consistent */
+  --radius: 0.5rem; /* 8px radius */
+  --radius-lg: 0.75rem; /* 12px for cards */
+  --radius-sm: 0.25rem; /* 4px for small elements */
 }
 
 @layer base {
   * {
-    border-color: theme(colors.border);
+    border-color: var(--color-border);
   }
+
   body {
-    background-color: theme(colors.background);
-    color: theme(colors.foreground);
-    font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+
+  /* Improve text readability */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-foreground);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  /* Link styles */
+  a {
+    color: var(--color-primary);
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--color-accent);
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: var(--color-primary-light);
+    color: var(--color-foreground-light);
   }
 }
 
@@ -42,5 +117,116 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Custom utility classes for the earthy theme */
+  .bg-gradient-warm {
+    background: linear-gradient(
+      135deg,
+      var(--color-background) 0%,
+      var(--color-secondary) 100%
+    );
+  }
+
+  .bg-gradient-earth {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-accent) 100%
+    );
+  }
+
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Text gradient for headings */
+  .text-gradient-earth {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-accent) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Optional: Add these component styles */
+@layer components {
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-light);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    background-color: var(--color-primary-dark);
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background-color: var(--color-secondary);
+    color: var(--color-secondary-foreground);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all 0.3s ease;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--color-secondary-dark);
+  }
+
+  .btn-accent {
+    background-color: var(--color-accent);
+    color: var(--color-accent-foreground);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all 0.3s ease;
+  }
+
+  .btn-accent:hover {
+    background-color: var(--color-accent-light);
+    transform: translateY(-1px);
+  }
+
+  .card {
+    background-color: var(--color-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .input {
+    background-color: var(--color-input);
+    border: 1px solid var(--color-input-border);
+    border-radius: var(--radius);
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 3px rgba(193, 123, 77, 0.1);
   }
 }

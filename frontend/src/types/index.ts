@@ -33,6 +33,26 @@ export interface ProductCategory {
   updatedAt: Date | string;
 }
 
+// types/index.ts - Add this new type
+export interface FrontendProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  discountPercentage: number;
+  images: string[];
+  category: string;
+  brand: string;
+  rating: number;
+  reviewCount: number;
+  stock: number;
+  isNew: boolean;
+  features: string[];
+  specifications?: Record<string, any>;
+}
+
+// Keep your existing Product interface for backend/API use
 export interface Product {
   _id: string;
   sku: string;

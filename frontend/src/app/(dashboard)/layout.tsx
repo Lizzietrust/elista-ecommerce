@@ -27,7 +27,6 @@ const navigation = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-// Extended interface for dashboard user data
 interface DashboardUser {
   name: string;
   email: string;
@@ -41,19 +40,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
 
-  // If you want to redirect non-authenticated users
-  // useEffect(() => {
-  //   if (!isLoading && !user) {
-  //     router.push('/login');
-  //   }
-  // }, [user, isLoading, router]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">
+          <div className="h-12 w-12 border-4 border-[#C17B4D] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#6B6B6B] dark:text-gray-400">
             Loading dashboard...
           </p>
         </div>
@@ -61,7 +53,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Use auth user or fallback to mock dashboard data
   const authUser = user || {
     id: "1",
     name: "John Doe",
@@ -72,7 +63,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     updatedAt: new Date("2024-01-01"),
   };
 
-  // Dashboard-specific user data (could come from a separate API)
   const dashboardUserData: DashboardUser = {
     name: authUser.name,
     email: authUser.email,
@@ -84,44 +74,42 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           year: "numeric",
         })
       : "Jan 2024",
-    totalOrders: 12, // This would come from orders API
-    totalSpent: 1245.89, // This would come from orders API
+    totalOrders: 12,
+    totalSpent: 1245.89,
   };
 
   const handleLogout = async () => {
     await logout();
-    // router.push('/login'); // Redirect after logout
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-[#FDF8F5] dark:bg-[#2C2C2C]">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-900/95 dark:border-gray-800">
+      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60 dark:bg-gray-900/95 dark:border-[#E8E0D8]/20">
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex h-16 items-center justify-between">
             <Link
               href="/"
-              className="text-xl font-bold text-gray-900 dark:text-white"
+              className="text-xl font-bold text-[#2C2C2C] dark:text-white"
             >
-              Elista<span className="text-blue-600">.</span>
+              Elista<span className="text-[#C17B4D]">.</span>
             </Link>
 
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                className="flex items-center gap-2 text-[#6B6B6B] dark:text-gray-400 hover:text-[#C17B4D] transition-colors"
               >
                 <Home size={16} />
                 <span className="hidden sm:inline">Back to Store</span>
               </Link>
-              {/* User avatar */}
               <div className="flex items-center gap-3">
                 <img
                   src={dashboardUserData.avatar}
                   alt={dashboardUserData.name}
-                  className="h-8 w-8 rounded-full"
+                  className="h-8 w-8 rounded-full border border-[#E8E0D8]"
                 />
-                <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="hidden md:inline text-sm font-medium text-[#2C2C2C] dark:text-gray-300">
                   {dashboardUserData.name}
                 </span>
               </div>
@@ -134,22 +122,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar Navigation */}
           <aside className="lg:w-64">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sticky top-24">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sticky top-24 border border-[#E8E0D8] dark:border-gray-800">
               {/* User Info */}
-              <div className="flex items-center gap-4 mb-8 pb-6 border-b dark:border-gray-800">
+              <div className="flex items-center gap-4 mb-8 pb-6 border-b border-[#E8E0D8] dark:border-gray-800">
                 <img
                   src={dashboardUserData.avatar}
                   alt={dashboardUserData.name}
                   className="h-12 w-12 rounded-full border-2 border-white dark:border-gray-800"
                 />
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">
+                  <h3 className="font-bold text-[#2C2C2C] dark:text-white">
                     {dashboardUserData.name}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
                     {dashboardUserData.email}
                   </p>
-                  <span className="inline-block mt-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">
+                  <span className="inline-block mt-1 px-2 py-1 bg-[#2C3E3E]/10 dark:bg-[#2C3E3E]/30 text-[#2C3E3E] dark:text-[#4A6B6B] text-xs font-medium rounded-full">
                     Premium Member
                   </span>
                 </div>
@@ -163,7 +151,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className="flex items-center justify-between px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+                      className="flex items-center justify-between px-4 py-3 rounded-xl text-[#6B6B6B] dark:text-gray-300 hover:bg-[#F4EFEA] dark:hover:bg-gray-800 hover:text-[#C17B4D] dark:hover:text-[#D49A6A] transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <Icon size={20} />
@@ -179,40 +167,40 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </nav>
 
               {/* Quick Stats */}
-              <div className="mt-8 pt-6 border-t dark:border-gray-800">
-                <h4 className="font-bold text-gray-900 dark:text-white mb-4">
+              <div className="mt-8 pt-6 border-t border-[#E8E0D8] dark:border-gray-800">
+                <h4 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
                   Quick Stats
                 </h4>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                       Member since
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-[#2C2C2C] dark:text-white">
                       {dashboardUserData.memberSince}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                       Total orders
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-[#2C2C2C] dark:text-white">
                       {dashboardUserData.totalOrders}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                       Total spent
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-[#2C2C2C] dark:text-white">
                       ${dashboardUserData.totalSpent.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                       Saved items
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-[#2C2C2C] dark:text-white">
                       8
                     </span>
                   </div>
@@ -220,10 +208,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </div>
 
               {/* Logout Button */}
-              <div className="mt-8 pt-6 border-t dark:border-gray-800">
+              <div className="mt-8 pt-6 border-t border-[#E8E0D8] dark:border-gray-800">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-[#C17B7B] hover:bg-[#C17B7B]/10 transition-colors"
                 >
                   <LogOut size={20} />
                   <span className="font-medium">Log out</span>
@@ -232,16 +220,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
 
             {/* Support Card */}
-            <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6">
-              <h4 className="font-bold text-gray-900 dark:text-white mb-3">
+            <div className="mt-6 bg-linear-to-r from-[#F4EFEA] to-[#E8E0D8] dark:from-[#2C3E3E]/20 dark:to-[#C17B4D]/20 rounded-2xl p-6 border border-[#E8E0D8] dark:border-gray-800">
+              <h4 className="font-bold text-[#2C2C2C] dark:text-white mb-3">
                 Need Help?
               </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-sm text-[#6B6B6B] dark:text-gray-400 mb-4">
                 Our support team is here to help you.
               </p>
               <Link
                 href="/contact"
-                className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                className="inline-flex items-center gap-2 text-sm text-[#C17B4D] hover:text-[#D49A6A] transition-colors"
               >
                 Contact Support →
               </Link>
@@ -250,7 +238,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           {/* Main Content */}
           <main className="flex-1">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 border border-[#E8E0D8] dark:border-gray-800">
               {children}
             </div>
           </main>

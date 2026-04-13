@@ -14,7 +14,44 @@ interface GetProductsParams {
   featured?: boolean;
 }
 
-export async function getProducts(params: GetProductsParams = {}) {
+interface ApiImage {
+  url: string;
+}
+
+interface ApiCategory {
+  name: string;
+}
+
+interface ApiProduct {
+  _id: string;
+  slug?: string;
+  name: string;
+  description: string;
+  price: number;
+  discountPrice?: number;
+  images: ApiImage[];
+  category?: ApiCategory;
+  brand?: string;
+  averageRating?: number;
+  ratingsCount?: number;
+  stock: number;
+  createdAt: string;
+  specifications?: Record<string, unknown>;
+  sku?: string;
+  isFeatured?: boolean;
+}
+
+interface ApiResponse {
+  data: ApiProduct[];
+  total: number;
+}
+
+export async function getProducts(params: GetProductsParams = {}): Promise<{
+  products: Product[];
+  totalCount: number;
+  categories: string[];
+  brands: string[];
+}> {
   const {
     category,
     sort = "-createdAt",
@@ -42,7 +79,7 @@ export async function getProducts(params: GetProductsParams = {}) {
       featured,
     });
 
-    const products: Product[] = response.data.map((product: any) => ({
+    const products: Product[] = response.data.map((product: ApiProduct) => ({
       id: product._id,
       slug: product.slug || product._id,
       name: product.name,
@@ -53,7 +90,7 @@ export async function getProducts(params: GetProductsParams = {}) {
             ((product.price - product.discountPrice) / product.price) * 100,
           )
         : 0,
-      images: product.images.map((img: any) => img.url),
+      images: product.images.map((img: ApiImage) => img.url),
       category: product.category?.name || "Uncategorized",
       brand: product.brand || "Unknown",
       rating: product.averageRating || 0,
@@ -70,16 +107,16 @@ export async function getProducts(params: GetProductsParams = {}) {
     const categories = [
       ...new Set(
         response.data
-          .map((p: any) => p.category?.name)
-          .filter((name: any): name is string => Boolean(name)),
+          .map((p: ApiProduct) => p.category?.name)
+          .filter((name: string | undefined): name is string => Boolean(name)),
       ),
     ];
 
     const brands = [
       ...new Set(
         response.data
-          .map((p: any) => p.brand)
-          .filter((brand: any): brand is string => Boolean(brand)),
+          .map((p: ApiProduct) => p.brand)
+          .filter((brand): brand is string => Boolean(brand)),
       ),
     ];
 

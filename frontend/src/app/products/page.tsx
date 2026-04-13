@@ -5,37 +5,33 @@ import Pagination from "@/components/ui/pagination";
 import { getProducts } from "@/lib/data/products";
 
 interface ProductsPageProps {
-  searchParams: {
+  searchParams: Promise<{
     category?: string;
     sort?: string;
     minPrice?: string;
     maxPrice?: string;
     page?: string;
     q?: string;
-  };
+  }>;
 }
 
 export default async function ProductsPage({
   searchParams,
 }: ProductsPageProps) {
-  const page = parseInt(searchParams.page || "1");
+  const params = await searchParams;
+
+  const page = parseInt(params.page || "1");
   const pageSize = 12;
 
   const { products, totalCount, categories, brands } = await getProducts({
-    category: searchParams.category,
-    sort: searchParams.sort || "newest",
-    minPrice: searchParams.minPrice
-      ? parseInt(searchParams.minPrice)
-      : undefined,
-    maxPrice: searchParams.maxPrice
-      ? parseInt(searchParams.maxPrice)
-      : undefined,
-    searchQuery: searchParams.q, 
+    category: params.category,
+    sort: params.sort || "newest",
+    minPrice: params.minPrice ? parseInt(params.minPrice) : undefined,
+    maxPrice: params.maxPrice ? parseInt(params.maxPrice) : undefined,
+    searchQuery: params.q,
     page,
-    pageSize, 
+    pageSize,
   });
-    
-  console.log({ products });
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -56,9 +52,9 @@ export default async function ProductsPage({
           <ProductFilters
             categories={categories}
             brands={brands}
-            selectedCategory={searchParams.category}
-            selectedMinPrice={searchParams.minPrice}
-            selectedMaxPrice={searchParams.maxPrice}
+            selectedCategory={params.category}
+            selectedMinPrice={params.minPrice}
+            selectedMaxPrice={params.maxPrice}
           />
         </div>
 
@@ -70,7 +66,7 @@ export default async function ProductsPage({
               Showing {(page - 1) * pageSize + 1} -{" "}
               {Math.min(page * pageSize, totalCount)} of {totalCount} products
             </div>
-            <ProductSort currentSort={searchParams.sort} />
+            <ProductSort currentSort={params.sort} />
           </div>
 
           {/* Products Grid */}

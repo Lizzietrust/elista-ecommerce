@@ -33,7 +33,6 @@ export interface ProductCategory {
   updatedAt: Date | string;
 }
 
-// types/index.ts - Add this new type
 export interface FrontendProduct {
   id: string;
   slug: string;
@@ -52,32 +51,26 @@ export interface FrontendProduct {
   specifications?: Record<string, any>;
 }
 
-// Keep your existing Product interface for backend/API use
 export interface Product {
-  _id: string;
-  sku: string;
+  id: string;
+  _id?: string;
   slug: string;
   name: string;
   description: string;
-  longDescription?: string;
   price: number;
-  comparePrice?: number;
-  images: ProductImage[];
-  category: ProductCategory | string;
+  discountPercentage: number;
+  images: string[];
+  category: string;
   brand: string;
-  colors?: string[];
-  sizes?: string[];
-  averageRating: number;
+  rating: number;
   reviewCount: number;
   stock: number;
-  isFeatured: boolean;
-  isActive: boolean;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  specifications?: Record<string, string>;
-  features?: string[];
-  relatedProducts?: Array<Product | string>;
+  isNew: boolean;
+  features: string[];
+  specifications: Record<string, any>;
+  sku?: string;
+  averageRating?: number;
+  isFeatured?: boolean;
 }
 
 export interface Category {

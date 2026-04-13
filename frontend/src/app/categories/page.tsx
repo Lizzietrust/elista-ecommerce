@@ -166,7 +166,7 @@ export default function CategoriesPage() {
                       Up to 50% off on latest gadgets
                     </p>
                     <span className="inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full font-medium hover:bg-white/30 transition-colors">
-                      Shop Now →
+                      Shop Now 
                     </span>
                   </div>
                 </div>

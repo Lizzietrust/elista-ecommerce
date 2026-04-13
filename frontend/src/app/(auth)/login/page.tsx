@@ -28,7 +28,6 @@ export default function LoginPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    // Clear error when user starts typing
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -63,16 +62,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // In real app, you would call your authentication API here
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
-
       toast.success("Successfully logged in!");
       router.push("/");
     } catch (error) {
@@ -86,19 +76,19 @@ export default function LoginPage() {
   return (
     <div className="w-full">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h2 className="text-3xl font-bold text-[#2C2C2C] dark:text-white">
           Welcome Back
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Sign in to your account to continue
+        <p className="text-[#6B6B6B] dark:text-gray-400 mt-2">
+          Sign in to your Elista account to continue
         </p>
       </div>
 
       {errors.general && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+        <div className="mb-6 p-4 bg-[#C17B7B]/10 dark:bg-[#C17B7B]/20 border border-[#C17B7B]/30 rounded-xl">
           <div className="flex items-center gap-3">
-            <AlertCircle className="text-red-600 dark:text-red-400" size={20} />
-            <p className="text-red-700 dark:text-red-300">{errors.general}</p>
+            <AlertCircle className="text-[#C17B7B]" size={20} />
+            <p className="text-[#C17B7B]">{errors.general}</p>
           </div>
         </div>
       )}
@@ -108,13 +98,13 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            className="block text-sm font-medium text-[#2C2C2C] dark:text-gray-300 mb-2"
           >
             Email Address
           </label>
           <div className="relative">
             <Mail
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#6B6B6B]"
               size={20}
             />
             <input
@@ -125,17 +115,15 @@ export default function LoginPage() {
               onChange={handleChange}
               className={`w-full pl-12 pr-4 py-3 rounded-xl border ${
                 errors.email
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                  : "border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500"
-              } bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2`}
+                  ? "border-[#C17B7B] focus:border-[#C17B7B] focus:ring-[#C17B7B]"
+                  : "border-[#E8E0D8] focus:border-[#C17B4D] focus:ring-[#C17B4D]"
+              } bg-white dark:bg-gray-800 text-[#2C2C2C] dark:text-white focus:outline-none focus:ring-2`}
               placeholder="you@example.com"
               disabled={isLoading}
             />
           </div>
           {errors.email && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-              {errors.email}
-            </p>
+            <p className="mt-2 text-sm text-[#C17B7B]">{errors.email}</p>
           )}
         </div>
 
@@ -144,20 +132,20 @@ export default function LoginPage() {
           <div className="flex items-center justify-between mb-2">
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-[#2C2C2C] dark:text-gray-300"
             >
               Password
             </label>
             <Link
               href="/forgot-password"
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-sm text-[#C17B4D] hover:text-[#D49A6A] transition-colors"
             >
               Forgot password?
             </Link>
           </div>
           <div className="relative">
             <Lock
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#6B6B6B]"
               size={20}
             />
             <input
@@ -168,39 +156,37 @@ export default function LoginPage() {
               onChange={handleChange}
               className={`w-full pl-12 pr-12 py-3 rounded-xl border ${
                 errors.password
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                  : "border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500"
-              } bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2`}
+                  ? "border-[#C17B7B] focus:border-[#C17B7B] focus:ring-[#C17B7B]"
+                  : "border-[#E8E0D8] focus:border-[#C17B4D] focus:ring-[#C17B4D]"
+              } bg-white dark:bg-gray-800 text-[#2C2C2C] dark:text-white focus:outline-none focus:ring-2`}
               placeholder="Enter your password"
               disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#6B6B6B] hover:text-[#2C2C2C] dark:hover:text-gray-300"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
           {errors.password && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-              {errors.password}
-            </p>
+            <p className="mt-2 text-sm text-[#C17B7B]">{errors.password}</p>
           )}
         </div>
 
-        {/* Remember Me & Forgot Password */}
-        <div className="flex items-center justify-between">
+        {/* Remember Me */}
+        <div className="flex items-center">
           <label className="flex items-center">
             <input
               type="checkbox"
               name="rememberMe"
               checked={formData.rememberMe}
               onChange={handleChange}
-              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              className="h-4 w-4 text-[#C17B4D] rounded border-[#E8E0D8] focus:ring-[#C17B4D]"
               disabled={isLoading}
             />
-            <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+            <span className="ml-2 text-sm text-[#6B6B6B] dark:text-gray-300">
               Remember me
             </span>
           </label>
@@ -209,7 +195,7 @@ export default function LoginPage() {
         {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full py-3 text-lg"
+          className="w-full py-3 text-lg bg-[#2C3E3E] hover:bg-[#4A6B6B] transition-all"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -225,10 +211,10 @@ export default function LoginPage() {
         {/* Social Login */}
         <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+            <div className="w-full border-t border-[#E8E0D8]"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+            <span className="px-4 bg-white dark:bg-gray-900 text-[#6B6B6B]">
               Or continue with
             </span>
           </div>
@@ -237,7 +223,7 @@ export default function LoginPage() {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            className="flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="flex items-center justify-center gap-3 py-3 px-4 border border-[#E8E0D8] rounded-xl hover:bg-[#F4EFEA] dark:hover:bg-gray-800 transition-colors"
             disabled={isLoading}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -258,32 +244,32 @@ export default function LoginPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="text-gray-700 dark:text-gray-300 font-medium">
+            <span className="text-[#2C2C2C] dark:text-gray-300 font-medium">
               Google
             </span>
           </button>
 
           <button
             type="button"
-            className="flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="flex items-center justify-center gap-3 py-3 px-4 border border-[#E8E0D8] rounded-xl hover:bg-[#F4EFEA] dark:hover:bg-gray-800 transition-colors"
             disabled={isLoading}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
             </svg>
-            <span className="text-gray-700 dark:text-gray-300 font-medium">
+            <span className="text-[#2C2C2C] dark:text-gray-300 font-medium">
               Apple
             </span>
           </button>
         </div>
 
         {/* Sign Up Link */}
-        <div className="text-center pt-6 border-t border-gray-200 dark:border-gray-800">
-          <p className="text-gray-600 dark:text-gray-400">
+        <div className="text-center pt-6 border-t border-[#E8E0D8]">
+          <p className="text-[#6B6B6B] dark:text-gray-400">
             Don't have an account?{" "}
             <Link
               href="/register"
-              className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+              className="text-[#C17B4D] font-semibold hover:text-[#D49A6A] transition-colors"
             >
               Sign up for free
             </Link>

@@ -53,10 +53,10 @@ export default function ProductFilters({
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800">
+    <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Filter className="h-5 w-5" />
+        <h3 className="font-semibold text-lg flex items-center gap-2 text-foreground">
+          <Filter className="h-5 w-5 text-accent" />
           Filters
         </h3>
         {(selectedCategory || selectedMinPrice || selectedMaxPrice) && (
@@ -64,7 +64,7 @@ export default function ProductFilters({
             variant="ghost"
             size="sm"
             onClick={clearFilters}
-            className="h-8 px-2 text-sm"
+            className="h-8 px-2 text-sm text-muted-foreground hover:text-accent hover:bg-muted transition-all duration-200"
           >
             Clear all
             <X className="h-3 w-3 ml-1" />
@@ -74,9 +74,7 @@ export default function ProductFilters({
 
       {/* Price Range */}
       <div className="mb-8">
-        <h4 className="font-medium mb-4 text-gray-900 dark:text-white">
-          Price Range
-        </h4>
+        <h4 className="font-medium mb-4 text-foreground">Price Range</h4>
         <div className="space-y-4">
           <div className="flex gap-2">
             <Input
@@ -86,7 +84,7 @@ export default function ProductFilters({
               max={1000}
               value={selectedMinPrice || ""}
               onChange={(e) => handleFilterChange("minPrice", e.target.value)}
-              className="h-9"
+              className="h-9 border-border focus:ring-ring focus:ring-2"
             />
             <Input
               type="number"
@@ -95,7 +93,7 @@ export default function ProductFilters({
               max={1000}
               value={selectedMaxPrice || ""}
               onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
-              className="h-9"
+              className="h-9 border-border focus:ring-ring focus:ring-2"
             />
           </div>
           <div className="px-2">
@@ -109,9 +107,10 @@ export default function ProductFilters({
                 handleFilterChange("minPrice", value[0]);
                 handleFilterChange("maxPrice", value[1]);
               }}
+              className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary [&_[role=slider]]:hover:bg-primary-light [&_[role=slider]]:focus:ring-ring"
             />
           </div>
-          <div className="flex justify-between text-sm text-gray-500">
+          <div className="flex justify-between text-sm text-muted-foreground">
             <span>$0</span>
             <span>$1000</span>
           </div>
@@ -120,16 +119,14 @@ export default function ProductFilters({
 
       {/* Categories */}
       <div className="mb-8">
-        <h4 className="font-medium mb-4 text-gray-900 dark:text-white">
-          Categories
-        </h4>
+        <h4 className="font-medium mb-4 text-foreground">Categories</h4>
         <div className="space-y-2">
           <button
             onClick={() => handleFilterChange("category", "")}
-            className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+            className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
               !selectedCategory
-                ? "bg-primary text-primary-foreground font-medium"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             All Categories
@@ -138,10 +135,10 @@ export default function ProductFilters({
             <button
               key={category}
               onClick={() => handleFilterChange("category", category)}
-              className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                 selectedCategory === category
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               {category}
@@ -153,18 +150,16 @@ export default function ProductFilters({
       {/* Brands */}
       {brands.length > 0 && (
         <div className="mb-8">
-          <h4 className="font-medium mb-4 text-gray-900 dark:text-white">
-            Brands
-          </h4>
+          <h4 className="font-medium mb-4 text-foreground">Brands</h4>
           <div className="space-y-2">
             {brands.map((brand) => (
               <label
                 key={brand}
-                className="flex items-center gap-2 cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer group"
               >
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-border text-accent focus:ring-ring focus:ring-2 transition-colors"
                   checked={searchParams.get("brand") === brand}
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -179,11 +174,50 @@ export default function ProductFilters({
                     }
                   }}
                 />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-200">
                   {brand}
                 </span>
               </label>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Active Filters Summary */}
+      {(selectedCategory || selectedMinPrice || selectedMaxPrice) && (
+        <div className="mt-6 pt-6 border-t border-border">
+          <h4 className="font-medium mb-3 text-foreground text-sm">
+            Active Filters
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {selectedCategory && (
+              <div className="flex items-center gap-1 bg-accent/10 text-accent px-3 py-1 rounded-full text-sm">
+                <span>Category: {selectedCategory}</span>
+                <button
+                  onClick={() => handleFilterChange("category", "")}
+                  className="ml-2 hover:text-accent-dark"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            {(selectedMinPrice || selectedMaxPrice) && (
+              <div className="flex items-center gap-1 bg-accent/10 text-accent px-3 py-1 rounded-full text-sm">
+                <span>
+                  Price: ${selectedMinPrice || "0"} - $
+                  {selectedMaxPrice || "1000"}
+                </span>
+                <button
+                  onClick={() => {
+                    handleFilterChange("minPrice", "");
+                    handleFilterChange("maxPrice", "");
+                  }}
+                  className="ml-2 hover:text-accent-dark"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

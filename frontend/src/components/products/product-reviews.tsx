@@ -85,23 +85,25 @@ export function ProductReviews({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8">
+    <div className="bg-card rounded-2xl shadow-lg p-6 md:p-8 border border-border">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-foreground">
             Customer Reviews
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             {reviewCount} verified reviews
           </p>
         </div>
-        <Button>Write a Review</Button>
+        <Button className="bg-primary hover:bg-primary-light text-primary-foreground transition-all duration-300">
+          Write a Review
+        </Button>
       </div>
 
       {/* Rating Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-        <div className="text-center p-6 bg-gray-50 dark:bg-gray-800 rounded-xl">
-          <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="text-center p-6 bg-muted rounded-xl border border-border">
+          <div className="text-5xl font-bold text-foreground mb-2">
             {averageRating.toFixed(1)}
           </div>
           <div className="flex justify-center mb-2">
@@ -110,11 +112,11 @@ export function ProductReviews({
                 key={i}
                 size={20}
                 fill={i < Math.floor(averageRating) ? "currentColor" : "none"}
-                className="text-amber-500"
+                className="text-accent"
               />
             ))}
           </div>
-          <div className="text-gray-600 dark:text-gray-400">Overall Rating</div>
+          <div className="text-muted-foreground">Overall Rating</div>
         </div>
 
         <div className="md:col-span-2">
@@ -122,18 +124,18 @@ export function ProductReviews({
             {ratingDistribution.map(({ stars, percentage }) => (
               <div key={stars} className="flex items-center gap-3">
                 <div className="flex items-center gap-1 w-16">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-sm font-medium text-foreground">
                     {stars}
                   </span>
-                  <Star size={14} className="text-amber-500" />
+                  <Star size={14} className="text-accent" />
                 </div>
-                <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-amber-500 rounded-full"
+                    className="h-full bg-accent rounded-full transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   ></div>
                 </div>
-                <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
+                <span className="text-sm text-muted-foreground w-12 text-right">
                   {percentage}%
                 </span>
               </div>
@@ -147,15 +149,13 @@ export function ProductReviews({
         {reviews.map((review) => (
           <div
             key={review.id}
-            className="border-b dark:border-gray-800 pb-6 last:border-0"
+            className="border-b border-border pb-6 last:border-0"
           >
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h4 className="font-bold text-gray-900 dark:text-white">
-                  {review.title}
-                </h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex text-amber-500">
+                <h4 className="font-bold text-foreground">{review.title}</h4>
+                <div className="flex items-center flex-wrap gap-2 mt-1">
+                  <div className="flex text-accent">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
@@ -164,11 +164,11 @@ export function ProductReviews({
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-muted-foreground">
                     by {review.author} • {review.date}
                   </span>
                   {review.verified && (
-                    <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
+                    <span className="flex items-center gap-1 text-sm text-success">
                       <Check size={12} />
                       Verified Purchase
                     </span>
@@ -177,15 +177,13 @@ export function ProductReviews({
               </div>
             </div>
 
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
-              {review.content}
-            </p>
+            <p className="text-muted-foreground mb-4">{review.content}</p>
 
             <div className="flex flex-wrap gap-2 mb-4">
               {review.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded"
+                  className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-lg"
                 >
                   {tag}
                 </span>
@@ -195,11 +193,15 @@ export function ProductReviews({
             <div className="flex items-center justify-between">
               <button
                 onClick={() => handleHelpful(review.id)}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                className="text-sm text-muted-foreground hover:text-accent transition-colors duration-200"
               >
                 Helpful ({review.helpful})
               </button>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+              >
                 Report
               </Button>
             </div>
@@ -208,7 +210,12 @@ export function ProductReviews({
       </div>
 
       <div className="text-center mt-8">
-        <Button variant="outline">Load More Reviews</Button>
+        <Button
+          variant="outline"
+          className="border-border hover:bg-muted hover:text-accent transition-all duration-300"
+        >
+          Load More Reviews
+        </Button>
       </div>
     </div>
   );

@@ -293,7 +293,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   // AddToCart component
   const AddToCart = ({ product }: { product: Product }) => {
     return (
-      <Button className="flex-1 py-3 text-lg gap-3">
+      <Button className="flex-1 py-3 text-lg gap-3 bg-[#2C3E3E] hover:bg-[#4A6B6B] transition-all">
         <ShoppingCart size={20} />
         Add to Cart
       </Button>
@@ -301,33 +301,33 @@ export default async function ProductPage({ params }: ProductPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-[#FDF8F5] dark:bg-[#2C2C2C]">
       {/* Breadcrumb */}
-      <div className="border-b bg-white dark:bg-gray-900">
+      <div className="border-b border-[#E8E0D8] dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-4 md:px-8 py-4">
           <nav className="flex items-center gap-2 text-sm">
             <Link
               href="/"
-              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="text-[#6B6B6B] dark:text-gray-400 hover:text-[#C17B4D] dark:hover:text-[#D49A6A] transition-colors"
             >
               Home
             </Link>
-            <ChevronLeft size={14} className="rotate-180" />
+            <ChevronLeft size={14} className="rotate-180 text-[#6B6B6B]" />
             <Link
               href="/categories"
-              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="text-[#6B6B6B] dark:text-gray-400 hover:text-[#C17B4D] dark:hover:text-[#D49A6A] transition-colors"
             >
               Categories
             </Link>
-            <ChevronLeft size={14} className="rotate-180" />
+            <ChevronLeft size={14} className="rotate-180 text-[#6B6B6B]" />
             <Link
               href={`/categories/${product.category.toLowerCase()}`}
-              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="text-[#6B6B6B] dark:text-gray-400 hover:text-[#C17B4D] dark:hover:text-[#D49A6A] transition-colors"
             >
               {product.category}
             </Link>
-            <ChevronLeft size={14} className="rotate-180" />
-            <span className="text-gray-900 dark:text-white font-medium truncate max-w-[200px]">
+            <ChevronLeft size={14} className="rotate-180 text-[#6B6B6B]" />
+            <span className="text-[#2C2C2C] dark:text-white font-medium truncate max-w-[200px]">
               {product.name}
             </span>
           </nav>
@@ -339,8 +339,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Left Column - Product Images */}
           <div className="lg:w-1/2">
             {/* Main Image */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 mb-4">
-              <div className="aspect-square rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 mb-4 border border-[#E8E0D8] dark:border-gray-800">
+              <div className="aspect-square rounded-xl bg-gradient-to-br from-[#F4EFEA] to-[#E8E0D8] dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
                 <div className="text-8xl">🎧</div>
               </div>
             </div>
@@ -350,9 +350,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.images.map((image, index) => (
                 <button
                   key={index}
-                  className="flex-shrink-0 w-20 h-20 rounded-lg bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 overflow-hidden"
+                  className="flex-shrink-0 w-20 h-20 rounded-lg bg-white dark:bg-gray-800 border-2 border-[#E8E0D8] dark:border-gray-700 hover:border-[#C17B4D] dark:hover:border-[#D49A6A] overflow-hidden transition-colors"
                 >
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                  <div className="w-full h-full flex items-center justify-center bg-[#F4EFEA] dark:bg-gray-700">
                     <span className="text-2xl">🎧</span>
                   </div>
                 </button>
@@ -361,69 +361,69 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Trust Badges */}
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3 border border-[#E8E0D8] dark:border-gray-800">
+                <div className="h-10 w-10 rounded-full bg-[#6B8E6B]/10 dark:bg-[#6B8E6B]/30 flex items-center justify-center">
                   <Truck
-                    className="text-green-600 dark:text-green-400"
+                    className="text-[#6B8E6B] dark:text-[#8BAA8B]"
                     size={20}
                   />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="font-medium text-[#2C2C2C] dark:text-white">
                     Free Shipping
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                     On orders over $50
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3 border border-[#E8E0D8] dark:border-gray-800">
+                <div className="h-10 w-10 rounded-full bg-[#2C3E3E]/10 dark:bg-[#2C3E3E]/30 flex items-center justify-center">
                   <Shield
-                    className="text-blue-600 dark:text-blue-400"
+                    className="text-[#2C3E3E] dark:text-[#4A6B6B]"
                     size={20}
                   />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="font-medium text-[#2C2C2C] dark:text-white">
                     2-Year Warranty
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                     Manufacturer warranty
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3 border border-[#E8E0D8] dark:border-gray-800">
+                <div className="h-10 w-10 rounded-full bg-[#C17B4D]/10 dark:bg-[#C17B4D]/30 flex items-center justify-center">
                   <RefreshCw
-                    className="text-purple-600 dark:text-purple-400"
+                    className="text-[#C17B4D] dark:text-[#D49A6A]"
                     size={20}
                   />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="font-medium text-[#2C2C2C] dark:text-white">
                     30-Day Returns
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                     Easy return policy
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3 border border-[#E8E0D8] dark:border-gray-800">
+                <div className="h-10 w-10 rounded-full bg-[#D4C4B7]/20 dark:bg-[#D4C4B7]/30 flex items-center justify-center">
                   <Award
-                    className="text-amber-600 dark:text-amber-400"
+                    className="text-[#C17B4D] dark:text-[#D49A6A]"
                     size={20}
                   />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="font-medium text-[#2C2C2C] dark:text-white">
                     Premium Quality
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                     Verified reviews
                   </div>
                 </div>
@@ -433,38 +433,38 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {/* Right Column - Product Info */}
           <div className="lg:w-1/2">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 border border-[#E8E0D8] dark:border-gray-800">
               {/* Product Header */}
               <div className="mb-6">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <Link
                     href={`/categories/${product.category.toLowerCase()}`}
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    className="text-sm font-medium text-[#C17B4D] dark:text-[#D49A6A] hover:underline"
                   >
                     {product.category}
                   </Link>
-                  <span className="text-gray-400">•</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-[#E8E0D8]">•</span>
+                  <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                     Brand: <span className="font-medium">{product.brand}</span>
                   </span>
                   {product.isFeatured && (
                     <>
-                      <span className="text-gray-400">•</span>
-                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold rounded-full">
+                      <span className="text-[#E8E0D8]">•</span>
+                      <span className="px-2 py-1 bg-[#C17B4D]/10 dark:bg-[#C17B4D]/30 text-[#C17B4D] text-xs font-bold rounded-full">
                         Featured
                       </span>
                     </>
                   )}
                 </div>
 
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                <h1 className="text-2xl md:text-3xl font-bold text-[#2C2C2C] dark:text-white mb-4">
                   {product.name}
                 </h1>
 
                 {/* Rating */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="flex text-amber-500">
+                    <div className="flex text-[#C17B4D]">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
@@ -477,14 +477,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         />
                       ))}
                     </div>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
+                    <span className="text-lg font-bold text-[#2C2C2C] dark:text-white">
                       {product.averageRating.toFixed(1)}
                     </span>
                   </div>
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-[#6B6B6B] dark:text-gray-400">
                     ({product.reviewCount} reviews)
                   </span>
-                  <span className="text-green-600 dark:text-green-400 font-medium">
+                  <span className="text-[#6B8E6B] dark:text-[#8BAA8B] font-medium">
                     {product.stock > 10
                       ? "In Stock"
                       : product.stock > 0
@@ -497,15 +497,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {/* Price */}
               <div className="mb-6">
                 <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+                  <span className="text-3xl md:text-4xl font-bold text-[#2C2C2C] dark:text-white">
                     ${product.price.toFixed(2)}
                   </span>
                   {product.comparePrice && (
                     <>
-                      <span className="text-xl line-through text-gray-400 dark:text-gray-600">
+                      <span className="text-xl line-through text-[#6B6B6B] dark:text-gray-500">
                         ${product.comparePrice.toFixed(2)}
                       </span>
-                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-bold rounded">
+                      <span className="px-2 py-1 bg-[#C17B7B]/10 text-[#C17B7B] font-bold rounded">
                         Save{" "}
                         {Math.round(
                           (1 - product.price / product.comparePrice) * 100,
@@ -515,16 +515,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     </>
                   )}
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-[#6B6B6B] dark:text-gray-400">
                   or 4 interest-free payments of $
                   {(product.price / 4).toFixed(2)} with
-                  <span className="font-medium ml-1">Elista Pay</span>
+                  <span className="font-medium ml-1 text-[#C17B4D]">
+                    Elista Pay
+                  </span>
                 </p>
               </div>
 
               {/* Short Description */}
               <div className="mb-8">
-                <p className="text-gray-700 dark:text-gray-300">
+                <p className="text-[#6B6B6B] dark:text-gray-300">
                   {product.description}
                 </p>
               </div>
@@ -532,17 +534,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {/* Color Selection */}
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-3">
+                  <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-3">
                     Color
                   </h3>
                   <div className="flex flex-wrap gap-3">
                     {product.colors.map((color) => (
                       <button
                         key={color}
-                        className={`px-4 py-2 rounded-lg border-2 ${
+                        className={`px-4 py-2 rounded-lg border-2 transition-all ${
                           color === "Black"
-                            ? "border-blue-500 bg-gray-900 text-white"
-                            : "border-gray-300 dark:border-gray-700 hover:border-blue-500"
+                            ? "border-[#C17B4D] bg-[#2C3E3E] text-white"
+                            : "border-[#E8E0D8] dark:border-gray-700 hover:border-[#C17B4D]"
                         }`}
                       >
                         {color}
@@ -555,17 +557,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {/* Size Selection */}
               {product.sizes && product.sizes.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-3">
+                  <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-3">
                     Size
                   </h3>
                   <div className="flex flex-wrap gap-3">
                     {product.sizes.map((size) => (
                       <button
                         key={size}
-                        className={`px-4 py-2 rounded-lg border-2 ${
+                        className={`px-4 py-2 rounded-lg border-2 transition-all ${
                           size === "Standard"
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                            : "border-gray-300 dark:border-gray-700 hover:border-blue-500"
+                            ? "border-[#C17B4D] bg-[#C17B4D]/10 text-[#C17B4D] font-medium"
+                            : "border-[#E8E0D8] dark:border-gray-700 hover:border-[#C17B4D]"
                         }`}
                       >
                         {size}
@@ -579,14 +581,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div className="mb-8">
                 <div className="flex flex-col sm:flex-row gap-4">
                   {/* Quantity Selector */}
-                  <div className="flex items-center border rounded-xl overflow-hidden">
-                    <button className="h-12 w-12 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <div className="flex items-center border border-[#E8E0D8] dark:border-gray-700 rounded-xl overflow-hidden">
+                    <button className="h-12 w-12 flex items-center justify-center text-[#6B6B6B] dark:text-gray-400 hover:bg-[#F4EFEA] dark:hover:bg-gray-800 transition-colors">
                       <span className="text-xl">−</span>
                     </button>
-                    <div className="h-12 w-16 flex items-center justify-center font-bold text-gray-900 dark:text-white">
+                    <div className="h-12 w-16 flex items-center justify-center font-bold text-[#2C2C2C] dark:text-white">
                       1
                     </div>
-                    <button className="h-12 w-12 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <button className="h-12 w-12 flex items-center justify-center text-[#6B6B6B] dark:text-gray-400 hover:bg-[#F4EFEA] dark:hover:bg-gray-800 transition-colors">
                       <span className="text-xl">+</span>
                     </button>
                   </div>
@@ -595,14 +597,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   <AddToCart product={product} />
 
                   {/* Wishlist Button */}
-                  <Button variant="outline" size="icon" className="h-12 w-12">
-                    <Heart size={20} />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-12 w-12 border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D] transition-all"
+                  >
+                    <Heart size={20} className="text-[#C17B4D]" />
                   </Button>
                 </div>
 
                 {product.stock < 10 && product.stock > 0 && (
-                  <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <div className="mt-4 p-3 bg-[#C17B4D]/10 rounded-xl border border-[#C17B4D]/20">
+                    <div className="flex items-center gap-2 text-[#C17B4D]">
                       <Clock size={16} />
                       <span className="font-medium">
                         Hurry! Only {product.stock} left in stock
@@ -614,32 +620,38 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
               {/* Action Buttons */}
               <div className="flex gap-3 mb-8">
-                <Button variant="outline" className="flex-1 gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2 border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D] transition-all"
+                >
                   <Share2 size={16} />
                   Share
                 </Button>
-                <Button variant="outline" className="flex-1 gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2 border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D] transition-all"
+                >
                   <Package size={16} />
                   Compare
                 </Button>
               </div>
 
               {/* Product Features */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <Check className="text-green-500" size={20} />
+              <div className="space-y-4 pt-4 border-t border-[#E8E0D8] dark:border-gray-800">
+                <div className="flex items-center gap-3 text-[#6B6B6B] dark:text-gray-300">
+                  <Check className="text-[#6B8E6B]" size={20} />
                   <span>Free shipping on orders over $50</span>
                 </div>
-                <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <Check className="text-green-500" size={20} />
+                <div className="flex items-center gap-3 text-[#6B6B6B] dark:text-gray-300">
+                  <Check className="text-[#6B8E6B]" size={20} />
                   <span>30-day money-back guarantee</span>
                 </div>
-                <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <Check className="text-green-500" size={20} />
+                <div className="flex items-center gap-3 text-[#6B6B6B] dark:text-gray-300">
+                  <Check className="text-[#6B8E6B]" size={20} />
                   <span>2-year manufacturer warranty</span>
                 </div>
-                <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                  <Check className="text-green-500" size={20} />
+                <div className="flex items-center gap-3 text-[#6B6B6B] dark:text-gray-300">
+                  <Check className="text-[#6B8E6B]" size={20} />
                   <span>24/7 customer support</span>
                 </div>
               </div>
@@ -649,18 +661,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Product Details Tabs */}
         <div className="mt-12">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg overflow-hidden border border-[#E8E0D8] dark:border-gray-800">
             {/* Tab Headers */}
-            <div className="border-b dark:border-gray-800">
+            <div className="border-b border-[#E8E0D8] dark:border-gray-800">
               <div className="flex overflow-x-auto">
                 {["Description", "Specifications", "Features", "Reviews"].map(
                   (tab) => (
                     <button
                       key={tab}
-                      className={`px-6 py-4 font-medium whitespace-nowrap border-b-2 ${
+                      className={`px-6 py-4 font-medium whitespace-nowrap border-b-2 transition-colors ${
                         tab === "Description"
-                          ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                          : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          ? "border-[#C17B4D] text-[#C17B4D]"
+                          : "border-transparent text-[#6B6B6B] dark:text-gray-400 hover:text-[#2C2C2C] dark:hover:text-white"
                       }`}
                     >
                       {tab}
@@ -674,10 +686,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <div className="p-6 md:p-8">
               {/* Description Tab */}
               <div className="prose prose-lg dark:prose-invert max-w-none">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-white mb-6">
                   Product Description
                 </h2>
-                <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                <div className="text-[#6B6B6B] dark:text-gray-300 whitespace-pre-line">
                   {product.longDescription || product.description}
                 </div>
               </div>
@@ -685,14 +697,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {/* Features List */}
               {product.features && (
                 <div className="mt-8">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  <h3 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-4">
                     Key Features
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {product.features.map((feature, index) => (
                       <div key={index} className="flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                        <span className="text-gray-700 dark:text-gray-300">
+                        <div className="h-2 w-2 rounded-full bg-[#C17B4D]"></div>
+                        <span className="text-[#6B6B6B] dark:text-gray-300">
                           {feature}
                         </span>
                       </div>
@@ -704,10 +716,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {/* Specifications Table */}
               {product.specifications && (
                 <div className="mt-8">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  <h3 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-4">
                     Specifications
                   </h3>
-                  <div className="border rounded-xl overflow-hidden">
+                  <div className="border border-[#E8E0D8] dark:border-gray-700 rounded-xl overflow-hidden">
                     <table className="w-full">
                       <tbody>
                         {Object.entries(product.specifications).map(
@@ -716,14 +728,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                               key={key}
                               className={
                                 index % 2 === 0
-                                  ? "bg-gray-50 dark:bg-gray-900/50"
+                                  ? "bg-[#FDF8F5] dark:bg-gray-900/50"
                                   : "bg-white dark:bg-gray-900"
                               }
                             >
-                              <td className="px-6 py-4 border-r dark:border-gray-800 font-medium text-gray-700 dark:text-gray-300">
+                              <td className="px-6 py-4 border-r border-[#E8E0D8] dark:border-gray-800 font-medium text-[#2C2C2C] dark:text-gray-300">
                                 {key}
                               </td>
-                              <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                              <td className="px-6 py-4 text-[#6B6B6B] dark:text-gray-400">
                                 {value}
                               </td>
                             </tr>
@@ -740,23 +752,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Reviews Section */}
         <div className="mt-12">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 border border-[#E8E0D8] dark:border-gray-800">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-white">
                   Customer Reviews
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-[#6B6B6B] dark:text-gray-400 mt-2">
                   {product.reviewCount} verified reviews
                 </p>
               </div>
-              <Button>Write a Review</Button>
+              <Button className="bg-[#2C3E3E] hover:bg-[#4A6B6B]">
+                Write a Review
+              </Button>
             </div>
 
             {/* Review Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="text-center p-6 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-center p-6 bg-[#FDF8F5] dark:bg-gray-800 rounded-xl border border-[#E8E0D8] dark:border-gray-700">
+                <div className="text-5xl font-bold text-[#2C2C2C] dark:text-white mb-2">
                   {product.averageRating.toFixed(1)}
                 </div>
                 <div className="flex justify-center mb-2">
@@ -769,11 +783,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                           ? "currentColor"
                           : "none"
                       }
-                      className="text-amber-500"
+                      className="text-[#C17B4D]"
                     />
                   ))}
                 </div>
-                <div className="text-gray-600 dark:text-gray-400">
+                <div className="text-[#6B6B6B] dark:text-gray-400">
                   Overall Rating
                 </div>
               </div>
@@ -785,18 +799,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     return (
                       <div key={stars} className="flex items-center gap-3">
                         <div className="flex items-center gap-1 w-16">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="text-sm font-medium text-[#2C2C2C] dark:text-white">
                             {stars}
                           </span>
-                          <Star size={14} className="text-amber-500" />
+                          <Star size={14} className="text-[#C17B4D]" />
                         </div>
-                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-[#F4EFEA] dark:bg-gray-700 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-amber-500 rounded-full"
+                            className="h-full bg-[#C17B4D] rounded-full"
                             style={{ width: `${percentage}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
+                        <span className="text-sm text-[#6B6B6B] dark:text-gray-400 w-12 text-right">
                           {Math.round(percentage)}%
                         </span>
                       </div>
@@ -811,41 +825,41 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {[1, 2, 3].map((review) => (
                 <div
                   key={review}
-                  className="border-b dark:border-gray-800 pb-6 last:border-0"
+                  className="border-b border-[#E8E0D8] dark:border-gray-800 pb-6 last:border-0"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h4 className="font-bold text-gray-900 dark:text-white">
+                      <h4 className="font-bold text-[#2C2C2C] dark:text-white">
                         Excellent Product!
                       </h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <div className="flex text-amber-500">
+                        <div className="flex text-[#C17B4D]">
                           {[...Array(5)].map((_, i) => (
                             <Star key={i} size={14} fill="currentColor" />
                           ))}
                         </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                           by Alex Johnson • 2 weeks ago
                         </span>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-[#6B8E6B]">
                       Verified Purchase
                     </div>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300">
+                  <p className="text-[#6B6B6B] dark:text-gray-300">
                     Absolutely love these headphones! The noise cancellation is
                     incredible and the battery life lasts through my entire work
                     week. Highly recommend!
                   </p>
                   <div className="flex gap-2 mt-4">
-                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded">
+                    <span className="px-2 py-1 bg-[#F4EFEA] dark:bg-gray-800 text-[#6B6B6B] dark:text-gray-300 text-xs rounded">
                       Great Sound
                     </span>
-                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded">
+                    <span className="px-2 py-1 bg-[#F4EFEA] dark:bg-gray-800 text-[#6B6B6B] dark:text-gray-300 text-xs rounded">
                       Comfortable
                     </span>
-                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded">
+                    <span className="px-2 py-1 bg-[#F4EFEA] dark:bg-gray-800 text-[#6B6B6B] dark:text-gray-300 text-xs rounded">
                       Long Battery
                     </span>
                   </div>
@@ -854,7 +868,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             <div className="text-center mt-8">
-              <Button variant="outline">Load More Reviews</Button>
+              <Button
+                variant="outline"
+                className="border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D]"
+              >
+                Load More Reviews
+              </Button>
             </div>
           </div>
         </div>
@@ -863,12 +882,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {related.length > 0 && (
           <div className="mt-12">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-white">
                 You May Also Like
               </h2>
               <Link
                 href={`/categories/${product.category.toLowerCase()}`}
-                className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                className="text-[#C17B4D] hover:text-[#D49A6A] transition-colors font-medium"
               >
                 View All {product.category}
               </Link>
@@ -884,7 +903,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Recently Viewed */}
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
+          <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-white mb-8">
             Recently Viewed
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

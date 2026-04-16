@@ -59,7 +59,7 @@ export interface Product {
   description: string;
   price: number;
   discountPercentage: number;
-  images: string[];
+  images: string[] | ProductImage[];
   category: string;
   brand: string;
   rating: number;

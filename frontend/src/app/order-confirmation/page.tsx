@@ -57,28 +57,28 @@ export default function OrderConfirmationPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12">
+    <div className="min-h-screen bg-[#FDF8F5] dark:bg-[#2C2C2C] py-12">
       <div className="container mx-auto px-4 md:px-8 max-w-4xl">
         {/* Success Header */}
         <div className="text-center mb-12">
-          <div className="h-24 w-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="h-24 w-24 bg-[#6B8E6B]/10 dark:bg-[#6B8E6B]/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle
-              className="text-green-600 dark:text-green-400"
+              className="text-[#6B8E6B] dark:text-[#8BAA8B]"
               size={48}
             />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#2C2C2C] dark:text-white mb-4">
             Order Confirmed!
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
+          <p className="text-[#6B6B6B] dark:text-gray-400 text-lg">
             Thank you for your purchase. We've sent a confirmation email to your
             inbox.
           </p>
-          <div className="mt-6 bg-white dark:bg-gray-900 rounded-2xl p-6 inline-block">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="mt-6 bg-white dark:bg-gray-900 rounded-2xl p-6 inline-block border border-[#E8E0D8] dark:border-gray-800 shadow-lg">
+            <div className="text-2xl font-bold text-[#2C2C2C] dark:text-white">
               #{orderDetails.orderId}
             </div>
-            <div className="text-gray-600 dark:text-gray-400">
+            <div className="text-[#6B6B6B] dark:text-gray-400">
               Order Date: {orderDetails.date}
             </div>
           </div>
@@ -88,13 +88,13 @@ export default function OrderConfirmationPage() {
           {/* Left Column - Order Timeline */}
           <div className="lg:col-span-2">
             {/* Order Timeline */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 mb-8">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 mb-8 border border-[#E8E0D8] dark:border-gray-800">
+              <h2 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-6">
                 Order Status
               </h2>
               <div className="relative">
                 {/* Timeline Line */}
-                <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-800"></div>
+                <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-[#E8E0D8] dark:bg-gray-800"></div>
 
                 {/* Timeline Steps */}
                 <div className="space-y-8 relative">
@@ -106,21 +106,21 @@ export default function OrderConfirmationPage() {
                     return (
                       <div key={index} className="flex items-start gap-4">
                         <div
-                          className={`h-16 w-16 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
+                          className={`h-16 w-16 rounded-full flex items-center justify-center shrink-0 z-10 transition-all ${
                             isCompleted
-                              ? "bg-green-100 dark:bg-green-900/30"
+                              ? "bg-[#6B8E6B]/10 dark:bg-[#6B8E6B]/30"
                               : isCurrent
-                                ? "bg-blue-100 dark:bg-blue-900/30"
-                                : "bg-gray-100 dark:bg-gray-800"
+                                ? "bg-[#C17B4D]/10 dark:bg-[#C17B4D]/30"
+                                : "bg-[#F4EFEA] dark:bg-gray-800"
                           }`}
                         >
                           <Icon
                             className={
                               isCompleted
-                                ? "text-green-600 dark:text-green-400"
+                                ? "text-[#6B8E6B] dark:text-[#8BAA8B]"
                                 : isCurrent
-                                  ? "text-blue-600 dark:text-blue-400"
-                                  : "text-gray-400 dark:text-gray-500"
+                                  ? "text-[#C17B4D] dark:text-[#D49A6A]"
+                                  : "text-[#6B6B6B] dark:text-gray-500"
                             }
                             size={24}
                           />
@@ -131,17 +131,17 @@ export default function OrderConfirmationPage() {
                             <h3
                               className={`font-bold ${
                                 isCompleted || isCurrent
-                                  ? "text-gray-900 dark:text-white"
-                                  : "text-gray-500 dark:text-gray-400"
+                                  ? "text-[#2C2C2C] dark:text-white"
+                                  : "text-[#6B6B6B] dark:text-gray-400"
                               }`}
                             >
                               {step.label}
                             </h3>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                            <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                               {step.date}
                             </span>
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm">
+                          <p className="text-[#6B6B6B] dark:text-gray-400 text-sm">
                             {isCompleted &&
                               "Your order has been confirmed and is being processed."}
                             {isCurrent &&
@@ -156,17 +156,14 @@ export default function OrderConfirmationPage() {
                 </div>
               </div>
 
-              <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+              <div className="mt-8 p-4 bg-[#2C3E3E]/10 rounded-xl border border-[#2C3E3E]/20">
                 <div className="flex items-center gap-3">
-                  <Truck
-                    className="text-blue-600 dark:text-blue-400"
-                    size={20}
-                  />
+                  <Truck className="text-[#2C3E3E]" size={20} />
                   <div>
-                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    <p className="text-sm font-medium text-[#2C3E3E]">
                       Estimated Delivery: {orderDetails.estimatedDelivery}
                     </p>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    <p className="text-xs text-[#2C3E3E]/80 mt-1">
                       You will receive tracking information via email once your
                       order ships.
                     </p>
@@ -176,19 +173,21 @@ export default function OrderConfirmationPage() {
             </div>
 
             {/* Order Actions */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-[#E8E0D8] dark:border-gray-800">
+              <h2 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-6">
                 What's Next?
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button
                   variant="outline"
-                  className="h-auto py-4 justify-start gap-4"
+                  className="h-auto py-4 justify-start gap-4 border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D] transition-all"
                 >
-                  <Download size={20} />
+                  <Download size={20} className="text-[#C17B4D]" />
                   <div className="text-left">
-                    <div className="font-medium">Download Invoice</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-medium text-[#2C2C2C] dark:text-white">
+                      Download Invoice
+                    </div>
+                    <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                       Get your order receipt
                     </div>
                   </div>
@@ -196,12 +195,14 @@ export default function OrderConfirmationPage() {
 
                 <Button
                   variant="outline"
-                  className="h-auto py-4 justify-start gap-4"
+                  className="h-auto py-4 justify-start gap-4 border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D] transition-all"
                 >
-                  <Share2 size={20} />
+                  <Share2 size={20} className="text-[#C17B4D]" />
                   <div className="text-left">
-                    <div className="font-medium">Share Order</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-medium text-[#2C2C2C] dark:text-white">
+                      Share Order
+                    </div>
+                    <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                       Share with friends
                     </div>
                   </div>
@@ -210,12 +211,14 @@ export default function OrderConfirmationPage() {
                 <Link href="/track-order" className="block">
                   <Button
                     variant="outline"
-                    className="h-auto py-4 justify-start gap-4 w-full"
+                    className="h-auto py-4 justify-start gap-4 w-full border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D] transition-all"
                   >
-                    <Truck size={20} />
+                    <Truck size={20} className="text-[#C17B4D]" />
                     <div className="text-left">
-                      <div className="font-medium">Track Order</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="font-medium text-[#2C2C2C] dark:text-white">
+                        Track Order
+                      </div>
+                      <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                         Follow your shipment
                       </div>
                     </div>
@@ -225,12 +228,14 @@ export default function OrderConfirmationPage() {
                 <Link href="/account/orders" className="block">
                   <Button
                     variant="outline"
-                    className="h-auto py-4 justify-start gap-4 w-full"
+                    className="h-auto py-4 justify-start gap-4 w-full border-[#E8E0D8] hover:bg-[#F4EFEA] hover:border-[#C17B4D] transition-all"
                   >
-                    <Package size={20} />
+                    <Package size={20} className="text-[#C17B4D]" />
                     <div className="text-left">
-                      <div className="font-medium">View All Orders</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="font-medium text-[#2C2C2C] dark:text-white">
+                        View All Orders
+                      </div>
+                      <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
                         In your account
                       </div>
                     </div>
@@ -244,42 +249,40 @@ export default function OrderConfirmationPage() {
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               {/* Order Summary */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 mb-6 border border-[#E8E0D8] dark:border-gray-800">
+                <h2 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-6">
                   Order Summary
                 </h2>
 
                 <div className="space-y-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-[#6B6B6B] dark:text-gray-400">
                       Items ({orderDetails.items})
                     </span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="font-medium text-[#2C2C2C] dark:text-white">
                       $179.98
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-[#6B6B6B] dark:text-gray-400">
                       Shipping
                     </span>
-                    <span className="font-medium text-green-600 dark:text-green-400">
-                      FREE
-                    </span>
+                    <span className="font-medium text-[#6B8E6B]">FREE</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-[#6B6B6B] dark:text-gray-400">
                       Tax
                     </span>
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="font-medium text-[#2C2C2C] dark:text-white">
                       $10.00
                     </span>
                   </div>
-                  <div className="pt-4 border-t dark:border-gray-800">
+                  <div className="pt-4 border-t border-[#E8E0D8] dark:border-gray-800">
                     <div className="flex justify-between text-lg font-bold">
-                      <span className="text-gray-900 dark:text-white">
+                      <span className="text-[#2C2C2C] dark:text-white">
                         Total
                       </span>
-                      <span className="text-gray-900 dark:text-white">
+                      <span className="text-[#2C2C2C] dark:text-white">
                         ${orderDetails.total.toFixed(2)}
                       </span>
                     </div>
@@ -288,15 +291,15 @@ export default function OrderConfirmationPage() {
               </div>
 
               {/* Shipping Information */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 mb-6 border border-[#E8E0D8] dark:border-gray-800">
+                <h2 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-4">
                   Shipping To
                 </h2>
                 <div className="space-y-2">
-                  <p className="font-medium text-gray-900 dark:text-white">
+                  <p className="font-medium text-[#2C2C2C] dark:text-white">
                     {orderDetails.shippingAddress.name}
                   </p>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p className="text-[#6B6B6B] dark:text-gray-400">
                     {orderDetails.shippingAddress.street}
                     <br />
                     {orderDetails.shippingAddress.city},{" "}
@@ -309,21 +312,21 @@ export default function OrderConfirmationPage() {
               </div>
 
               {/* Payment Information */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-[#E8E0D8] dark:border-gray-800">
+                <h2 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-4">
                   Payment Method
                 </h2>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-16 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                    <span className="font-bold text-gray-700 dark:text-gray-300">
+                  <div className="h-10 w-16 bg-[#F4EFEA] dark:bg-gray-800 rounded flex items-center justify-center">
+                    <span className="font-bold text-[#2C2C2C] dark:text-gray-300">
                       VISA
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="font-medium text-[#2C2C2C] dark:text-white">
                       {orderDetails.paymentMethod}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
                       Paid on {orderDetails.date}
                     </p>
                   </div>
@@ -333,21 +336,60 @@ export default function OrderConfirmationPage() {
               {/* Continue Shopping */}
               <div className="mt-6">
                 <Link href="/" className="block w-full">
-                  <Button className="w-full gap-2">
+                  <Button className="w-full gap-2 bg-[#2C3E3E] hover:bg-[#4A6B6B] transition-all">
                     <Home size={16} />
                     Continue Shopping
                   </Button>
                 </Link>
-                <p className="text-center text-gray-600 dark:text-gray-400 mt-4 text-sm">
+                <p className="text-center text-[#6B6B6B] dark:text-gray-400 mt-4 text-sm">
                   Questions about your order?{" "}
                   <Link
                     href="/contact"
-                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                    className="text-[#C17B4D] hover:text-[#D49A6A] transition-colors"
                   >
                     Contact Support
                   </Link>
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Information Section */}
+        <div className="mt-12 pt-8 border-t border-[#E8E0D8] dark:border-gray-800">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="h-12 w-12 rounded-full bg-[#2C3E3E]/10 flex items-center justify-center mx-auto mb-3">
+                <Package className="text-[#2C3E3E]" size={20} />
+              </div>
+              <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-1">
+                Need Help?
+              </h3>
+              <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                Contact our support team
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="h-12 w-12 rounded-full bg-[#C17B4D]/10 flex items-center justify-center mx-auto mb-3">
+                <Truck className="text-[#C17B4D]" size={20} />
+              </div>
+              <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-1">
+                Track Your Order
+              </h3>
+              <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                Get real-time updates
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="h-12 w-12 rounded-full bg-[#6B8E6B]/10 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="text-[#6B8E6B]" size={20} />
+              </div>
+              <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-1">
+                Easy Returns
+              </h3>
+              <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                30-day return policy
+              </p>
             </div>
           </div>
         </div>

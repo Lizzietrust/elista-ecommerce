@@ -36,12 +36,12 @@ export default async function ProductsPage({
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 bg-[#FDF8F5] dark:bg-[#2C2C2C] min-h-screen">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-4xl font-bold text-[#2C2C2C] dark:text-white mb-2">
           Our Products
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-[#6B6B6B] dark:text-gray-400">
           Discover our collection of {totalCount} amazing products
         </p>
       </div>
@@ -62,7 +62,7 @@ export default async function ProductsPage({
         <div className="lg:w-3/4">
           {/* Header with sort and results count */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
               Showing {(page - 1) * pageSize + 1} -{" "}
               {Math.min(page * pageSize, totalCount)} of {totalCount} products
             </div>
@@ -86,11 +86,26 @@ export default async function ProductsPage({
               )}
             </>
           ) : (
-            <div className="text-center py-16">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-[#E8E0D8] dark:border-gray-800">
+              <div className="h-20 w-20 bg-[#F4EFEA] dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  className="w-10 h-10 text-[#6B6B6B]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-[#2C2C2C] dark:text-white mb-2">
                 No products found
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-[#6B6B6B] dark:text-gray-400">
                 Try adjusting your filters or search criteria
               </p>
             </div>

@@ -1,75 +1,81 @@
 @import "tailwindcss";
 
 @theme {
+  /* Neutral & Earthy Color Palette for Elista Ecommerce */
+
   /* Backgrounds - Warm and inviting */
-  --color-background: #fdf8f5; /* Warm cream - main background */
-  --color-background-secondary: #f4efea; /* Slightly darker cream */
+  --color-background: #fdf8f5;
+  --color-background-secondary: #f4efea;
+  --color-background-tertiary: #e8e0d8;
 
-  /* Foreground/Text Colors - Soft and readable */
-  --color-foreground: #2c2c2c; /* Soft black - primary text */
-  --color-foreground-muted: #6b6b6b; /* Muted gray - secondary text */
-  --color-foreground-light: #ffffff; /* White text for dark backgrounds */
-
-  /* Card & Surface Colors */
-  --color-card: #ffffff; /* Pure white for cards */
-  --color-card-foreground: #2c2c2c; /* Dark text on cards */
-  --color-popover: #ffffff; /* White for popups/modals */
-  --color-popover-foreground: #2c2c2c;
+  /* Foreground/Text Colors */
+  --color-foreground: #2c2c2c;
+  --color-foreground-muted: #6b6b6b;
+  --color-foreground-light: #ffffff;
 
   /* Primary - Deep Forest Green */
-  --color-primary: #2c3e3e; /* Deep forest green - headers, nav, buttons */
-  --color-primary-foreground: #ffffff; /* White text on primary */
-  --color-primary-light: #4a6b6b; /* Lighter forest green for hover */
-  --color-primary-dark: #1a2a2a; /* Darker for active states */
+  --color-primary: #2c3e3e;
+  --color-primary-foreground: #ffffff;
+  --color-primary-light: #4a6b6b;
+  --color-primary-dark: #1a2a2a;
 
   /* Secondary - Warm Beige */
-  --color-secondary: #d4c4b7; /* Warm beige - backgrounds, cards */
-  --color-secondary-foreground: #2c2c2c; /* Dark text on secondary */
-  --color-secondary-light: #e8ded5; /* Lighter beige */
-  --color-secondary-dark: #b8a99a; /* Darker beige for borders */
-
-  /* Muted/Subtle Elements */
-  --color-muted: #f4efea; /* Muted cream backgrounds */
-  --color-muted-foreground: #6b6b6b; /* Muted text */
+  --color-secondary: #d4c4b7;
+  --color-secondary-foreground: #2c2c2c;
+  --color-secondary-light: #e8ded5;
+  --color-secondary-dark: #b8a99a;
 
   /* Accent - Terracotta */
-  --color-accent: #c17b4d; /* Terracotta - CTAs, highlights */
-  --color-accent-foreground: #ffffff; /* White text on accent */
-  --color-accent-light: #d49a6a; /* Lighter terracotta for hover */
-  --color-accent-dark: #a05e38; /* Darker for active states */
+  --color-accent: #c17b4d;
+  --color-accent-foreground: #ffffff;
+  --color-accent-light: #d49a6a;
+  --color-accent-dark: #a05e38;
 
-  /* Destructive/Error - Muted Terracotta */
-  --color-destructive: #c17b7b; /* Muted terracotta for errors */
-  --color-destructive-foreground: #ffffff;
+  /* UI Elements */
+  --color-muted: #f4efea;
+  --color-muted-foreground: #6b6b6b;
+  --color-border: #e8e0d8;
+  --color-input: #ffffff;
+  --color-ring: #c17b4d;
 
-  /* Success - Sage Green */
-  --color-success: #6b8e6b; /* Sage green for success messages */
+  /* Status Colors */
+  --color-success: #6b8e6b;
   --color-success-foreground: #ffffff;
-
-  /* Borders & Inputs - Soft and natural */
-  --color-border: #e8e0d8; /* Soft beige border */
-  --color-input: #ffffff; /* White input backgrounds */
-  --color-input-border: #e8e0d8; /* Border color for inputs */
-  --color-ring: #c17b4d; /* Terracotta focus rings */
+  --color-success-light: #8baa8b;
+  --color-destructive: #c17b7b;
+  --color-destructive-foreground: #ffffff;
+  --color-destructive-light: #d49a9a;
+  --color-warning: #d4a56b;
+  --color-warning-foreground: #2c2c2c;
+  --color-info: #4a6b6b;
+  --color-info-foreground: #ffffff;
 
   /* Additional Earthy Accents */
-  --color-earth-warm: #c17b4d; /* Terracotta */
-  --color-earth-clay: #8b6b4d; /* Clay brown */
-  --color-earth-stone: #9ca3af; /* Stone gray */
-  --color-forest: #2c3e3e; /* Forest green */
-  --color-sage: #6b8e6b; /* Sage green */
-  --color-sand: #d4c4b7; /* Warm sand */
-  --color-cream: #fdf8f5; /* Cream */
+  --color-earth-clay: #8b6b4d;
+  --color-earth-stone: #9ca3af;
+  --color-earth-sand: #d4c4b7;
+  --color-earth-cream: #fdf8f5;
+  --color-forest: #2c3e3e;
+  --color-sage: #6b8e6b;
+  --color-terracotta: #c17b4d;
 
-  /* Border Radius - Keep consistent */
-  --radius: 0.5rem; /* 8px radius */
-  --radius-lg: 0.75rem; /* 12px for cards */
-  --radius-sm: 0.25rem; /* 4px for small elements */
+  /* Border Radius */
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Spacing */
+  --spacing: 0.25rem;
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
@@ -78,9 +84,11 @@
     font-feature-settings:
       "rlig" 1,
       "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Improve text readability */
+  /* Typography */
   h1,
   h2,
   h3,
@@ -88,13 +96,13 @@
   h5,
   h6 {
     color: var(--color-foreground);
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.02em;
   }
 
   /* Link styles */
   a {
-    color: var(--color-primary);
+    color: var(--color-foreground);
     transition: color 0.2s ease;
   }
 
@@ -104,21 +112,43 @@
 
   /* Selection color */
   ::selection {
-    background-color: var(--color-primary-light);
+    background-color: var(--color-accent);
     color: var(--color-foreground-light);
+  }
+
+  ::-webkit-selection {
+    background-color: var(--color-accent);
+    color: var(--color-foreground-light);
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-background-secondary);
+    border-radius: var(--radius);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-secondary-dark);
+    border-radius: var(--radius);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
   }
 }
 
 @layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
   /* Custom utility classes for the earthy theme */
   .bg-gradient-warm {
     background: linear-gradient(
@@ -136,6 +166,31 @@
     );
   }
 
+  .bg-gradient-sage {
+    background: linear-gradient(
+      135deg,
+      var(--color-success) 0%,
+      var(--color-success-light) 100%
+    );
+  }
+
+  .bg-gradient-terracotta {
+    background: linear-gradient(
+      135deg,
+      var(--color-terracotta) 0%,
+      var(--color-accent-light) 100%
+    );
+  }
+
+  .bg-gradient-forest {
+    background: linear-gradient(
+      135deg,
+      var(--color-forest) 0%,
+      var(--color-primary-light) 100%
+    );
+  }
+
+  /* Card hover effects */
   .card-hover {
     transition: all 0.3s ease;
   }
@@ -156,10 +211,44 @@
     background-clip: text;
     color: transparent;
   }
+
+  .text-gradient-warm {
+    background: linear-gradient(
+      135deg,
+      var(--color-secondary-dark) 0%,
+      var(--color-terracotta) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* No scrollbar utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale {
+    animation: scale 0.2s ease-in-out;
+  }
 }
 
-/* Optional: Add these component styles */
 @layer components {
+  /* Button Components */
   .btn-primary {
     background-color: var(--color-primary);
     color: var(--color-primary-foreground);
@@ -204,6 +293,7 @@
     transform: translateY(-1px);
   }
 
+  /* Card Component */
   .card {
     background-color: var(--color-card);
     border-radius: var(--radius-lg);
@@ -216,9 +306,10 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   }
 
+  /* Input Component */
   .input {
     background-color: var(--color-input);
-    border: 1px solid var(--color-input-border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius);
     padding: 0.5rem 0.75rem;
     transition: all 0.2s ease;
@@ -228,5 +319,81 @@
     outline: none;
     border-color: var(--color-ring);
     box-shadow: 0 0 0 3px rgba(193, 123, 77, 0.1);
+  }
+
+  /* Container Component */
+  .container-custom {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-custom {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-custom {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Dark mode specific overrides */
+.dark {
+  --color-background: #2c2c2c;
+  --color-background-secondary: #1a1a1a;
+  --color-foreground: #ffffff;
+  --color-foreground-muted: #a3a3a3;
+  --color-muted: #3a3a3a;
+  --color-border: #404040;
+  --color-input: #3a3a3a;
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.875rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  h3 {
+    font-size: 1.25rem;
   }
 }

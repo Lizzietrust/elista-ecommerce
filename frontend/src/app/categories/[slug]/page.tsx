@@ -49,7 +49,6 @@ const getCategoryName = (category: Category | string): string => {
 // Helper function to get category object safely
 const getCategoryObject = (category: Category | string): Category | null => {
   if (typeof category === "string") {
-    // Return a minimal category object for string categories
     return {
       _id: "",
       name: category,
@@ -651,14 +650,14 @@ export default async function CategoryPage({
     (product) => product.price >= minPrice && product.price <= maxPrice,
   );
 
-  // Apply brand filter (if any selected)
+  // Apply brand filter
   if (selectedBrands.length > 0 && selectedBrands[0] !== "") {
     filteredProducts = filteredProducts.filter(
       (product) => product.brand && selectedBrands.includes(product.brand),
     );
   }
 
-  // Apply feature/tag filter with proper typing
+  // Apply feature/tag filter
   if (selectedFeatures.length > 0 && selectedFeatures[0] !== "") {
     filteredProducts = filteredProducts.filter((product) =>
       product.tags?.some((tag: string) => selectedFeatures.includes(tag)),
@@ -675,12 +674,10 @@ export default async function CategoryPage({
       case "rating":
         return (b.averageRating || 0) - (a.averageRating || 0);
       case "newest":
-        // Using createdAt for newest sorting
         return (
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-      default: // 'featured'
-        // Featured products first, then by rating
+      default:
         if (a.isFeatured && !b.isFeatured) return -1;
         if (!a.isFeatured && b.isFeatured) return 1;
         return (b.averageRating || 0) - (a.averageRating || 0);
@@ -703,24 +700,24 @@ export default async function CategoryPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Category Hero */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+    <div className="min-h-screen bg-[#FDF8F5] dark:bg-[#2C2C2C]">
+      {/* Category Hero - Earthy Gradient */}
+      <div className="bg-gradient-to-r from-[#2C3E3E] to-[#4A6B6B] text-white">
         <div className="container mx-auto px-4 md:px-8 py-8 md:py-12">
           <div className="max-w-4xl">
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-2 text-sm text-blue-200 mb-6">
+            <nav className="flex items-center gap-2 text-sm text-[#D4C4B7] mb-6">
               <Link href="/" className="hover:text-white transition-colors">
                 Home
               </Link>
-              <ChevronDown size={14} className="rotate-270" />
+              <ChevronDown size={14} className="-rotate-90" />
               <Link
                 href="/categories"
                 className="hover:text-white transition-colors"
               >
                 Categories
               </Link>
-              <ChevronDown size={14} className="rotate-270" />
+              <ChevronDown size={14} className="-rotate-90" />
               <span className="font-medium text-white">
                 {categoryData.name}
               </span>
@@ -732,7 +729,7 @@ export default async function CategoryPage({
                 <h1 className="text-3xl md:text-5xl font-bold mb-4">
                   {categoryData.name}
                 </h1>
-                <p className="text-xl text-blue-100 mb-6 max-w-2xl">
+                <p className="text-xl text-[#D4C4B7] mb-6 max-w-2xl">
                   {categoryData.description}
                 </p>
 
@@ -752,7 +749,7 @@ export default async function CategoryPage({
                     <span>Free Shipping Over $50</span>
                   </div>
                   {categoryData.stats.newArrivals > 0 && (
-                    <div className="bg-green-500/30 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
+                    <div className="bg-[#6B8E6B]/50 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
                       <span className="font-medium">
                         {categoryData.stats.newArrivals} New Arrivals
                       </span>
@@ -768,7 +765,7 @@ export default async function CategoryPage({
                     <div className="text-2xl font-bold">
                       {filteredProducts.length}
                     </div>
-                    <div className="text-sm text-blue-200">Products Found</div>
+                    <div className="text-sm text-[#D4C4B7]">Products Found</div>
                   </div>
                   <div>
                     <div className="text-xl font-bold">
@@ -781,7 +778,7 @@ export default async function CategoryPage({
                         ...filteredProducts.map((p) => p.price),
                       ).toFixed(2)}
                     </div>
-                    <div className="text-sm text-blue-200">Price Range</div>
+                    <div className="text-sm text-[#D4C4B7]">Price Range</div>
                   </div>
                 </div>
               </div>
@@ -795,9 +792,9 @@ export default async function CategoryPage({
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sticky top-24">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sticky top-24 border border-[#E8E0D8] dark:border-gray-800">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#2C2C2C] dark:text-white flex items-center gap-2">
                   <Sliders size={20} />
                   Filters
                 </h2>
@@ -807,7 +804,7 @@ export default async function CategoryPage({
                   selectedFeatures.length > 0) && (
                   <Link
                     href={`/categories/${slug}`}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                    className="text-sm text-[#C17B4D] hover:text-[#D49A6A] transition-colors"
                   >
                     Clear All
                   </Link>
@@ -816,19 +813,18 @@ export default async function CategoryPage({
 
               {/* Price Range Filter */}
               <div className="mb-8">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
                   Price Range
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-[#6B6B6B] dark:text-gray-400">
                       ${minPrice}
                     </span>
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-[#6B6B6B] dark:text-gray-400">
                       ${maxPrice}
                     </span>
                   </div>
-                  {/* In a real app, this would be an interactive range slider */}
                   <div className="space-y-2">
                     {[
                       { label: "Under $25", max: 25 },
@@ -854,8 +850,8 @@ export default async function CategoryPage({
                           })}`}
                           className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
                             isActive
-                              ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                              ? "bg-[#C17B4D]/10 text-[#C17B4D] font-medium"
+                              : "text-[#6B6B6B] dark:text-gray-300 hover:bg-[#F4EFEA] dark:hover:bg-gray-800"
                           }`}
                         >
                           {range.label}
@@ -868,7 +864,7 @@ export default async function CategoryPage({
 
               {/* Brands Filter */}
               <div className="mb-8">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
                   Brands
                 </h3>
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
@@ -897,10 +893,10 @@ export default async function CategoryPage({
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className={`h-4 w-4 rounded border flex items-center justify-center ${
+                            className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${
                               isSelected
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-300 dark:border-gray-700 group-hover:border-blue-500"
+                                ? "bg-[#C17B4D] border-[#C17B4D]"
+                                : "border-[#E8E0D8] dark:border-gray-700 group-hover:border-[#C17B4D]"
                             }`}
                           >
                             {isSelected && (
@@ -908,16 +904,16 @@ export default async function CategoryPage({
                             )}
                           </div>
                           <span
-                            className={`text-sm ${
+                            className={`text-sm transition-colors ${
                               isSelected
-                                ? "text-blue-600 dark:text-blue-400 font-medium"
-                                : "text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                                ? "text-[#C17B4D] font-medium"
+                                : "text-[#6B6B6B] dark:text-gray-300 group-hover:text-[#C17B4D]"
                             }`}
                           >
                             {brand}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-[#6B6B6B] dark:text-gray-400">
                           {brandProductCount}
                         </span>
                       </Link>
@@ -929,7 +925,7 @@ export default async function CategoryPage({
               {/* Features Filter */}
               {categoryData.filters.features.length > 0 && (
                 <div className="mb-8">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                  <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
                     Features
                   </h3>
                   <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
@@ -958,10 +954,10 @@ export default async function CategoryPage({
                         >
                           <div className="flex items-center gap-3">
                             <div
-                              className={`h-4 w-4 rounded border flex items-center justify-center ${
+                              className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${
                                 isSelected
-                                  ? "bg-blue-600 border-blue-600"
-                                  : "border-gray-300 dark:border-gray-700 group-hover:border-blue-500"
+                                  ? "bg-[#C17B4D] border-[#C17B4D]"
+                                  : "border-[#E8E0D8] dark:border-gray-700 group-hover:border-[#C17B4D]"
                               }`}
                             >
                               {isSelected && (
@@ -969,16 +965,16 @@ export default async function CategoryPage({
                               )}
                             </div>
                             <span
-                              className={`text-sm ${
+                              className={`text-sm transition-colors ${
                                 isSelected
-                                  ? "text-blue-600 dark:text-blue-400 font-medium"
-                                  : "text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                                  ? "text-[#C17B4D] font-medium"
+                                  : "text-[#6B6B6B] dark:text-gray-300 group-hover:text-[#C17B4D]"
                               }`}
                             >
                               {feature}
                             </span>
                           </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-[#6B6B6B] dark:text-gray-400">
                             {featureProductCount}
                           </span>
                         </Link>
@@ -990,74 +986,44 @@ export default async function CategoryPage({
 
               {/* Stock Filter */}
               <div className="mb-8">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
                   Stock Status
                 </h3>
                 <div className="space-y-3">
-                  <Link
-                    href={`/categories/${slug}?${createQueryString({
-                      min: minPrice,
-                      max: maxPrice,
-                      brands: selectedBrands.join(","),
-                      features: selectedFeatures.join(","),
-                      sort: selectedSort,
-                      view,
-                    })}`}
-                    className="flex items-center justify-between group"
-                  >
+                  <div className="flex items-center justify-between group cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <div className="h-4 w-4 rounded border border-gray-300 dark:border-gray-700"></div>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                      <div className="h-4 w-4 rounded border border-[#E8E0D8] dark:border-gray-700"></div>
+                      <span className="text-sm text-[#6B6B6B] dark:text-gray-300">
                         In Stock (
                         {filteredProducts.filter((p) => p.stock > 0).length})
                       </span>
                     </div>
-                  </Link>
-                  <Link
-                    href={`/categories/${slug}?${createQueryString({
-                      min: minPrice,
-                      max: maxPrice,
-                      brands: selectedBrands.join(","),
-                      features: selectedFeatures.join(","),
-                      sort: selectedSort,
-                      view,
-                    })}`}
-                    className="flex items-center justify-between group"
-                  >
+                  </div>
+                  <div className="flex items-center justify-between group cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <div className="h-4 w-4 rounded border border-gray-300 dark:border-gray-700"></div>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                      <div className="h-4 w-4 rounded border border-[#E8E0D8] dark:border-gray-700"></div>
+                      <span className="text-sm text-[#6B6B6B] dark:text-gray-300">
                         On Sale (
                         {filteredProducts.filter((p) => p.comparePrice).length})
                       </span>
                     </div>
-                  </Link>
-                  <Link
-                    href={`/categories/${slug}?${createQueryString({
-                      min: minPrice,
-                      max: maxPrice,
-                      brands: selectedBrands.join(","),
-                      features: selectedFeatures.join(","),
-                      sort: selectedSort,
-                      view,
-                    })}`}
-                    className="flex items-center justify-between group"
-                  >
+                  </div>
+                  <div className="flex items-center justify-between group cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <div className="h-4 w-4 rounded border border-gray-300 dark:border-gray-700"></div>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                      <div className="h-4 w-4 rounded border border-[#E8E0D8] dark:border-gray-700"></div>
+                      <span className="text-sm text-[#6B6B6B] dark:text-gray-300">
                         Featured (
                         {filteredProducts.filter((p) => p.isFeatured).length})
                       </span>
                     </div>
-                  </Link>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Category Navigation */}
-            <div className="mt-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+            <div className="mt-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-[#E8E0D8] dark:border-gray-800">
+              <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
                 More Categories
               </h3>
               <div className="space-y-3">
@@ -1067,12 +1033,12 @@ export default async function CategoryPage({
                     <Link
                       key={cat.slug}
                       href={`/categories/${cat.slug}`}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                      className="flex items-center justify-between p-3 rounded-xl hover:bg-[#F4EFEA] dark:hover:bg-gray-800 transition-colors group"
                     >
-                      <span className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                      <span className="text-[#6B6B6B] dark:text-gray-300 group-hover:text-[#C17B4D] transition-colors">
                         {cat.name}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                         {cat.products.length}
                       </span>
                     </Link>
@@ -1084,12 +1050,12 @@ export default async function CategoryPage({
           {/* Products Section */}
           <main className="flex-1">
             {/* Toolbar */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 md:p-6 mb-6">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 md:p-6 mb-6 border border-[#E8E0D8] dark:border-gray-800">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-600 dark:text-gray-400">
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="text-[#6B6B6B] dark:text-gray-400">
                     Showing{" "}
-                    <span className="font-bold text-gray-900 dark:text-white">
+                    <span className="font-bold text-[#2C2C2C] dark:text-white">
                       {filteredProducts.length}
                     </span>{" "}
                     of {categoryData.products.length} products
@@ -1112,7 +1078,7 @@ export default async function CategoryPage({
                             sort: selectedSort,
                             view,
                           })}`}
-                          className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full text-sm hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                          className="flex items-center gap-1 bg-[#C17B4D]/10 text-[#C17B4D] px-3 py-1 rounded-full text-sm hover:bg-[#C17B4D]/20 transition-colors"
                         >
                           <span>
                             ${minPrice} - ${maxPrice}
@@ -1133,7 +1099,7 @@ export default async function CategoryPage({
                             sort: selectedSort,
                             view,
                           })}`}
-                          className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full text-sm hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                          className="flex items-center gap-1 bg-[#C17B4D]/10 text-[#C17B4D] px-3 py-1 rounded-full text-sm hover:bg-[#C17B4D]/20 transition-colors"
                         >
                           <span>{brand}</span>
                           <X size={14} />
@@ -1152,7 +1118,7 @@ export default async function CategoryPage({
                             sort: selectedSort,
                             view,
                           })}`}
-                          className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full text-sm hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                          className="flex items-center gap-1 bg-[#C17B4D]/10 text-[#C17B4D] px-3 py-1 rounded-full text-sm hover:bg-[#C17B4D]/20 transition-colors"
                         >
                           <span>{feature}</span>
                           <X size={14} />
@@ -1164,7 +1130,7 @@ export default async function CategoryPage({
 
                 <div className="flex items-center gap-4">
                   {/* View Toggle */}
-                  <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                  <div className="flex items-center gap-2 bg-[#F4EFEA] dark:bg-gray-800 p-1 rounded-lg">
                     <Link
                       href={`/categories/${slug}?${createQueryString({
                         min: minPrice,
@@ -1174,7 +1140,11 @@ export default async function CategoryPage({
                         sort: selectedSort,
                         view: "grid",
                       })}`}
-                      className={`p-2 rounded ${view === "grid" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"}`}
+                      className={`p-2 rounded transition-colors ${
+                        view === "grid"
+                          ? "bg-white dark:bg-gray-700 text-[#2C3E3E] dark:text-white shadow-sm"
+                          : "text-[#6B6B6B] hover:text-[#C17B4D]"
+                      }`}
                     >
                       <Grid size={20} />
                     </Link>
@@ -1187,7 +1157,11 @@ export default async function CategoryPage({
                         sort: selectedSort,
                         view: "list",
                       })}`}
-                      className={`p-2 rounded ${view === "list" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"}`}
+                      className={`p-2 rounded transition-colors ${
+                        view === "list"
+                          ? "bg-white dark:bg-gray-700 text-[#2C3E3E] dark:text-white shadow-sm"
+                          : "text-[#6B6B6B] hover:text-[#C17B4D]"
+                      }`}
                     >
                       <List size={20} />
                     </Link>
@@ -1208,19 +1182,16 @@ export default async function CategoryPage({
                         })}`;
                         window.location.href = url;
                       }}
-                      className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white pl-4 pr-10 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm"
+                      className="appearance-none bg-white dark:bg-gray-800 border border-[#E8E0D8] dark:border-gray-700 text-[#2C2C2C] dark:text-white pl-4 pr-10 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C17B4D] cursor-pointer text-sm"
                     >
-                      {sortOptions.map((option) => {
-                        const Icon = option.icon;
-                        return (
-                          <option key={option.value} value={option.value}>
-                            Sort by: {option.label}
-                          </option>
-                        );
-                      })}
+                      {sortOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          Sort by: {option.label}
+                        </option>
+                      ))}
                     </select>
                     <ChevronDown
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#6B6B6B] pointer-events-none"
                       size={16}
                     />
                   </div>
@@ -1230,37 +1201,38 @@ export default async function CategoryPage({
 
             {/* Products Grid/List */}
             {filteredProducts.length === 0 ? (
-              <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl shadow-lg">
-                <div className="h-20 w-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Filter className="text-gray-400" size={32} />
+              <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-[#E8E0D8] dark:border-gray-800">
+                <div className="h-20 w-20 bg-[#F4EFEA] dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Filter className="text-[#6B6B6B]" size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-3">
                   No products found
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                <p className="text-[#6B6B6B] dark:text-gray-400 mb-8 max-w-md mx-auto">
                   Try adjusting your filters or browse other categories
                 </p>
                 <Link href={`/categories/${slug}`} className="inline-block">
-                  <Button className="gap-2">Clear All Filters</Button>
+                  <Button className="gap-2 bg-[#2C3E3E] hover:bg-[#4A6B6B]">
+                    Clear All Filters
+                  </Button>
                 </Link>
               </div>
             ) : view === "list" ? (
               // List View
               <div className="space-y-4">
                 {filteredProducts.map((product) => {
-                  const category = getCategoryObject(product.category);
                   const categoryName = getCategoryName(product.category);
 
                   return (
                     <div
                       key={product._id}
-                      className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6"
+                      className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-[#E8E0D8] dark:border-gray-800 hover:shadow-xl transition-shadow"
                     >
                       <div className="flex flex-col md:flex-row gap-6">
                         {/* Product Image */}
                         <div className="md:w-48 flex-shrink-0">
-                          <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden">
-                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-900">
+                          <div className="aspect-square bg-[#F4EFEA] dark:bg-gray-800 rounded-xl overflow-hidden">
+                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#D4C4B7]/20 to-[#C17B4D]/20 dark:from-gray-800 dark:to-gray-900">
                               <span className="text-5xl">🛒</span>
                             </div>
                           </div>
@@ -1271,26 +1243,26 @@ export default async function CategoryPage({
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div>
                               <div className="mb-2">
-                                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                                <span className="text-sm text-[#C17B4D] font-medium">
                                   {categoryName}
                                 </span>
                                 {product.brand && (
-                                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-3">
+                                  <span className="text-sm text-[#6B6B6B] dark:text-gray-400 ml-3">
                                     by {product.brand}
                                   </span>
                                 )}
                               </div>
 
-                              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                              <h3 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-2">
                                 <Link
                                   href={`/products/${product.slug}`}
-                                  className="hover:text-blue-600 dark:hover:text-blue-400"
+                                  className="hover:text-[#C17B4D] transition-colors"
                                 >
                                   {product.name}
                                 </Link>
                               </h3>
 
-                              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                              <p className="text-[#6B6B6B] dark:text-gray-400 mb-4 line-clamp-2">
                                 {product.description}
                               </p>
 
@@ -1300,7 +1272,7 @@ export default async function CategoryPage({
                                   {product.tags.map((tag: string) => (
                                     <span
                                       key={tag}
-                                      className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-full"
+                                      className="px-3 py-1 bg-[#F4EFEA] dark:bg-gray-800 text-[#6B6B6B] dark:text-gray-300 text-sm rounded-full"
                                     >
                                       {tag}
                                     </span>
@@ -1310,7 +1282,7 @@ export default async function CategoryPage({
 
                               {/* Rating */}
                               <div className="flex items-center gap-2 mb-4">
-                                <div className="flex text-amber-500">
+                                <div className="flex text-[#C17B4D]">
                                   {[...Array(5)].map((_, i) => (
                                     <Star
                                       key={i}
@@ -1321,10 +1293,11 @@ export default async function CategoryPage({
                                           ? "currentColor"
                                           : "none"
                                       }
+                                      className="cursor-pointer"
                                     />
                                   ))}
                                 </div>
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
                                   {product.averageRating?.toFixed(1)} (
                                   {product.reviewCount} reviews)
                                 </span>
@@ -1334,11 +1307,11 @@ export default async function CategoryPage({
                             {/* Price & Actions */}
                             <div className="flex-shrink-0">
                               <div className="text-right mb-4">
-                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                <div className="text-2xl font-bold text-[#2C2C2C] dark:text-white">
                                   ${product.price.toFixed(2)}
                                 </div>
                                 {product.comparePrice && (
-                                  <div className="text-lg line-through text-gray-400 dark:text-gray-600">
+                                  <div className="text-sm line-through text-[#6B6B6B] dark:text-gray-500">
                                     ${product.comparePrice.toFixed(2)}
                                   </div>
                                 )}
@@ -1346,12 +1319,15 @@ export default async function CategoryPage({
 
                               <div className="flex flex-col gap-2">
                                 <Link href={`/products/${product.slug}`}>
-                                  <Button variant="outline" className="w-full">
+                                  <Button
+                                    variant="outline"
+                                    className="w-full border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                                  >
                                     View Details
                                   </Button>
                                 </Link>
-                                <Button className="w-full gap-2">
-                                  <span>Add to Cart</span>
+                                <Button className="w-full gap-2 bg-[#2C3E3E] hover:bg-[#4A6B6B]">
+                                  Add to Cart
                                 </Button>
                               </div>
                             </div>
@@ -1363,7 +1339,7 @@ export default async function CategoryPage({
                 })}
               </div>
             ) : (
-              // Grid View (using your ProductCard)
+              // Grid View
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard key={product._id} product={product} />
@@ -1375,7 +1351,12 @@ export default async function CategoryPage({
             {filteredProducts.length > 0 && (
               <div className="mt-12 flex justify-center">
                 <nav className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" disabled>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled
+                    className="border-[#E8E0D8] opacity-50"
+                  >
                     <ChevronDown className="rotate-90" size={16} />
                   </Button>
                   {[1, 2, 3, 4, 5].map((page) => (
@@ -1383,12 +1364,20 @@ export default async function CategoryPage({
                       key={page}
                       variant={page === 1 ? "default" : "outline"}
                       size="icon"
-                      className="w-10 h-10"
+                      className={`w-10 h-10 ${
+                        page === 1
+                          ? "bg-[#2C3E3E] hover:bg-[#4A6B6B]"
+                          : "border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                      }`}
                     >
                       {page}
                     </Button>
                   ))}
-                  <Button variant="outline" size="icon">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                  >
                     <ChevronDown className="-rotate-90" size={16} />
                   </Button>
                 </nav>

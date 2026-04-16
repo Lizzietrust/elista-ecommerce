@@ -397,3 +397,7 @@
     font-size: 1.25rem;
   }
 }
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}

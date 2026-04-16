@@ -14,6 +14,15 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Elista Ecommerce - Modern Online Shopping",
   description: "A modern ecommerce platform built with Next.js and TypeScript",
+  keywords: [
+    "ecommerce",
+    "online shopping",
+    "fashion",
+    "electronics",
+    "home decor",
+  ],
+  authors: [{ name: "Elista" }],
+  viewport: "width=device-width, initial-scale=1",
 };
 
 export default function RootLayout({
@@ -33,12 +42,34 @@ export default function RootLayout({
           >
             <AuthProvider>
               <CartProvider>
-                <div className="flex min-h-screen flex-col">
+                <div className="flex min-h-screen flex-col bg-[#FDF8F5] dark:bg-[#2C2C2C]">
                   <Header />
                   <main className="flex-1">{children}</main>
                   <Footer />
                 </div>
-                <Toaster />
+                <Toaster
+                  position="bottom-right"
+                  toastOptions={{
+                    style: {
+                      background: "#FFFFFF",
+                      color: "#2C2C2C",
+                      border: "1px solid #E8E0D8",
+                      borderRadius: "12px",
+                    },
+                    success: {
+                      style: {
+                        background: "#6B8E6B",
+                        color: "#FFFFFF",
+                      },
+                    },
+                    error: {
+                      style: {
+                        background: "#C17B7B",
+                        color: "#FFFFFF",
+                      },
+                    },
+                  }}
+                />
               </CartProvider>
             </AuthProvider>
           </ThemeProvider>

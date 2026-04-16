@@ -38,19 +38,24 @@ export default function ProductSort({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted hover:text-accent transition-all duration-200">
           Sort by: {currentLabel}
           <ChevronDown className="h-4 w-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent
+        align="end"
+        className="w-56 bg-card border-border shadow-lg"
+      >
         {sortOptions.map((option) => (
           <DropdownMenuItem
             key={option.value}
             onClick={() => handleSortChange(option.value)}
-            className={
-              currentSort === option.value ? "bg-gray-100 dark:bg-gray-800" : ""
-            }
+            className={`cursor-pointer transition-colors duration-200 ${
+              currentSort === option.value
+                ? "bg-accent/10 text-accent font-medium"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
           >
             {option.label}
           </DropdownMenuItem>

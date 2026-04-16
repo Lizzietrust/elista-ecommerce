@@ -58,7 +58,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.slug}`}>
-      <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-border">
         <div className="relative aspect-square overflow-hidden bg-muted">
           <Image
             src={product.images[0]?.url || "/images/placeholder.jpg"}
@@ -71,22 +71,23 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Wishlist Button */}
           <button
             onClick={handleToggleWishlist}
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center transition-colors z-10"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center transition-all duration-200 z-10 hover:bg-muted"
             aria-label={
               productInWishlist ? "Remove from wishlist" : "Add to wishlist"
             }
           >
             <Heart
               size={16}
-              className={`transition-colors ${
+              className={`transition-colors duration-200 ${
                 productInWishlist
-                  ? "fill-red-500 text-red-500"
-                  : "text-gray-700 hover:text-red-500"
+                  ? "fill-destructive text-destructive"
+                  : "text-muted-foreground hover:text-destructive"
               }`}
               fill={productInWishlist ? "currentColor" : "none"}
             />
           </button>
 
+          {/* Featured Badge */}
           {product.isFeatured && (
             <div className="absolute top-2 left-2 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground z-10">
               Featured
@@ -95,27 +96,28 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Stock Status Badge */}
           {product.stock < 10 && product.stock > 0 && (
-            <div className="absolute top-2 left-12 rounded-full bg-amber-500 px-2 py-1 text-xs font-semibold text-white z-10">
+            <div className="absolute top-2 left-20 rounded-full bg-warning px-2 py-1 text-xs font-semibold text-warning-foreground z-10">
               {product.stock} left
             </div>
           )}
 
           {product.stock === 0 && (
-            <div className="absolute top-2 left-2 rounded-full bg-destructive px-2 py-1 text-xs font-semibold text-white z-10">
+            <div className="absolute top-2 left-2 rounded-full bg-destructive px-2 py-1 text-xs font-semibold text-destructive-foreground z-10">
               Out of Stock
             </div>
           )}
 
           {/* Sale Badge */}
           {product.comparePrice && product.comparePrice > product.price && (
-            <div className="absolute bottom-2 left-2 rounded-full bg-red-500 px-2 py-1 text-xs font-semibold text-white z-10">
+            <div className="absolute bottom-2 left-2 rounded-full bg-accent px-2 py-1 text-xs font-semibold text-accent-foreground z-10">
               SALE
             </div>
           )}
 
+          {/* Add to Cart Button */}
           <Button
             size="icon"
-            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 bg-primary hover:bg-primary-light"
             onClick={handleAddToCart}
             disabled={product.stock === 0}
             aria-label="Add to cart"
@@ -123,9 +125,12 @@ export function ProductCard({ product }: ProductCardProps) {
             <ShoppingCart className="h-4 w-4" />
           </Button>
         </div>
+
         <CardContent className="p-4">
           <div className="space-y-2">
-            <h3 className="font-semibold line-clamp-1">{product.name}</h3>
+            <h3 className="font-semibold line-clamp-1 text-foreground group-hover:text-accent transition-colors duration-200">
+              {product.name}
+            </h3>
             <p className="text-sm text-muted-foreground line-clamp-2">
               {product.description}
             </p>
@@ -136,8 +141,8 @@ export function ProductCard({ product }: ProductCardProps) {
                     key={i}
                     className={`h-4 w-4 ${
                       i < Math.floor(product.averageRating || 0)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "fill-muted text-muted"
+                        ? "fill-accent text-accent"
+                        : "fill-muted text-muted-foreground"
                     }`}
                   />
                 ))}
@@ -148,9 +153,10 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           </div>
         </CardContent>
+
         <CardFooter className="p-4 pt-0 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold">
+            <span className="text-xl font-bold text-foreground">
               ${product.price.toFixed(2)}
             </span>
             {product.comparePrice && product.comparePrice > product.price && (
@@ -158,7 +164,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 <span className="text-sm text-muted-foreground line-through">
                   ${product.comparePrice.toFixed(2)}
                 </span>
-                <span className="text-xs font-bold text-red-500">
+                <span className="text-xs font-bold text-accent">
                   {Math.round((1 - product.price / product.comparePrice) * 100)}
                   % OFF
                 </span>
@@ -166,7 +172,7 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
 
-          {/* Category Tag - Fixed to handle both string and Category object */}
+          {/* Category Tag */}
           <span className="text-xs text-muted-foreground">
             {getCategoryName()}
           </span>

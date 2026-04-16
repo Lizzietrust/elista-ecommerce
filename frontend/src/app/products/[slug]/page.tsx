@@ -340,7 +340,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="lg:w-1/2">
             {/* Main Image */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 mb-4 border border-[#E8E0D8] dark:border-gray-800">
-              <div className="aspect-square rounded-xl bg-gradient-to-br from-[#F4EFEA] to-[#E8E0D8] dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+              <div className="aspect-square rounded-xl bg-linear-to-br from-[#F4EFEA] to-[#E8E0D8] dark:from-gray-800 dark:to-gray-900 flex items-center justify-center overflow-hidden">
                 <div className="text-8xl">🎧</div>
               </div>
             </div>
@@ -350,7 +350,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.images.map((image, index) => (
                 <button
                   key={index}
-                  className="flex-shrink-0 w-20 h-20 rounded-lg bg-white dark:bg-gray-800 border-2 border-[#E8E0D8] dark:border-gray-700 hover:border-[#C17B4D] dark:hover:border-[#D49A6A] overflow-hidden transition-colors"
+                  className="shrink-0 w-20 h-20 rounded-lg bg-white dark:bg-gray-800 border-2 border-[#E8E0D8] dark:border-gray-700 hover:border-[#C17B4D] dark:hover:border-[#D49A6A] overflow-hidden transition-colors"
                 >
                   <div className="w-full h-full flex items-center justify-center bg-[#F4EFEA] dark:bg-gray-700">
                     <span className="text-2xl">🎧</span>

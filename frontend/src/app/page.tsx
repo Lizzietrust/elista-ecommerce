@@ -5,7 +5,7 @@ import Newsletter from "@/components/sections/newsletter";
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-12 bg-[#FDF8F5] dark:bg-[#2C2C2C]">
       <HeroSection />
       <FeaturedProducts />
       <CategoryGrid />

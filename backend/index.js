@@ -42,7 +42,7 @@ console.log(
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "elista-ecommerce", // Folder name in Cloudinary
+    folder: "elista-ecommerce",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
     transformation: [{ width: 500, height: 500, crop: "limit" }],
   },

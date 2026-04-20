@@ -1,13 +1,49 @@
+"use client";
+
+import { useCampaign } from "@/lib/hooks/use-campaign";
+import CampaignCountdown from "../campaign/CampaignCountdown";
+
 export default function HeroSection() {
+  const { activeCampaign, timeRemaining } = useCampaign();
+
   return (
-    <section className="relative bg-gradient-to-br from-primary via-primary-light to-accent text-white py-16 md:py-24 overflow-hidden">
+    <section className="relative bg-linear-to-br from-primary via-primary-light to-accent text-white py-16 md:py-24 overflow-hidden">
       <div className="container mx-auto px-4 md:px-8 relative z-10">
         <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-            <span className="text-secondary-light text-sm font-medium">
-              ✨ Limited Time Offer
-            </span>
-          </div>
+          {/* Dynamic Limited Time Offer Badge */}
+          {activeCampaign ? (
+            <div className="inline-flex flex-col items-start gap-3 mb-8">
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-full px-5 py-2.5 shadow-lg border border-white/20">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-light opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-secondary-light"></span>
+                </span>
+                <span className="text-secondary-light text-sm font-semibold tracking-wide">
+                  🔥{" "}
+                  {activeCampaign.discountType === "percentage"
+                    ? `${activeCampaign.discountValue}% OFF`
+                    : `$${activeCampaign.discountValue} OFF`}
+                  {activeCampaign.bannerText &&
+                    ` - ${activeCampaign.bannerText}`}
+                </span>
+              </div>
+
+              {activeCampaign.endDate && (
+                <div className="bg-black/30 backdrop-blur-sm rounded-full px-4 py-2">
+                  <CampaignCountdown
+                    endDate={activeCampaign.endDate}
+                    size="small"
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <span className="text-secondary-light text-sm font-medium">
+                ✨ Limited Time Offer
+              </span>
+            </div>
+          )}
 
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Discover{" "}
@@ -39,7 +75,7 @@ export default function HeroSection() {
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-secondary/10 rounded-full blur-3xl"></div>
 
       {/* Animated particles */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
     </section>
   );
 }

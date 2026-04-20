@@ -1,9 +1,8 @@
-
+// lib/api/client.ts (FRONTEND - Fully fixed version)
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL;
-
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export interface ErrorResponseData {
   success: boolean;
@@ -55,10 +54,11 @@ apiClient.interceptors.request.use(
       }
     }
 
+    // ✅ FIX: Add timestamp to GET requests to prevent caching
     if (config.method?.toLowerCase() === "get") {
       config.params = {
         ...config.params,
-        _t: Date.now(),
+        _t: Date.now(), // Current timestamp to bust cache
       };
     }
 
@@ -83,7 +83,10 @@ apiClient.interceptors.response.use(
         case 401:
           console.error("Unauthorized access");
           if (typeof window !== "undefined") {
-            window.location.href = "/login";
+            // Only redirect if not already on login page
+            if (!window.location.pathname.includes("/login")) {
+              window.location.href = "/login";
+            }
           }
           break;
         case 403:

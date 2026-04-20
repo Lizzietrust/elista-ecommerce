@@ -109,12 +109,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      index: true,
     },
     defaultPaymentMethod: {
       type: String,
     },
-    // Removed PayPal field since we're not using PayPal
 
     dateOfBirth: Date,
     gender: {
@@ -168,7 +166,6 @@ const userSchema = new mongoose.Schema(
             type: Date,
             default: Date.now,
           },
-          // Enhanced cart item fields for variants
           color: {
             type: String,
             trim: true,
@@ -180,12 +177,10 @@ const userSchema = new mongoose.Schema(
           variantId: {
             type: mongoose.Schema.Types.ObjectId,
           },
-          // Store price at time of adding to cart
           priceAtAdd: {
             type: Number,
             min: [0, "Price cannot be negative"],
           },
-          // Optional note for the item
           note: {
             type: String,
             trim: true,
@@ -201,19 +196,16 @@ const userSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "Coupon",
       },
-      // Store applied coupon code for quick reference
       couponCode: {
         type: String,
         uppercase: true,
         trim: true,
       },
-      // Store calculated discount amount
       discountAmount: {
         type: Number,
         default: 0,
         min: [0, "Discount amount cannot be negative"],
       },
-      // Store shipping information
       shippingMethod: {
         name: String,
         cost: {
@@ -226,31 +218,26 @@ const userSchema = new mongoose.Schema(
           max: Number,
         },
       },
-      // Store tax rate for this cart
       taxRate: {
         type: Number,
         default: 0.08,
         min: [0, "Tax rate cannot be negative"],
         max: [1, "Tax rate cannot exceed 100%"],
       },
-      // Currency for this cart
       currency: {
         type: String,
         default: "USD",
         enum: ["USD", "EUR", "GBP", "CAD", "AUD"],
       },
-      // Store cart notes
       notes: {
         type: String,
         trim: true,
         maxlength: [500, "Cart notes cannot exceed 500 characters"],
       },
-      // Store whether cart requires shipping
       requiresShipping: {
         type: Boolean,
         default: true,
       },
-      // Store last validation timestamp
       lastValidatedAt: Date,
     },
     preferences: {
@@ -272,18 +259,15 @@ const userSchema = new mongoose.Schema(
         default: "en",
         enum: ["en", "es", "fr", "de", "zh"],
       },
-      // Shipping preferences
       shippingPreference: {
         type: String,
         enum: ["standard", "express", "economy"],
         default: "standard",
       },
-      // Tax preferences
       taxExempt: {
         type: Boolean,
         default: false,
       },
-      // Payment preferences
       defaultPaymentMethodType: {
         type: String,
         enum: ["card", "bank_transfer"],
@@ -307,13 +291,11 @@ const userSchema = new mongoose.Schema(
 );
 
 // ===========================
-// HELPER FUNCTIONS FOR CART CALCULATIONS
+// HELPER FUNCTIONS
 // ===========================
 
-// Helper function to calculate discount
 const calculateDiscount = (subtotal, coupon) => {
   let discount = 0;
-
   switch (coupon.discountType) {
     case "percentage":
       discount = (subtotal * coupon.discountValue) / 100;
@@ -323,49 +305,24 @@ const calculateDiscount = (subtotal, coupon) => {
       break;
     case "fixed":
       discount = coupon.discountValue;
-      if (discount > subtotal) {
-        discount = subtotal;
-      }
+      if (discount > subtotal) discount = subtotal;
       break;
     case "free_shipping":
-      // This would be handled in shipping calculation
       discount = 0;
       break;
   }
-
   return discount;
 };
 
-// Helper function to calculate shipping
 const calculateShipping = (cartItems, shippingAddress = null) => {
-  // Calculate subtotal for shipping decisions
   const subtotal = cartItems.reduce((total, item) => {
     return total + item.product.price * item.quantity;
   }, 0);
-
-  // Free shipping over $50 by default
-  if (subtotal > 50) {
-    return 0;
-  }
-
-  // TODO: Add more complex shipping logic based on:
-  // 1. Shipping address location
-  // 2. Product weights
-  // 3. Shipping preferences
-  // 4. Promotional shipping offers
-
-  // For now, return a simple flat rate
+  if (subtotal > 50) return 0;
   return 5.99;
 };
 
-// Helper function to calculate tax
 const calculateTax = (amount, shippingAddress = null) => {
-  // TODO: Add tax calculation based on:
-  // 1. Shipping address (state/country tax rates)
-  // 2. Product categories (some products might be tax-exempt)
-  // 3. User type (business vs consumer)
-
-  // For now, return 8% tax
   return amount * 0.08;
 };
 
@@ -373,12 +330,10 @@ const calculateTax = (amount, shippingAddress = null) => {
 // VIRTUAL PROPERTIES
 // ===========================
 
-// Virtual for full name
 userSchema.virtual("fullName").get(function () {
   return this.name;
 });
 
-// Virtual for default address
 userSchema.virtual("defaultAddress").get(function () {
   return (
     this.addresses.find((addr) => addr.isDefault) ||
@@ -387,16 +342,12 @@ userSchema.virtual("defaultAddress").get(function () {
   );
 });
 
-// Virtual for user's cart item count
 userSchema.virtual("cartItemCount").get(function () {
   return this.cart.items.reduce((total, item) => total + item.quantity, 0);
 });
 
-// Virtual for user's cart total (requires populated cart items)
 userSchema.virtual("cartTotal").get(function () {
   if (!this.cart.items || this.cart.items.length === 0) return 0;
-
-  // This requires cart items to be populated with product prices
   return this.cart.items.reduce((total, item) => {
     if (item.product && item.product.price) {
       return total + item.product.price * item.quantity;
@@ -405,16 +356,12 @@ userSchema.virtual("cartTotal").get(function () {
   }, 0);
 });
 
-// Virtual for user's active addresses count
 userSchema.virtual("addressCount").get(function () {
   return this.addresses.length;
 });
 
-// Virtual for cart subtotal (sum of all item prices * quantities)
 userSchema.virtual("cartSubtotal").get(async function () {
   if (this.cart.items.length === 0) return 0;
-
-  // Populate products to get prices if not already populated
   if (
     !this.cart.items[0].product ||
     typeof this.cart.items[0].product === "string"
@@ -424,7 +371,6 @@ userSchema.virtual("cartSubtotal").get(async function () {
       select: "price isActive",
     });
   }
-
   return this.cart.items.reduce((total, item) => {
     if (item.product && item.product.isActive) {
       const itemPrice = item.priceAtAdd || item.product.price;
@@ -434,7 +380,6 @@ userSchema.virtual("cartSubtotal").get(async function () {
   }, 0);
 });
 
-// Virtual for cart tax amount
 userSchema.virtual("cartTaxAmount").get(async function () {
   const subtotal = await this.cartSubtotal;
   const discount = this.cart.discountAmount || 0;
@@ -443,7 +388,6 @@ userSchema.virtual("cartTaxAmount").get(async function () {
   return taxableAmount * (this.cart.taxRate || 0.08);
 });
 
-// Virtual for cart total amount
 userSchema.virtual("cartTotalAmount").get(async function () {
   const subtotal = await this.cartSubtotal;
   const discount = this.cart.discountAmount || 0;
@@ -452,114 +396,100 @@ userSchema.virtual("cartTotalAmount").get(async function () {
   return subtotal - discount + shipping + tax;
 });
 
-// Virtual for checking if user has Stripe customer ID
 userSchema.virtual("hasStripeCustomer").get(function () {
   return !!this.stripeCustomerId;
 });
 
-// Virtual for user's saved payment methods count (Stripe)
 userSchema.virtual("paymentMethodsCount").get(function () {
-  // This would require a separate query to Stripe
-  // For now, return 0 or 1 based on defaultPaymentMethod
   return this.defaultPaymentMethod ? 1 : 0;
 });
 
 // ===========================
-// MIDDLEWARE
+// MIDDLEWARE — all async, no duplicates
 // ===========================
 
-// Encrypt password before saving
+// 1. Hash password before saving
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-
   try {
+    if (!this.isModified("password")) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 });
 
-// Update updatedAt timestamp for cart when items or coupon changes
-userSchema.pre("save", function (next) {
-  if (
-    this.isModified("cart.items") ||
-    this.isModified("cart.coupon") ||
-    this.isModified("cart.couponCode") ||
-    this.isModified("cart.discountAmount") ||
-    this.isModified("cart.shippingMethod") ||
-    this.isModified("cart.taxRate")
-  ) {
-    this.cart.updatedAt = Date.now();
-  }
-  next();
-});
-
-// Middleware to ensure only one default address
-userSchema.pre("save", function (next) {
-  if (this.isModified("addresses")) {
-    // Count default addresses
-    const defaultAddresses = this.addresses.filter((addr) => addr.isDefault);
-
-    // If more than one default, make only the first one default
-    if (defaultAddresses.length > 1) {
-      let foundFirst = false;
-      this.addresses.forEach((addr) => {
-        if (addr.isDefault) {
-          if (!foundFirst) {
-            foundFirst = true;
-          } else {
-            addr.isDefault = false;
-          }
-        }
-      });
-    }
-
-    // If no default address and we have addresses, set first as default
-    if (defaultAddresses.length === 0 && this.addresses.length > 0) {
-      this.addresses[0].isDefault = true;
-    }
-  }
-  next();
-});
-
-// Middleware to store price when adding to cart
+// 2. Update cart updatedAt timestamp
 userSchema.pre("save", async function (next) {
-  if (this.isModified("cart.items")) {
-    const Product = mongoose.model("Product");
+  try {
+    if (
+      this.isModified("cart.items") ||
+      this.isModified("cart.coupon") ||
+      this.isModified("cart.couponCode") ||
+      this.isModified("cart.discountAmount") ||
+      this.isModified("cart.shippingMethod") ||
+      this.isModified("cart.taxRate")
+    ) {
+      this.cart.updatedAt = Date.now();
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
-    // For new items, store the current price
-    for (const item of this.cart.items) {
-      if (!item.priceAtAdd && item.product) {
-        try {
-          const product = await Product.findById(item.product).select("price");
-          if (product) {
-            item.priceAtAdd = product.price;
+// 3. Ensure only one default address
+userSchema.pre("save", async function (next) {
+  try {
+    if (this.isModified("addresses")) {
+      const defaultAddresses = this.addresses.filter((addr) => addr.isDefault);
+      if (defaultAddresses.length > 1) {
+        let foundFirst = false;
+        this.addresses.forEach((addr) => {
+          if (addr.isDefault) {
+            if (!foundFirst) foundFirst = true;
+            else addr.isDefault = false;
           }
-        } catch (error) {
-          console.error("Error fetching product price:", error);
+        });
+      }
+      if (defaultAddresses.length === 0 && this.addresses.length > 0) {
+        this.addresses[0].isDefault = true;
+      }
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 4. Store product price at time of adding to cart
+userSchema.pre("save", async function (next) {
+  try {
+    if (this.isModified("cart.items")) {
+      const Product = mongoose.model("Product");
+      for (const item of this.cart.items) {
+        if (!item.priceAtAdd && item.product) {
+          const product = await Product.findById(item.product).select("price");
+          if (product) item.priceAtAdd = product.price;
         }
       }
     }
+    next();
+  } catch (err) {
+    next(err);
   }
-  next();
 });
 
+// ===========================
+// INSTANCE METHODS
+// ===========================
 
 userSchema.methods.getSignedJwtToken = function () {
   return jwt.sign(
-    {
-      id: this._id,
-      role: this.role,
-      email: this.email,
-    },
+    { id: this._id, role: this.role, email: this.email },
     process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRE,
-    },
+    { expiresIn: process.env.JWT_EXPIRE },
   );
 };
 
@@ -587,7 +517,6 @@ userSchema.methods.getEmailVerificationToken = function () {
   return verificationToken;
 };
 
-// Payment-related methods
 userSchema.methods.setStripeCustomerId = function (customerId) {
   this.stripeCustomerId = customerId;
   return this.save();
@@ -603,7 +532,6 @@ userSchema.methods.clearDefaultPaymentMethod = function () {
   return this.save();
 };
 
-// Wishlist methods
 userSchema.methods.addToWishlist = function (productId) {
   if (!this.wishlist.includes(productId)) {
     this.wishlist.push(productId);
@@ -622,7 +550,6 @@ userSchema.methods.isInWishlist = function (productId) {
   return this.wishlist.some((id) => id.toString() === productId.toString());
 };
 
-// Recently viewed methods
 userSchema.methods.addToRecentlyViewed = function (productId) {
   this.recentlyViewed = this.recentlyViewed.filter(
     (id) => id.toString() !== productId.toString(),
@@ -634,23 +561,16 @@ userSchema.methods.addToRecentlyViewed = function (productId) {
   return this.save();
 };
 
-// Enhanced Cart Methods
-
-// Method to add item to cart with variant support
 userSchema.methods.addToCart = async function (
   productId,
   quantity = 1,
   options = {},
 ) {
   const { color, size, variantId, note } = options;
-
   const Product = mongoose.model("Product");
   const product = await Product.findById(productId).select("price");
-  if (!product) {
-    throw new Error("Product not found");
-  }
+  if (!product) throw new Error("Product not found");
 
-  // Find existing item with same product and attributes
   const existingItemIndex = this.cart.items.findIndex((item) => {
     return (
       item.product.toString() === productId.toString() &&
@@ -663,24 +583,20 @@ userSchema.methods.addToCart = async function (
   });
 
   if (existingItemIndex >= 0) {
-    // Update quantity if same product with same attributes
     this.cart.items[existingItemIndex].quantity += quantity;
     this.cart.items[existingItemIndex].addedAt = Date.now();
     if (note) this.cart.items[existingItemIndex].note = note;
   } else {
-    // Add new item
     const newItem = {
       product: productId,
       quantity,
       addedAt: Date.now(),
       priceAtAdd: product.price,
     };
-
     if (color) newItem.color = color;
     if (size) newItem.size = size;
     if (variantId) newItem.variantId = variantId;
     if (note) newItem.note = note;
-
     this.cart.items.push(newItem);
   }
 
@@ -688,41 +604,29 @@ userSchema.methods.addToCart = async function (
   return this.save();
 };
 
-// Method to update cart item quantity
 userSchema.methods.updateCartItemQuantity = function (itemId, quantity) {
   const itemIndex = this.cart.items.findIndex(
     (item) => item._id.toString() === itemId.toString(),
   );
-
-  if (itemIndex === -1) {
-    throw new Error("Item not found in cart");
-  }
+  if (itemIndex === -1) throw new Error("Item not found in cart");
 
   if (quantity <= 0) {
-    // Remove item if quantity is 0 or negative
     this.cart.items.splice(itemIndex, 1);
   } else {
     this.cart.items[itemIndex].quantity = quantity;
     this.cart.items[itemIndex].addedAt = Date.now();
   }
-
   this.cart.updatedAt = Date.now();
   return this.save();
 };
 
-// Method to update cart item attributes
 userSchema.methods.updateCartItemAttributes = function (itemId, updates) {
   const itemIndex = this.cart.items.findIndex(
     (item) => item._id.toString() === itemId.toString(),
   );
-
-  if (itemIndex === -1) {
-    throw new Error("Item not found in cart");
-  }
+  if (itemIndex === -1) throw new Error("Item not found in cart");
 
   const item = this.cart.items[itemIndex];
-
-  // Update allowed fields
   if (updates.color !== undefined) item.color = updates.color;
   if (updates.size !== undefined) item.size = updates.size;
   if (updates.variantId !== undefined) item.variantId = updates.variantId;
@@ -730,28 +634,21 @@ userSchema.methods.updateCartItemAttributes = function (itemId, updates) {
   if (updates.quantity !== undefined && updates.quantity > 0) {
     item.quantity = updates.quantity;
   }
-
   item.addedAt = Date.now();
   this.cart.updatedAt = Date.now();
   return this.save();
 };
 
-// Method to remove item from cart
 userSchema.methods.removeFromCart = function (itemId) {
   const itemIndex = this.cart.items.findIndex(
     (item) => item._id.toString() === itemId.toString(),
   );
-
-  if (itemIndex === -1) {
-    throw new Error("Item not found in cart");
-  }
-
+  if (itemIndex === -1) throw new Error("Item not found in cart");
   this.cart.items.splice(itemIndex, 1);
   this.cart.updatedAt = Date.now();
   return this.save();
 };
 
-// Method to clear cart
 userSchema.methods.clearCart = function () {
   this.cart.items = [];
   this.cart.coupon = null;
@@ -761,10 +658,8 @@ userSchema.methods.clearCart = function () {
   return this.save();
 };
 
-// Method to check if product is in cart
 userSchema.methods.isInCart = function (productId, options = {}) {
   const { color, size, variantId } = options;
-
   return this.cart.items.some((item) => {
     const productMatch = item.product.toString() === productId.toString();
     const colorMatch = color ? item.color === color : true;
@@ -774,25 +669,19 @@ userSchema.methods.isInCart = function (productId, options = {}) {
         ? item.variantId.toString() === variantId.toString()
         : false
       : true;
-
     return productMatch && colorMatch && sizeMatch && variantMatch;
   });
 };
 
-// Method to apply coupon to cart
 userSchema.methods.applyCouponToCart = async function (coupon) {
   this.cart.coupon = coupon._id;
   this.cart.couponCode = coupon.code;
-
-  // Calculate and store discount amount
   const subtotal = await this.cartSubtotal;
   this.cart.discountAmount = calculateDiscount(subtotal, coupon);
-
   this.cart.updatedAt = Date.now();
   return this.save();
 };
 
-// Method to remove coupon from cart
 userSchema.methods.removeCouponFromCart = function () {
   this.cart.coupon = null;
   this.cart.couponCode = null;
@@ -801,39 +690,33 @@ userSchema.methods.removeCouponFromCart = function () {
   return this.save();
 };
 
-// Method to set shipping method
 userSchema.methods.setShippingMethod = function (shippingMethod) {
   this.cart.shippingMethod = shippingMethod;
   this.cart.updatedAt = Date.now();
   return this.save();
 };
 
-// Method to set tax rate
 userSchema.methods.setTaxRate = function (taxRate) {
   this.cart.taxRate = taxRate;
   this.cart.updatedAt = Date.now();
   return this.save();
 };
 
-// Method to get cart summary from user model
 userSchema.methods.getCartSummary = async function (shippingAddress = null) {
   await this.populate({
     path: "cart.items.product",
     select: "name price images stock isActive weight sku",
   });
 
-  // Filter out invalid or inactive products
   const validCartItems = this.cart.items.filter(
     (item) => item.product && item.product.isActive,
   );
 
-  // Calculate subtotal using stored prices or current prices
   const subtotal = validCartItems.reduce((total, item) => {
     const itemPrice = item.priceAtAdd || item.product.price;
     return total + itemPrice * item.quantity;
   }, 0);
 
-  // Get coupon details if exists
   let couponDetails = null;
   if (this.cart.coupon) {
     const Coupon = mongoose.model("Coupon");
@@ -849,18 +732,14 @@ userSchema.methods.getCartSummary = async function (shippingAddress = null) {
     }
   }
 
-  // Calculate shipping
   const shippingCost =
     this.cart.shippingMethod?.cost ||
     calculateShipping(validCartItems, shippingAddress);
 
-  // Calculate tax
   const taxableAmount =
     subtotal - (this.cart.discountAmount || 0) + shippingCost;
   const taxRate = this.preferences.taxExempt ? 0 : this.cart.taxRate || 0.08;
   const tax = taxableAmount * taxRate;
-
-  // Calculate total
   const total = subtotal - (this.cart.discountAmount || 0) + shippingCost + tax;
 
   return {
@@ -901,7 +780,6 @@ userSchema.methods.getCartSummary = async function (shippingAddress = null) {
   };
 };
 
-// Method to validate cart items (check stock, availability)
 userSchema.methods.validateCart = async function () {
   await this.populate({
     path: "cart.items.product",
@@ -928,7 +806,7 @@ userSchema.methods.validateCart = async function () {
       price: item.priceAtAdd || product?.price || 0,
       isAvailable: true,
       message: "",
-      requiresShipping: true, // Default to true
+      requiresShipping: true,
     };
 
     if (!product || !product.isActive) {
@@ -942,14 +820,9 @@ userSchema.methods.validateCart = async function () {
     } else {
       itemResult.message = "Available";
       validationResults.items.push(itemResult);
-
-      // Calculate total weight if available
       if (product.weight && product.weight.value) {
         validationResults.totalWeight += product.weight.value * item.quantity;
       }
-
-      // Check if product requires shipping
-      // You might want to add a field to Product model for this
       if (product.weight && product.weight.value > 0) {
         validationResults.requiresShipping = true;
       }
@@ -957,42 +830,29 @@ userSchema.methods.validateCart = async function () {
   }
 
   validationResults.isValid = validationResults.errors.length === 0;
-
-  // Update cart's requiresShipping flag
   this.cart.requiresShipping = validationResults.requiresShipping;
   this.cart.lastValidatedAt = new Date();
-
   await this.save();
 
   return validationResults;
 };
 
-// Method to merge another cart into this one (for guest users)
 userSchema.methods.mergeCart = async function (guestCartItems) {
   for (const guestItem of guestCartItems) {
     const { productId, quantity = 1, color, size, variantId, note } = guestItem;
-
-    // Check if product exists and is active
     const Product = mongoose.model("Product");
     const product = await Product.findById(productId);
-    if (!product || !product.isActive) {
-      continue;
-    }
-
-    // Add to cart using the enhanced addToCart method
+    if (!product || !product.isActive) continue;
     await this.addToCart(productId, quantity, { color, size, variantId, note });
   }
-
   return this.save();
 };
 
-// Method to convert cart to order items
 userSchema.methods.cartToOrderItems = async function () {
   await this.populate({
     path: "cart.items.product",
     select: "name price sku",
   });
-
   return this.cart.items.map((item) => ({
     product: item.product._id,
     name: item.product.name,
@@ -1007,13 +867,11 @@ userSchema.methods.cartToOrderItems = async function () {
   }));
 };
 
-// Method to update last login
 userSchema.methods.updateLastLogin = function () {
   this.lastLogin = Date.now();
   return this.save();
 };
 
-// Address management methods
 userSchema.methods.addAddress = function (addressData) {
   const {
     street,
@@ -1108,9 +966,7 @@ userSchema.methods.deleteAddress = function (addressId) {
     };
   }
 
-  if (this.addresses.length === 0) {
-    this.address = {};
-  }
+  if (this.addresses.length === 0) this.address = {};
 
   return this.save();
 };
@@ -1174,24 +1030,18 @@ userSchema.statics.findByRole = function (role) {
 userSchema.statics.findInactiveUsers = function (days = 30) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
-  return this.find({
-    lastLogin: { $lt: cutoffDate },
-    isActive: true,
-  });
+  return this.find({ lastLogin: { $lt: cutoffDate }, isActive: true });
 };
 
-// Static method to find users with non-empty carts
 userSchema.statics.findUsersWithCarts = function () {
-  return this.find({
-    "cart.items.0": { $exists: true },
-  }).select("name email cart");
+  return this.find({ "cart.items.0": { $exists: true } }).select(
+    "name email cart",
+  );
 };
 
-// Static method to cleanup old carts (for admin/maintenance)
 userSchema.statics.cleanupOldCarts = async function (days = 30) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
-
   const result = await this.updateMany(
     {
       "cart.updatedAt": { $lt: cutoffDate },
@@ -1207,21 +1057,18 @@ userSchema.statics.cleanupOldCarts = async function (days = 30) {
       },
     },
   );
-
   return {
     modifiedCount: result.modifiedCount,
     message: `Cleaned up ${result.modifiedCount} old carts`,
   };
 };
 
-// Static method to find users with Stripe customer IDs
 userSchema.statics.findUsersWithStripe = function () {
   return this.find({
     stripeCustomerId: { $exists: true, $ne: null },
   }).select("name email stripeCustomerId");
 };
 
-// Static method to find users without Stripe customer IDs
 userSchema.statics.findUsersWithoutStripe = function () {
   return this.find({
     $or: [{ stripeCustomerId: { $exists: false } }, { stripeCustomerId: null }],

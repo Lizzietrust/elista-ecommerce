@@ -1,37 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  /* Neutral & Earthy Color Palette for Elista Ecommerce */
-
-  /* Backgrounds - Warm and inviting */
   --color-background: #fdf8f5;
   --color-background-secondary: #f4efea;
   --color-background-tertiary: #e8e0d8;
 
-  /* Foreground/Text Colors */
   --color-foreground: #2c2c2c;
   --color-foreground-muted: #6b6b6b;
   --color-foreground-light: #ffffff;
 
-  /* Primary - Deep Forest Green */
   --color-primary: #2c3e3e;
   --color-primary-foreground: #ffffff;
   --color-primary-light: #4a6b6b;
   --color-primary-dark: #1a2a2a;
 
-  /* Secondary - Warm Beige */
   --color-secondary: #d4c4b7;
   --color-secondary-foreground: #2c2c2c;
   --color-secondary-light: #e8ded5;
   --color-secondary-dark: #b8a99a;
 
-  /* Accent - Terracotta */
   --color-accent: #c17b4d;
   --color-accent-foreground: #ffffff;
   --color-accent-light: #d49a6a;
   --color-accent-dark: #a05e38;
 
-  /* UI Elements */
   --color-muted: #f4efea;
   --color-muted-foreground: #6b6b6b;
   --color-border: #e8e0d8;
@@ -400,4 +392,24 @@
 
 .animation-delay-1000 {
   animation-delay: 1s;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1000ms;
 }

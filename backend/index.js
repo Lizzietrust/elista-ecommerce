@@ -8,7 +8,6 @@ import { v2 as cloudinary } from "cloudinary";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-// Import routes for ecommerce
 import authRoutes from "./routes/AuthRoutes.js";
 import userRoutes from "./routes/UserRoutes.js";
 import productRoutes from "./routes/ProductRoutes.js";
@@ -18,15 +17,13 @@ import orderRoutes from "./routes/OrderRoutes.js";
 import paymentRoutes from "./routes/PaymentRoutes.js";
 import reviewRoutes from "./routes/ReviewRoutes.js";
 import wishlistRoutes from "./routes/WishlistRoutes.js";
+import campaignRoutes from "./routes/CampaignRoutes.js";
 
-// Import error handler middleware
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
-
-
+import Campaign from "./models/Campaign.js";
 
 dotenv.config();
 
-// Cloudinary configuration for image uploads
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -38,7 +35,6 @@ console.log(
   process.env.CLOUDINARY_CLOUD_NAME,
 );
 
-// Set up Multer with Cloudinary storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -57,7 +53,6 @@ const databaseURL = process.env.MONGODB_URI;
 
 console.log("databasesURL:", databaseURL);
 
-// CORS configuration
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",")
   : [];
@@ -65,7 +60,6 @@ const allowedOrigins = process.env.FRONTEND_URL
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.indexOf(origin) === -1) {
@@ -81,16 +75,13 @@ app.use(
   }),
 );
 
-// Basic middleware
 app.use(cookieParser());
-app.use(express.json({ limit: "10mb" })); // Increased limit for product images
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Serve static files
 app.use("/uploads", express.static("uploads"));
 app.use("/public", express.static("public"));
 
-// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
@@ -100,8 +91,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/campaigns", campaignRoutes);
 
-// Health check endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "success",
@@ -111,7 +102,6 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Test Cloudinary endpoint
 app.get("/api/test-cloudinary", async (req, res) => {
   try {
     const result = await cloudinary.api.ping();
@@ -130,7 +120,6 @@ app.get("/api/test-cloudinary", async (req, res) => {
   }
 });
 
-// Database test endpoint
 app.get("/api/test-db", async (req, res) => {
   try {
     const dbState = mongoose.connection.readyState;

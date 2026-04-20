@@ -88,7 +88,6 @@ export default function FeaturedProducts() {
             Handpicked items just for you
           </p>
 
-          {/* Optional: Show last updated time and refresh button */}
           <div className="flex items-center justify-center gap-2 mt-4">
             {lastUpdated && (
               <span className="text-xs text-muted-foreground">
@@ -116,7 +115,6 @@ export default function FeaturedProducts() {
               href={`/products/${product.slug || product._id}`}
               className="group bg-card rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-border block"
             >
-              {/* Product Image */}
               <div className="h-48 bg-linear-to-br from-muted to-muted/50 flex items-center justify-center relative overflow-hidden">
                 {product.images && product.images[0] ? (
                   <Image
@@ -127,14 +125,17 @@ export default function FeaturedProducts() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   />
                 ) : (
-                  <div className="text-5xl transform group-hover:scale-110 transition-transform duration-300">
-                    🛒
-                  </div>
+                  <Image
+                    src="https://images.unsplash.com/photo-1493666438817-866a91353ca9?auto=format&fit=crop&w=800&q=80"
+                    alt="Product Image"
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  />
                 )}
-                {/* Overlay on hover */}
+
                 <div className="absolute inset-0 bg-foreground/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                {/* Optional: Show loading overlay while refetching */}
                 {isRefetching && (
                   <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
                     <RefreshCw size={24} className="animate-spin text-accent" />

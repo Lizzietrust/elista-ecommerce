@@ -8,6 +8,7 @@ import { CartProvider } from "@/components/providers/cart-provider";
 import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import CampaignBanner from "@/components/campaign/CampaignBanner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -44,32 +45,13 @@ export default function RootLayout({
               <CartProvider>
                 <div className="flex min-h-screen flex-col bg-[#FDF8F5] dark:bg-[#2C2C2C]">
                   <Header />
-                  <main className="flex-1">{children}</main>
+                  <main className="flex-1">
+                    <CampaignBanner />
+                    {children}
+                  </main>
                   <Footer />
                 </div>
-                <Toaster
-                  position="bottom-right"
-                  toastOptions={{
-                    style: {
-                      background: "#FFFFFF",
-                      color: "#2C2C2C",
-                      border: "1px solid #E8E0D8",
-                      borderRadius: "12px",
-                    },
-                    success: {
-                      style: {
-                        background: "#6B8E6B",
-                        color: "#FFFFFF",
-                      },
-                    },
-                    error: {
-                      style: {
-                        background: "#C17B7B",
-                        color: "#FFFFFF",
-                      },
-                    },
-                  }}
-                />
+                <Toaster />
               </CartProvider>
             </AuthProvider>
           </ThemeProvider>

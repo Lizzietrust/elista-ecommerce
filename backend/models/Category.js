@@ -56,11 +56,10 @@ const categorySchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
-// Generate slug before saving
-categorySchema.pre("save", function (next) {
+categorySchema.pre("save", async function () {
   if (!this.slug && this.name) {
     this.slug = this.name
       .toLowerCase()
@@ -69,7 +68,6 @@ categorySchema.pre("save", function (next) {
       .replace(/-+/g, "-")
       .trim();
   }
-  next();
 });
 
 // Virtual for subcategories
@@ -183,7 +181,7 @@ categorySchema.methods.isDescendantOf = async function (parentCategoryId) {
 
 // Method to get all descendant categories (recursive)
 categorySchema.methods.getAllDescendants = async function (
-  includeSelf = false
+  includeSelf = false,
 ) {
   const descendants = includeSelf ? [this] : [];
 
@@ -267,12 +265,12 @@ categorySchema.methods.updateSortOrder = function (newOrder) {
 // Static method to update product count for a category
 categorySchema.statics.updateProductCount = async function (
   categoryId,
-  change = 1
+  change = 1,
 ) {
   return this.findByIdAndUpdate(
     categoryId,
     { $inc: { productCount: change } },
-    { new: true }
+    { new: true },
   );
 };
 
@@ -298,7 +296,7 @@ categorySchema.statics.getFeaturedCategories = function (limit = 10) {
 categorySchema.statics.getCategoryTree = async function (
   parentId = null,
   depth = 0,
-  maxDepth = 3
+  maxDepth = 3,
 ) {
   if (depth >= maxDepth) return [];
 
@@ -312,7 +310,7 @@ categorySchema.statics.getCategoryTree = async function (
       const children = await this.getCategoryTree(
         category._id,
         depth + 1,
-        maxDepth
+        maxDepth,
       );
       return {
         _id: category._id,
@@ -326,7 +324,7 @@ categorySchema.statics.getCategoryTree = async function (
         children,
         depth,
       };
-    })
+    }),
   );
 
   return tree;

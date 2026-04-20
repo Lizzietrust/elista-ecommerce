@@ -224,9 +224,6 @@ export const getProductById = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Create new product
-// @route   POST /api/products
-// @access  Private/Admin/Seller
 export const createProduct = asyncHandler(async (req, res, next) => {
   // Set seller to current user (if seller role)
   if (req.user.role === "seller" && !req.body.seller) {
@@ -428,32 +425,40 @@ export const processProductImages = asyncHandler(async (req, res, next) => {
   next();
 });
 
-// @desc    Get featured products
-// @route   GET /api/products/featured
-// @access  Public
 export const getFeaturedProducts = asyncHandler(async (req, res, next) => {
-  const limit = parseInt(req.query.limit) || 8;
+  const limit = Math.min(parseInt(req.query.limit) || 8, 50);
+  const category = req.query.category;
 
-  const products = await Product.find({
+  let query = {
     featured: true,
     isActive: true,
     stock: { $gt: 0 },
-  })
-    .select("name price images slug category averageRating featured")
+  };
+
+  if (category) {
+    query.category = category;
+  }
+
+  const products = await Product.find(query)
+    .select(
+      "name price images slug category averageRating reviewCount featured featuredOrder stock",
+    )
     .populate("category", "name slug")
     .limit(limit)
-    .sort("-createdAt");
+    .sort({ featuredOrder: 1, createdAt: -1 })
+    .lean();
+
+  const total = await Product.countDocuments(query);
 
   res.status(200).json({
     success: true,
     count: products.length,
+    total,
+    limit,
     data: products,
   });
 });
 
-// @desc    Get products by category
-// @route   GET /api/products/category/:categoryId
-// @access  Public
 export const getProductsByCategory = asyncHandler(async (req, res, next) => {
   const { categoryId } = req.params;
   const { query, sort, page, limit } = buildProductQuery(req.query);
@@ -461,7 +466,6 @@ export const getProductsByCategory = asyncHandler(async (req, res, next) => {
   query.category = categoryId;
   const skip = (page - 1) * limit;
 
-  // Check if category exists
   const category = await Category.findById(categoryId);
   if (!category) {
     return next(new ErrorResponse("Category not found", 404));

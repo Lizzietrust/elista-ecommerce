@@ -170,21 +170,10 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get single product
-// @route   GET /api/products/:id
-// @access  Public
 export const getProductById = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(req.params.id)
     .populate("category", "name slug description")
-    .populate("seller", "name email phone")
-    .populate({
-      path: "reviews",
-      populate: {
-        path: "user",
-        select: "name email",
-      },
-      options: { sort: { createdAt: -1 }, limit: 10 },
-    });
+    .populate("seller", "name email phone");
 
   if (!product) {
     return next(
@@ -202,17 +191,21 @@ export const getProductById = asyncHandler(async (req, res, next) => {
 
   // Add to recently viewed for authenticated users
   if (req.user) {
-    const user = req.user;
-    await user.addToRecentlyViewed(product._id);
+    try {
+      await req.user.addToRecentlyViewed(product._id);
+    } catch (error) {
+      console.error("Error adding to recently viewed:", error);
+    }
   }
 
-  // Get related products
+  // Get related products - FIXED: Properly populate category
   const relatedProducts = await Product.find({
     category: product.category,
     _id: { $ne: product._id },
     isActive: true,
   })
-    .select("name price images slug averageRating")
+    .select("name price images slug averageRating category")
+    .populate("category", "name slug") // Add this line to populate category
     .limit(4);
 
   res.status(200).json({
@@ -225,12 +218,10 @@ export const getProductById = asyncHandler(async (req, res, next) => {
 });
 
 export const createProduct = asyncHandler(async (req, res, next) => {
-  // Set seller to current user (if seller role)
   if (req.user.role === "seller" && !req.body.seller) {
     req.body.seller = req.user.id;
   }
 
-  // Check if seller is trying to create product for someone else
   if (
     req.user.role === "seller" &&
     req.body.seller &&
@@ -241,7 +232,6 @@ export const createProduct = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Validate category exists
   if (req.body.category) {
     const categoryExists = await Category.findById(req.body.category);
     if (!categoryExists) {
@@ -249,22 +239,18 @@ export const createProduct = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Handle uploaded images
   if (req.files && req.files.length > 0) {
     req.body.images = req.files.map((file) => file.path);
   }
 
-  // Generate SKU if not provided
   if (!req.body.sku) {
     const namePrefix = req.body.name.substring(0, 3).toUpperCase();
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     req.body.sku = `${namePrefix}-${randomNum}`;
   }
 
-  // Create product
   const product = await Product.create(req.body);
 
-  // Update category product count
   if (product.category) {
     await Category.findByIdAndUpdate(product.category, {
       $inc: { productCount: 1 },
@@ -278,9 +264,6 @@ export const createProduct = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update product
-// @route   PUT /api/products/:id
-// @access  Private/Admin/Seller
 export const updateProduct = asyncHandler(async (req, res, next) => {
   let product = await Product.findById(req.params.id);
 

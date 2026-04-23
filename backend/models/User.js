@@ -335,20 +335,26 @@ userSchema.virtual("fullName").get(function () {
 });
 
 userSchema.virtual("defaultAddress").get(function () {
+  const addresses = this.addresses || [];
   return (
-    this.addresses.find((addr) => addr.isDefault) ||
-    (this.addresses.length > 0 ? this.addresses[0] : null) ||
-    this.address
+    addresses.find((addr) => addr.isDefault) ||
+    (addresses.length > 0 ? addresses[0] : null) ||
+    this.address ||
+    null
   );
 });
 
 userSchema.virtual("cartItemCount").get(function () {
-  return this.cart.items.reduce((total, item) => total + item.quantity, 0);
+  return (this.cart?.items || []).reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
 });
 
 userSchema.virtual("cartTotal").get(function () {
-  if (!this.cart.items || this.cart.items.length === 0) return 0;
-  return this.cart.items.reduce((total, item) => {
+  const items = this.cart?.items || [];
+  if (items.length === 0) return 0;
+  return items.reduce((total, item) => {
     if (item.product && item.product.price) {
       return total + item.product.price * item.quantity;
     }
@@ -357,21 +363,19 @@ userSchema.virtual("cartTotal").get(function () {
 });
 
 userSchema.virtual("addressCount").get(function () {
-  return this.addresses.length;
+  return (this.addresses || []).length;
 });
 
 userSchema.virtual("cartSubtotal").get(async function () {
-  if (this.cart.items.length === 0) return 0;
-  if (
-    !this.cart.items[0].product ||
-    typeof this.cart.items[0].product === "string"
-  ) {
+  const items = this.cart?.items || [];
+  if (items.length === 0) return 0;
+  if (!items[0].product || typeof items[0].product === "string") {
     await this.populate({
       path: "cart.items.product",
       select: "price isActive",
     });
   }
-  return this.cart.items.reduce((total, item) => {
+  return (this.cart?.items || []).reduce((total, item) => {
     if (item.product && item.product.isActive) {
       const itemPrice = item.priceAtAdd || item.product.price;
       return total + itemPrice * item.quantity;
@@ -550,15 +554,18 @@ userSchema.methods.isInWishlist = function (productId) {
   return this.wishlist.some((id) => id.toString() === productId.toString());
 };
 
-userSchema.methods.addToRecentlyViewed = function (productId) {
+userSchema.methods.addToRecentlyViewed = async function (productId) {
   this.recentlyViewed = this.recentlyViewed.filter(
     (id) => id.toString() !== productId.toString(),
   );
+
   this.recentlyViewed.unshift(productId);
+
   if (this.recentlyViewed.length > 20) {
     this.recentlyViewed = this.recentlyViewed.slice(0, 20);
   }
-  return this.save();
+  await this.save();
+  return this;
 };
 
 userSchema.methods.addToCart = async function (

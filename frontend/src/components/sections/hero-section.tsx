@@ -2,6 +2,16 @@
 
 import { useCampaign } from "@/lib/hooks/use-campaign";
 import CampaignCountdown from "../campaign/CampaignCountdown";
+import {
+  Flame,
+  Sparkles,
+  ArrowRight,
+  ShoppingBag,
+  LayoutGrid,
+  Clock,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function HeroSection() {
   const { activeCampaign, timeRemaining } = useCampaign();
@@ -18,8 +28,8 @@ export default function HeroSection() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-light opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-secondary-light"></span>
                 </span>
-                <span className="text-secondary-light text-sm font-semibold tracking-wide">
-                  🔥{" "}
+                <span className="text-secondary-light text-sm font-semibold tracking-wide flex items-center gap-1">
+                  <Flame className="w-4 h-4 inline" />
                   {activeCampaign.discountType === "percentage"
                     ? `${activeCampaign.discountValue}% OFF`
                     : `$${activeCampaign.discountValue} OFF`}
@@ -39,8 +49,9 @@ export default function HeroSection() {
             </div>
           ) : (
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <Sparkles className="w-4 h-4 text-secondary-light" />
               <span className="text-secondary-light text-sm font-medium">
-                ✨ Limited Time Offer
+                Limited Time Offer
               </span>
             </div>
           )}
@@ -56,15 +67,20 @@ export default function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <button className="bg-white text-primary font-semibold py-3 px-8 rounded-lg hover:bg-muted transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 group">
-              Shop Now
-              <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform duration-300">
-                →
-              </span>
-            </button>
-            <button className="bg-transparent border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white/10 transition-all duration-300 hover:scale-105">
-              View Collections
-            </button>
+            <Link href="/products">
+              <button className="group bg-white text-primary font-semibold py-3 px-8 rounded-lg hover:shadow-xl hover:-translate-y-0.5 inline-flex items-center justify-center gap-2 transition-all duration-300">
+                <ShoppingBag className="w-5 h-5" />
+                <span>Shop Now</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+              </button>
+            </Link>
+
+            <Link href="/categories">
+              <button className="group bg-transparent border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white/10 transition-all duration-300 hover:scale-105 inline-flex items-center justify-center gap-2">
+                <LayoutGrid className="w-5 h-5" />
+                <span>View Collections</span>
+              </button>
+            </Link>
           </div>
         </div>
       </div>

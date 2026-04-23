@@ -37,6 +37,7 @@ export interface Product {
     name: string;
     email: string;
   };
+  comparePrice?: number;
 }
 
 export interface Category {

@@ -120,24 +120,24 @@ export const useProduct = (
 };
 
 // Product by slug hook
-export const useProductBySlug = (
-  slug: string,
-  options?: Omit<UseQueryOptions<Product, Error>, "queryKey" | "queryFn">,
+export const useProductById = (
+  id: string,
+  options?: Omit<UseQueryOptions<ProductDetailsResponseData, Error>, "queryKey" | "queryFn">,
 ) => {
-  return useQuery<Product, Error>({
-    queryKey: productKeys.detail(slug),
-    queryFn: async () => {
-      const response = await productApi.getBySlug(slug);
-      return response.data.product;
-    },
-    enabled: !!slug,
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 60,
-    ...options,
-  });
+   return useQuery<ProductDetailsResponseData, Error>({
+     queryKey: [...productKeys.detail(id), "byId"],
+     queryFn: async () => {
+       const response = await productApi.getById(id);
+       return response.data;
+     },
+     enabled: !!id,
+     staleTime: 1000 * 60 * 10,
+     gcTime: 1000 * 60 * 60,
+     ...options,
+   });
 };
 
-// Product details with related products
+
 export const useProductDetails = (
   id: string,
   options?: Omit<

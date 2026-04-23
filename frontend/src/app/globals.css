@@ -102,6 +102,10 @@
     color: var(--color-accent);
   }
 
+  button {
+    cursor: pointer;
+  }
+
   /* Selection color */
   ::selection {
     background-color: var(--color-accent);

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Star, ShoppingCart, Heart, Loader2 } from "lucide-react";
-import { Product, Category } from "@/types";
+import { Product, Category, ProductImage } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useCart } from "@/lib/hooks/use-cart";
@@ -13,36 +13,50 @@ import {
 } from "@/lib/hooks/use-wishlist";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useProductReviews } from "@/lib/hooks/use-reviews";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  console.log({ product });
+
   const router = useRouter();
   const { addItem } = useCart();
 
-  // Check if user is authenticated
   const isAuthenticated =
     typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
 
-  // Only fetch wishlist status if user is authenticated
+  const productId = (product._id ?? product.id) as string;
+
   const { data: wishlistData, isLoading: isCheckingWishlist } =
-    useCheckInWishlist(product._id, {
-      enabled: isAuthenticated, // Only run query if authenticated
+    useCheckInWishlist(productId, {
+      enabled: isAuthenticated && !!productId,
     });
 
-  const isInWishlist = wishlistData?.data?.isInWishlist || false;
+  const isInWishlist = wishlistData?.isInWishlist ?? false;
 
   const { mutate: toggleWishlist, isPending: isTogglingWishlist } =
     useToggleWishlist();
+
+  const { data: reviewData, isLoading: isLoadingReviews } = useProductReviews(
+    productId,
+    { limit: 1 },
+    { enabled: productId.length > 0 },
+  );
+
+  const averageRating =
+    reviewData?.statistics?.averageRating ?? product.averageRating ?? 0;
+
+  const totalReviews =
+    reviewData?.statistics?.totalReviews ?? product.ratingsCount ?? 0;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      // This should never happen since button is hidden, but keeping for safety
       toast.error("Please login to add items to cart", {
         duration: 3000,
         position: "bottom-center",
@@ -72,7 +86,6 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      // This should never happen since button is hidden, but keeping for safety
       toast.error("Please login to manage your wishlist", {
         duration: 3000,
         position: "bottom-center",
@@ -104,14 +117,18 @@ export function ProductCard({ product }: ProductCardProps) {
       <Link href={`/products/${product._id}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted cursor-pointer">
           <Image
-            src={product.images[0]?.url || "/images/placeholder.jpg"}
+            src={
+              (typeof product.images[0] === "string"
+                ? product.images[0]
+                : (product.images[0] as ProductImage)?.url) ||
+              "/images/placeholder.jpg"
+            }
             alt={product.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
 
-          {/* Wishlist Button - Only show if authenticated */}
           {isAuthenticated && (
             <button
               onClick={handleToggleWishlist}
@@ -161,7 +178,6 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
 
-          {/* Add to Cart Button - Only show if authenticated */}
           {isAuthenticated && (
             <Button
               size="icon"
@@ -191,16 +207,23 @@ export function ProductCard({ product }: ProductCardProps) {
                   <Star
                     key={i}
                     className={`h-4 w-4 ${
-                      i < Math.floor(product.averageRating || 0)
+                      i < Math.floor(Number(averageRating))
                         ? "fill-accent text-accent"
                         : "fill-muted text-muted-foreground"
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-sm text-muted-foreground">
-                ({product.reviewCount || 0})
-              </span>
+              {isLoadingReviews ? (
+                <Loader2
+                  size={12}
+                  className="animate-spin text-muted-foreground"
+                />
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  ({totalReviews})
+                </span>
+              )}
             </div>
           </div>
         </CardContent>
@@ -229,7 +252,6 @@ export function ProductCard({ product }: ProductCardProps) {
         </CardFooter>
       </Link>
 
-      {/* Optional: Add a subtle login prompt on the card for unauthenticated users */}
       {!isAuthenticated && (
         <div className="px-4 pb-4 pt-0">
           <Button

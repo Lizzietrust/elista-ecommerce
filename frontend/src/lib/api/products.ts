@@ -4,57 +4,9 @@ import {
   PaginatedApiResponse,
 } from "./client";
 
-export interface Product {
-  _id: string;
-  name: string;
-  description: string;
-  price: number;
-  discountPrice?: number;
-  images: Array<{
-    url: string;
-    publicId?: string;
-    thumbnail?: string;
-  }>;
-  category: {
-    _id: string;
-    name: string;
-    slug: string;
-  };
-  brand?: string;
-  sku?: string;
-  stock: number;
-  averageRating?: number;
-  ratingsCount?: number;
-  featured?: boolean;
-  isActive: boolean;
-  slug?: string;
-  tags?: string[];
-  specifications?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  seller?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  comparePrice?: number;
-}
+export type { Product, ProductImage, Category } from "@/types";
+import type { Product, Category } from "@/types";
 
-export interface Category {
-  _id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  parent?: string | Category;
-  children?: Category[];
-  image?: string;
-  featured?: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Query parameters
 export interface ProductQueryParams {
   page?: number;
   limit?: number;
@@ -69,10 +21,7 @@ export interface ProductQueryParams {
   seller?: string;
 }
 
-// Response interfaces
-export interface ProductListResponse extends PaginatedApiResponse<Product> {
-  // Inherits all properties from PaginatedApiResponse
-}
+export interface ProductListResponse extends PaginatedApiResponse<Product> {}
 
 export interface ProductFiltersResponseData {
   categories: string[];
@@ -88,9 +37,7 @@ export interface ProductDetailsResponseData {
   relatedProducts: Product[];
 }
 
-// Main products API functions
 export const productApi = {
-  // Get all products with filters
   getProducts: async (
     params: ProductQueryParams = {},
   ): Promise<ProductListResponse> => {
@@ -108,11 +55,7 @@ export const productApi = {
       seller,
     } = params;
 
-    const queryParams: Record<string, any> = {
-      page,
-      limit,
-      sort,
-    };
+    const queryParams: Record<string, any> = { page, limit, sort };
 
     if (category) queryParams.category = category;
     if (minPrice !== undefined) queryParams.minPrice = minPrice;
@@ -125,18 +68,17 @@ export const productApi = {
 
     const response = await typedApiClient.get<ProductListResponse>(
       "/products",
-      {
-        params: queryParams,
-      },
+      { params: queryParams },
     );
 
-    // Extract categories and brands from the response data
     const categoriesSet = new Set<string>();
     const brandsSet = new Set<string>();
 
     response.data.forEach((product) => {
-      if (product.category?.name) {
+      if (product.category && typeof product.category === "object") {
         categoriesSet.add(product.category.name);
+      } else if (typeof product.category === "string") {
+        categoriesSet.add(product.category);
       }
       if (product.brand) {
         brandsSet.add(product.brand);
@@ -151,7 +93,6 @@ export const productApi = {
     };
   },
 
-  // Get product by ID (with related products)
   getById: async (
     id: string,
   ): Promise<BaseApiResponse<ProductDetailsResponseData>> => {
@@ -160,7 +101,6 @@ export const productApi = {
     );
   },
 
-  // Get product by slug (with related products)
   getBySlug: async (
     slug: string,
   ): Promise<BaseApiResponse<ProductDetailsResponseData>> => {
@@ -169,7 +109,6 @@ export const productApi = {
     );
   },
 
-  // Search products
   search: async (
     query: string,
     limit: number = 20,
@@ -179,44 +118,34 @@ export const productApi = {
     });
   },
 
-  // Get featured products
   getFeatured: async (
     limit: number = 8,
   ): Promise<BaseApiResponse<Product[]>> => {
     return typedApiClient.get<BaseApiResponse<Product[]>>(
       "/products/featured",
-      {
-        params: { limit },
-      },
+      { params: { limit } },
     );
   },
 
-  // Get new arrivals
   getNewArrivals: async (
     limit: number = 12,
     days: number = 30,
   ): Promise<BaseApiResponse<Product[]>> => {
     return typedApiClient.get<BaseApiResponse<Product[]>>(
       "/products/new-arrivals",
-      {
-        params: { limit, days },
-      },
+      { params: { limit, days } },
     );
   },
 
-  // Get best sellers
   getBestSellers: async (
     limit: number = 12,
   ): Promise<BaseApiResponse<Product[]>> => {
     return typedApiClient.get<BaseApiResponse<Product[]>>(
       "/products/best-sellers",
-      {
-        params: { limit },
-      },
+      { params: { limit } },
     );
   },
 
-  // Get products by category (with pagination support)
   getProductsByCategory: async (
     categoryId: string,
     params: Omit<ProductQueryParams, "category"> = {},
@@ -226,29 +155,22 @@ export const productApi = {
     >(`/products/category/${categoryId}`, { params });
   },
 
-  // Get related products
   getRelated: async (
     productId: string,
     limit: number = 4,
   ): Promise<BaseApiResponse<Product[]>> => {
     return typedApiClient.get<BaseApiResponse<Product[]>>(
       `/products/related/${productId}`,
-      {
-        params: { limit },
-      },
+      { params: { limit } },
     );
   },
 
-  // Get product filters
   getProductFilters: async (): Promise<
     BaseApiResponse<ProductFiltersResponseData>
   > => {
-    // First get all products to calculate filters
     const response = await typedApiClient.get<PaginatedApiResponse<Product>>(
       "/products",
-      {
-        params: { limit: 100 },
-      },
+      { params: { limit: 100 } },
     );
 
     const categoriesSet = new Set<string>();
@@ -256,8 +178,10 @@ export const productApi = {
     const prices: number[] = [];
 
     response.data.forEach((product) => {
-      if (product.category?.name) {
+      if (product.category && typeof product.category === "object") {
         categoriesSet.add(product.category.name);
+      } else if (typeof product.category === "string") {
+        categoriesSet.add(product.category);
       }
       if (product.brand) {
         brandsSet.add(product.brand);
@@ -265,22 +189,19 @@ export const productApi = {
       prices.push(product.price);
     });
 
-    const priceRange = {
-      min: Math.min(...prices),
-      max: Math.max(...prices),
-    };
-
     return {
       success: true,
       data: {
         categories: Array.from(categoriesSet),
         brands: Array.from(brandsSet),
-        priceRange,
+        priceRange: {
+          min: Math.min(...prices),
+          max: Math.max(...prices),
+        },
       },
     };
   },
 
-  // Legacy method for backward compatibility
   getAll: async (params?: {
     page?: number;
     limit?: number;
@@ -292,17 +213,13 @@ export const productApi = {
   }): Promise<Product[]> => {
     const response = await typedApiClient.get<PaginatedApiResponse<Product>>(
       "/products",
-      {
-        params,
-      },
+      { params },
     );
     return response.data;
   },
 };
 
-// Category API functions
 export const categoryApi = {
-  // Get all categories
   getAll: async (params?: {
     featured?: boolean;
     parent?: string;
@@ -313,26 +230,19 @@ export const categoryApi = {
     });
   },
 
-  // Get category tree
   getTree: async (): Promise<BaseApiResponse<Category[]>> => {
     return typedApiClient.get<BaseApiResponse<Category[]>>("/categories/tree");
   },
 
-  // Get category by slug
   getBySlug: async (slug: string): Promise<BaseApiResponse<Category>> => {
     return typedApiClient.get<BaseApiResponse<Category>>(
       `/categories/slug/${slug}`,
     );
   },
 
-  // Get category with products
   getWithProducts: async (
     categoryId: string,
-    params?: {
-      page?: number;
-      limit?: number;
-      sort?: string;
-    },
+    params?: { page?: number; limit?: number; sort?: string },
   ): Promise<PaginatedApiResponse<Product> & { category: Category }> => {
     return typedApiClient.get<
       PaginatedApiResponse<Product> & { category: Category }
@@ -340,7 +250,6 @@ export const categoryApi = {
   },
 };
 
-// Export types as aliases for backward compatibility if needed
 export type GetProductsParams = ProductQueryParams;
 export type GetProductsResponse = ProductListResponse;
 export type ProductFilters = ProductFiltersResponseData;

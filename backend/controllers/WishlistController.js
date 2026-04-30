@@ -308,7 +308,7 @@ export const generateShareLink = asyncHandler(async (req, res, next) => {
 
   const token = await wishlist.generateShareToken(expiryDays);
 
-  const shareUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/wishlist/share/${token}`;
+  const shareUrl = `${process.env.FRONTEND_URL}/wishlist/share/${token}`;
 
   res.status(200).json({
     success: true,

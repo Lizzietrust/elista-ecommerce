@@ -5,6 +5,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
 import multer from "multer";
 import path from "path";
+import mongoose from "mongoose";
 
 // Create a simple multer configuration for file uploads
 const storage = multer.diskStorage({
@@ -34,15 +35,13 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Create upload middleware
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter,
 });
 
-// Helper function to build product query
-const buildProductQuery = (queryParams, userId = null) => {
+const buildProductQuery = async (queryParams, userId = null) => {
   const {
     category,
     minPrice,
@@ -59,28 +58,41 @@ const buildProductQuery = (queryParams, userId = null) => {
 
   let query = { isActive: true };
 
-  // Category filter
   if (category) {
-    if (Array.isArray(category)) {
-      query.category = { $in: category };
+    const Category = mongoose.model("Category");
+    let categoryIds = [];
+
+    if (mongoose.Types.ObjectId.isValid(category)) {
+      categoryIds = [category];
     } else {
-      query.category = category;
+      const foundCategory = await Category.findOne({
+        name: { $regex: new RegExp(`^${category}$`, "i") },
+      });
+
+      if (foundCategory) {
+        categoryIds = [foundCategory._id];
+      } else {
+        throw new ErrorResponse(`Invalid category: ${category}`, 400);
+      }
+    }
+
+    if (Array.isArray(categoryIds)) {
+      query.category = { $in: categoryIds };
+    } else {
+      query.category = categoryIds;
     }
   }
 
-  // Price range filter
   if (minPrice || maxPrice) {
     query.price = {};
     if (minPrice) query.price.$gte = Number(minPrice);
     if (maxPrice) query.price.$lte = Number(maxPrice);
   }
 
-  // Rating filter
   if (rating) {
     query.averageRating = { $gte: Number(rating) };
   }
 
-  // Stock filter
   if (inStock !== undefined) {
     if (inStock === "true" || inStock === true) {
       query.stock = { $gt: 0 };
@@ -89,12 +101,10 @@ const buildProductQuery = (queryParams, userId = null) => {
     }
   }
 
-  // Featured filter
   if (featured !== undefined) {
     query.featured = featured === "true" || featured === true;
   }
 
-  // Seller filter (for admin/seller view)
   if (seller) {
     query.seller = seller;
   }
@@ -123,11 +133,8 @@ const buildProductQuery = (queryParams, userId = null) => {
   return { query, sort: sortObj, page: parseInt(page), limit: parseInt(limit) };
 };
 
-// @desc    Get all products
-// @route   GET /api/products
-// @access  Public
 export const getAllProducts = asyncHandler(async (req, res, next) => {
-  const { query, sort, page, limit } = buildProductQuery(
+  const { query, sort, page, limit } = await buildProductQuery(
     req.query,
     req.user?.id,
   );

@@ -10,8 +10,8 @@ export interface User {
 
 export interface ProductImage {
   url: string;
-  publicId: string;
-  thumbnail: string;
+  publicId?: string;
+  thumbnail?: string;
   alt?: string;
 }
 
@@ -53,17 +53,19 @@ export interface FrontendProduct {
 
 export interface Product {
   id: string;
-  _id?: string;
+  _id: string;
   slug: string;
   name: string;
   description: string;
   price: number;
+  comparePrice?: number;
   discountPercentage: number;
   images: string[] | ProductImage[];
-  category: string;
+  category: string | ProductCategory;
   brand: string;
   rating: number;
   reviewCount: number;
+  ratingsCount?: number;
   stock: number;
   isNew: boolean;
   features: string[];
@@ -71,6 +73,9 @@ export interface Product {
   sku?: string;
   averageRating?: number;
   isFeatured?: boolean;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Category {

@@ -1,4 +1,3 @@
-// lib/api/client.ts (FRONTEND - Fully fixed version)
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -68,23 +67,70 @@ apiClient.interceptors.request.use(
   },
 );
 
+// Define public endpoints that don't require authentication
+const PUBLIC_ENDPOINTS = [
+  "/api/products",
+  "/api/categories",
+  "/api/brands",
+  "/api/search",
+  "/api/reviews",
+  "/api/product",
+];
+
+// Helper function to check if an endpoint is public
+const isPublicEndpoint = (url?: string): boolean => {
+  if (!url) return false;
+  return PUBLIC_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+};
+
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     // Return the data part - we need to cast it to maintain TypeScript types
     return response.data;
   },
-  (error: AxiosError<ErrorResponseData>) => {
-    const { response } = error;
+  async (error: AxiosError<ErrorResponseData>) => {
+    const { response, config } = error;
+
+    // Get the original request config
+    const originalRequest = config as AxiosRequestConfig & { _retry?: boolean };
 
     if (response) {
       switch (response.status) {
         case 401:
-          console.error("Unauthorized access");
+          // Check if this is a public endpoint that should silently fail
+          if (isPublicEndpoint(originalRequest?.url)) {
+            console.debug(
+              "Unauthorized access on public endpoint, continuing normally",
+            );
+            // Return empty/default data for public endpoints
+            return Promise.reject({
+              status: response.status,
+              message: "Authentication required for this operation",
+              data: response?.data,
+              isPublicEndpoint: true,
+            });
+          }
+
+          // For protected endpoints, handle authentication
+          console.error("Unauthorized access on protected endpoint");
+
           if (typeof window !== "undefined") {
-            // Only redirect if not already on login page
-            if (!window.location.pathname.includes("/login")) {
-              window.location.href = "/login";
+            // Clear invalid token if it exists
+            localStorage.removeItem("token");
+
+            // Only redirect for protected routes that need auth
+            // Don't redirect for product browsing, etc.
+            const protectedRoutes = [
+              "/checkout",
+              "/profile",
+              "/orders",
+              "/wishlist",
+            ];
+            const currentPath = window.location.pathname;
+
+            if (protectedRoutes.some((route) => currentPath.includes(route))) {
+              window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
             }
           }
           break;
@@ -163,3 +209,27 @@ export const typedApiClient = {
     return apiRequest<T>({ method: "DELETE", url, ...config });
   },
 };
+
+// Helper function to handle authentication-optional API calls
+export async function optionalAuthRequest<T = any>(
+  url: string,
+  options?: {
+    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+    data?: any;
+    config?: AxiosRequestConfig;
+  },
+): Promise<{ data: T | null; isAuthenticated: boolean; error?: any }> {
+  try {
+    const method = options?.method || "GET";
+    const response = await typedApiClient[
+      method.toLowerCase() as keyof typeof typedApiClient
+    ](url, options?.data, options?.config);
+    return { data: response as T, isAuthenticated: true };
+  } catch (error: any) {
+    // If it's a 401 error on a public endpoint, return empty data instead of failing
+    if (error.status === 401 && error.isPublicEndpoint) {
+      return { data: null, isAuthenticated: false };
+    }
+    throw error;
+  }
+}

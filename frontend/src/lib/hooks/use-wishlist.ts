@@ -8,6 +8,7 @@ import {
   wishlistApi,
   WishlistResponse,
   AddToWishlistResponse,
+  WishlistItem,
 } from "@/lib/api/wishlist";
 import { Product } from "@/lib/api/products";
 import { toast } from "react-hot-toast";
@@ -44,17 +45,30 @@ export const useWishlist = (
   });
 };
 
-export const useCheckInWishlist = (productId: string) => {
-  return useQuery({
-    queryKey: wishlistKeys.check(productId),
-    queryFn: async () => {
-      const response = await wishlistApi.checkInWishlist(productId);
-      return response.data;
+export const useCheckInWishlist = (
+  productId: string,
+  options?: Omit<
+    UseQueryOptions<
+      { isInWishlist: boolean; itemDetails?: WishlistItem },
+      Error
+    >,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  return useQuery<{ isInWishlist: boolean; itemDetails?: WishlistItem }, Error>(
+    {
+      queryKey: wishlistKeys.check(productId),
+      queryFn: async () => {
+        const response = await wishlistApi.checkInWishlist(productId);
+
+        return response.data;
+      },
+      enabled: !!productId,
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 10,
+      ...options,
     },
-    enabled: !!productId,
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 10,
-  });
+  );
 };
 
 export const useWishlistCount = () => {

@@ -74,7 +74,7 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
     categoryName: {
-      type: String, // ✅ ADDED: For easier frontend display and filtering
+      type: String, 
       index: true,
     },
     subCategory: {

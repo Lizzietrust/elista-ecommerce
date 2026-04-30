@@ -10,11 +10,15 @@ import {
   LayoutGrid,
   Clock,
   Zap,
+  UserPlus,
+  LogIn,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function HeroSection() {
   const { activeCampaign, timeRemaining } = useCampaign();
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <section className="relative bg-linear-to-br from-primary via-primary-light to-accent text-white py-16 md:py-24 overflow-hidden">
@@ -75,10 +79,22 @@ export default function HeroSection() {
               </button>
             </Link>
 
-            <Link href="/categories">
-              <button className="group bg-transparent border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white/10 transition-all duration-300 hover:scale-105 inline-flex items-center justify-center gap-2">
-                <LayoutGrid className="w-5 h-5" />
-                <span>View Collections</span>
+            {/* New Sign In / Register Button */}
+            <Link href="/login">
+              <button
+                className="group bg-secondary hover:bg-secondary-light text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center justify-center gap-2"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+              >
+                {isHovered ? (
+                  <UserPlus className="w-5 h-5 transition-all duration-300" />
+                ) : (
+                  <LogIn className="w-5 h-5 transition-all duration-300" />
+                )}
+                <span>Get Started</span>
+                {isHovered && (
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                )}
               </button>
             </Link>
           </div>

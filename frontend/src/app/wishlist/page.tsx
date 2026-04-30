@@ -15,287 +15,77 @@ import {
   SortAsc,
   Grid,
   List,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
 import { toast } from "react-hot-toast";
-import { Product, Category } from "@/types";
-
-// Define a WishlistItem interface
-interface WishlistItem {
-  id: string;
-  product: Product;
-  addedDate: string;
-}
-
-// Mock wishlist data with complete Product structure
-const initialWishlistItems: WishlistItem[] = [
-  {
-    id: "1",
-    product: {
-      _id: "1",
-      slug: "wireless-headphones",
-      name: "Premium Wireless Headphones",
-      description: "Noise-cancelling over-ear headphones with 30hr battery",
-      price: 249.99,
-      comparePrice: 299.99,
-      averageRating: 4.7,
-      reviewCount: 128,
-      images: [
-        {
-          url: "/api/placeholder/400/400",
-          publicId: "wireless-headphones-1",
-          thumbnail: "/api/placeholder/200/200",
-          alt: "Wireless Headphones",
-        },
-      ],
-      category: "Electronics",
-      stock: 25,
-      isFeatured: true,
-      tags: ["Wireless", "Noise Cancelling"],
-      brand: "AudioMaster",
-      sku: "HP-001-BLK",
-      isActive: true,
-      createdAt: "2024-01-15",
-      updatedAt: "2024-01-15",
-      specifications: {},
-      features: [],
-    },
-    addedDate: "2024-01-15",
-  },
-  {
-    id: "2",
-    product: {
-      _id: "2",
-      slug: "smart-watch-pro",
-      name: "Smart Watch Pro",
-      description: "Advanced smartwatch with fitness tracking",
-      price: 349.99,
-      comparePrice: 399.99,
-      averageRating: 4.6,
-      reviewCount: 89,
-      images: [
-        {
-          url: "/api/placeholder/400/400",
-          publicId: "smart-watch-1",
-          thumbnail: "/api/placeholder/200/200",
-          alt: "Smart Watch Pro",
-        },
-      ],
-      category: "Electronics",
-      stock: 15,
-      isFeatured: false,
-      tags: ["Smartwatch", "Fitness"],
-      brand: "TechWear",
-      sku: "SW-002-BLK",
-      isActive: true,
-      createdAt: "2024-01-10",
-      updatedAt: "2024-01-10",
-      specifications: {},
-      features: [],
-    },
-    addedDate: "2024-01-10",
-  },
-  {
-    id: "3",
-    product: {
-      _id: "3",
-      slug: "laptop-stand-premium",
-      name: "Premium Aluminum Laptop Stand",
-      description: "Ergonomic aluminum laptop stand",
-      price: 89.99,
-      comparePrice: 119.99,
-      averageRating: 4.5,
-      reviewCount: 156,
-      images: [
-        {
-          url: "/api/placeholder/400/400",
-          publicId: "laptop-stand-1",
-          thumbnail: "/api/placeholder/200/200",
-          alt: "Laptop Stand",
-        },
-      ],
-      category: "Electronics",
-      stock: 50,
-      isFeatured: true,
-      tags: ["Ergonomic", "Adjustable"],
-      brand: "ErgoTech",
-      sku: "LS-003-SIL",
-      isActive: true,
-      createdAt: "2024-01-05",
-      updatedAt: "2024-01-05",
-      specifications: {},
-      features: [],
-    },
-    addedDate: "2024-01-05",
-  },
-  {
-    id: "4",
-    product: {
-      _id: "4",
-      slug: "portable-speaker",
-      name: "Waterproof Portable Speaker",
-      description: "Bluetooth speaker with 360° sound",
-      price: 129.99,
-      comparePrice: 159.99,
-      averageRating: 4.4,
-      reviewCount: 203,
-      images: [
-        {
-          url: "/api/placeholder/400/400",
-          publicId: "speaker-1",
-          thumbnail: "/api/placeholder/200/200",
-          alt: "Portable Speaker",
-        },
-      ],
-      category: "Electronics",
-      stock: 30,
-      isFeatured: false,
-      tags: ["Waterproof", "Portable"],
-      brand: "SoundWave",
-      sku: "SP-004-BLK",
-      isActive: true,
-      createdAt: "2024-01-02",
-      updatedAt: "2024-01-02",
-      specifications: {},
-      features: [],
-    },
-    addedDate: "2024-01-02",
-  },
-  {
-    id: "5",
-    product: {
-      _id: "5",
-      slug: "mechanical-keyboard",
-      name: "Mechanical Gaming Keyboard",
-      description: "RGB mechanical keyboard",
-      price: 149.99,
-      averageRating: 4.8,
-      reviewCount: 67,
-      images: [
-        {
-          url: "/api/placeholder/400/400",
-          publicId: "keyboard-1",
-          thumbnail: "/api/placeholder/200/200",
-          alt: "Mechanical Keyboard",
-        },
-      ],
-      category: "Electronics",
-      stock: 20,
-      isFeatured: true,
-      tags: ["Mechanical", "RGB"],
-      brand: "GameMaster",
-      sku: "KB-005-BLK",
-      isActive: true,
-      createdAt: "2023-12-28",
-      updatedAt: "2023-12-28",
-      specifications: {},
-      features: [],
-    },
-    addedDate: "2023-12-28",
-  },
-  {
-    id: "6",
-    product: {
-      _id: "6",
-      slug: "organic-cotton-t-shirt",
-      name: "Organic Cotton T-Shirt",
-      description: "Premium organic cotton t-shirt",
-      price: 24.99,
-      averageRating: 4.2,
-      reviewCount: 94,
-      images: [
-        {
-          url: "/api/placeholder/400/400",
-          publicId: "tshirt-1",
-          thumbnail: "/api/placeholder/200/200",
-          alt: "Organic Cotton T-Shirt",
-        },
-      ],
-      category: "Fashion",
-      stock: 50,
-      isFeatured: true,
-      tags: ["Organic", "Cotton"],
-      brand: "EcoWear",
-      sku: "TS-006-WHT",
-      isActive: true,
-      createdAt: "2023-12-20",
-      updatedAt: "2023-12-20",
-      specifications: {},
-      features: [],
-    },
-    addedDate: "2023-12-20",
-  },
-];
+import {
+  useWishlist,
+  useClearWishlist,
+  useRemoveFromWishlist,
+  useMoveToCart,
+  useGenerateShareLink,
+} from "@/lib/hooks/use-wishlist";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw } from "lucide-react";
 
 const sortOptions = [
-  { value: "date-new", label: "Date Added: Newest" },
-  { value: "date-old", label: "Date Added: Oldest" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
+  { value: "-addedAt", label: "Date Added: Newest" },
+  { value: "addedAt", label: "Date Added: Oldest" },
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "price-desc", label: "Price: High to Low" },
   { value: "name-asc", label: "Name: A to Z" },
   { value: "name-desc", label: "Name: Z to A" },
   { value: "rating", label: "Highest Rated" },
 ];
 
-const categories = [
-  "All",
-  "Electronics",
-  "Fashion",
-  "Home",
-  "Sports",
-  "Beauty",
-];
-
 export default function WishlistPage() {
-  const [wishlistItems, setWishlistItems] =
-    useState<WishlistItem[]>(initialWishlistItems);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("date-new");
+  const [sortBy, setSortBy] = useState("-addedAt");
   const [filterCategory, setFilterCategory] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Helper function to get category name
-  const getCategoryName = (category: string | Category): string => {
-    if (typeof category === "string") {
-      return category;
-    } else {
-      return category.name;
-    }
+  const { data: wishlistData, isLoading, isError, refetch } = useWishlist();
+  const { mutate: removeFromWishlist, isPending: isRemoving } =
+    useRemoveFromWishlist();
+  const { mutate: clearWishlist, isPending: isClearing } = useClearWishlist();
+  const { mutate: moveToCart, isPending: isMovingToCart } = useMoveToCart();
+  const { mutate: generateShareLink, isPending: isGeneratingShareLink } =
+    useGenerateShareLink();
+
+  const wishlist = wishlistData?.data;
+  const items = wishlist?.items || [];
+  const summary = wishlist?.summary;
+  const wishlistId = wishlist?.wishlist?._id;
+
+  const getCategoryName = (category: any): string => {
+    if (!category) return "Uncategorized";
+    if (typeof category === "string") return category;
+    if (typeof category === "object" && category.name) return category.name;
+    return "Uncategorized";
   };
 
-  // Calculate totals
-  const totalItems = wishlistItems.length;
-  const totalValue = wishlistItems.reduce(
-    (sum, item) => sum + item.product.price,
-    0,
-  );
-  const selectedValue = wishlistItems
-    .filter((item) => selectedItems.includes(item.id))
-    .reduce((sum, item) => sum + item.product.price, 0);
+  const categories = [
+    "All",
+    ...new Set(items.map((item) => getCategoryName(item.product.category))),
+  ].filter(Boolean);
 
-  // Filter items by category
-  const filteredItems = wishlistItems.filter(
+  const filteredItems = items.filter(
     (item) =>
       filterCategory === "All" ||
       getCategoryName(item.product.category) === filterCategory,
   );
 
-  // Sort items
   const sortedItems = [...filteredItems].sort((a, b) => {
     switch (sortBy) {
-      case "date-new":
-        return (
-          new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime()
-        );
-      case "date-old":
-        return (
-          new Date(a.addedDate).getTime() - new Date(b.addedDate).getTime()
-        );
-      case "price-low":
+      case "-addedAt":
+        return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+      case "addedAt":
+        return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
+      case "price-asc":
         return a.product.price - b.product.price;
-      case "price-high":
+      case "price-desc":
         return b.product.price - a.product.price;
       case "name-asc":
         return a.product.name.localeCompare(b.product.name);
@@ -308,79 +98,137 @@ export default function WishlistPage() {
     }
   });
 
+  const totalItems = items.length;
+  const totalValue = items.reduce((sum, item) => sum + item.product.price, 0);
+  const selectedValue = items
+    .filter((item) => selectedItems.includes(item.product._id))
+    .reduce((sum, item) => sum + item.product.price, 0);
+
   const handleSelectAll = () => {
     if (selectedItems.length === filteredItems.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(filteredItems.map((item) => item.id));
+      setSelectedItems(filteredItems.map((item) => item.product._id));
     }
   };
 
-  const handleSelectItem = (itemId: string) => {
+  const handleSelectItem = (productId: string) => {
     setSelectedItems((prev) =>
-      prev.includes(itemId)
-        ? prev.filter((id) => id !== itemId)
-        : [...prev, itemId],
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId],
     );
   };
 
-  const handleRemoveItem = (itemId: string) => {
-    setWishlistItems((prev) => prev.filter((item) => item.id !== itemId));
-    setSelectedItems((prev) => prev.filter((id) => id !== itemId));
-    toast.success("Item removed from wishlist");
+  const handleRemoveItem = (productId: string) => {
+    removeFromWishlist(productId, {
+      onSuccess: () => {
+        setSelectedItems((prev) => prev.filter((id) => id !== productId));
+      },
+    });
   };
 
   const handleRemoveSelected = () => {
-    setWishlistItems((prev) =>
-      prev.filter((item) => !selectedItems.includes(item.id)),
-    );
+    selectedItems.forEach((productId) => {
+      removeFromWishlist(productId);
+    });
     setSelectedItems([]);
-    toast.success("Selected items removed from wishlist");
   };
 
   const handleAddSelectedToCart = async () => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success(`${selectedItems.length} items added to cart`);
-    } catch (error) {
-      toast.error("Failed to add items to cart");
-    } finally {
-      setIsLoading(false);
+    for (const productId of selectedItems) {
+      moveToCart({ productId });
     }
+    setSelectedItems([]);
   };
 
   const handleShareWishlist = () => {
-    const shareUrl = `${window.location.origin}/wishlist/share/your-share-id`;
-    navigator.clipboard.writeText(shareUrl);
-    toast.success("Wishlist link copied to clipboard!");
+    generateShareLink(7, {
+      onSuccess: (response) => {
+        const shareUrl = response.data?.shareUrl;
+        if (shareUrl) {
+          navigator.clipboard.writeText(shareUrl);
+          toast.success("Wishlist link copied to clipboard!");
+        }
+      },
+    });
   };
 
   const handleClearWishlist = () => {
     if (confirm("Are you sure you want to clear your entire wishlist?")) {
-      setWishlistItems([]);
-      setSelectedItems([]);
-      toast.success("Wishlist cleared");
+      clearWishlist(undefined, {
+        onSuccess: () => {
+          setSelectedItems([]);
+        },
+      });
     }
   };
 
-  if (wishlistItems.length === 0) {
+  if (isLoading) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="h-24 w-24 bg-[#F4EFEA] dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Heart className="text-[#6B6B6B]" size={48} />
+      <div className="min-h-screen bg-background py-8 md:py-12">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="mb-8">
+            <Skeleton className="h-10 w-64 mb-2" />
+            <Skeleton className="h-5 w-96" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#2C2C2C] dark:text-white mb-3">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="lg:w-3/4">
+              <Skeleton className="h-16 w-full mb-6 rounded-xl" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <Skeleton key={i} className="h-96 rounded-xl" />
+                ))}
+              </div>
+            </div>
+            <div className="lg:w-1/4">
+              <Skeleton className="h-64 rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="bg-destructive/10 rounded-lg p-8">
+            <AlertCircle className="text-destructive mx-auto mb-4" size={48} />
+            <p className="text-destructive font-semibold mb-2">
+              Failed to load wishlist
+            </p>
+            <p className="text-foreground-muted text-sm mb-4">
+              There was an error loading your wishlist. Please try again.
+            </p>
+            <Button onClick={() => refetch()} className="gap-2">
+              <RefreshCw size={16} />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="h-24 w-24 bg-background-secondary rounded-full flex items-center justify-center mx-auto mb-6">
+            <Heart className="text-foreground-muted" size={48} />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
             Your wishlist is empty
           </h1>
-          <p className="text-[#6B6B6B] dark:text-gray-400 mb-8">
+          <p className="text-foreground-muted mb-8">
             Save items you love for later. Click the heart icon on any product
             to add it here.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/">
-              <Button className="gap-2 bg-[#2C3E3E] hover:bg-[#4A6B6B]">
+              <Button className="gap-2 bg-primary hover:bg-primary-light">
                 <ChevronLeft size={16} />
                 Continue Shopping
               </Button>
@@ -388,7 +236,7 @@ export default function WishlistPage() {
             <Link href="/categories">
               <Button
                 variant="outline"
-                className="border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                className="border-border hover:bg-background-secondary"
               >
                 Browse Categories
               </Button>
@@ -400,60 +248,48 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="min-h-screen py-8 md:py-12 bg-[#FDF8F5] dark:bg-[#2C2C2C]">
+    <div className="min-h-screen bg-background py-8 md:py-12">
       <div className="container mx-auto px-4 md:px-8">
-        {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-[#6B6B6B] dark:text-gray-400 mb-2">
-            <Link
-              href="/"
-              className="hover:text-[#C17B4D] dark:hover:text-[#D49A6A] transition-colors"
-            >
+          <div className="flex items-center gap-2 text-sm text-foreground-muted mb-2">
+            <Link href="/" className="hover:text-accent transition-colors">
               Home
             </Link>
             <ChevronLeft size={14} className="rotate-180" />
-            <span className="text-[#2C2C2C] dark:text-white">Wishlist</span>
+            <span className="text-foreground">Wishlist</span>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-[#2C2C2C] dark:text-white">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 My Wishlist
               </h1>
-              <p className="text-[#6B6B6B] dark:text-gray-400 mt-2">
+              <p className="text-foreground-muted mt-2">
                 Save items you love and come back to them later
               </p>
             </div>
 
-            {/* Stats */}
             <div className="flex flex-wrap gap-4">
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 min-w-35 border border-[#E8E0D8] dark:border-gray-800">
-                <div className="text-2xl font-bold text-[#2C2C2C] dark:text-white">
-                  {totalItems}
+              <div className="bg-background-secondary rounded-xl p-4 min-w-35 border border-border">
+                <div className="text-2xl font-bold text-foreground">
+                  {summary?.totalItems || totalItems}
                 </div>
-                <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
-                  Total Items
-                </div>
+                <div className="text-sm text-foreground-muted">Total Items</div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 min-w-35 border border-[#E8E0D8] dark:border-gray-800">
-                <div className="text-2xl font-bold text-[#2C2C2C] dark:text-white">
-                  ${totalValue.toFixed(2)}
+              <div className="bg-background-secondary rounded-xl p-4 min-w-35 border border-border">
+                <div className="text-2xl font-bold text-foreground">
+                  ${(summary?.totalEstimatedCost || totalValue).toFixed(2)}
                 </div>
-                <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
-                  Total Value
-                </div>
+                <div className="text-sm text-foreground-muted">Total Value</div>
               </div>
             </div>
           </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content */}
           <div className="lg:w-3/4">
-            {/* Toolbar */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 md:p-6 mb-6 border border-[#E8E0D8] dark:border-gray-800">
+            <div className="bg-background-secondary/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-6 mb-6 border border-border">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Selection Controls */}
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
@@ -464,17 +300,17 @@ export default function WishlistPage() {
                           filteredItems.length > 0
                         }
                         onChange={handleSelectAll}
-                        className="h-5 w-5 text-[#C17B4D] rounded border-[#E8E0D8] focus:ring-[#C17B4D]"
+                        className="h-5 w-5 text-accent rounded border-border focus:ring-accent"
                       />
-                      <span className="text-sm font-medium text-[#2C2C2C] dark:text-gray-300">
+                      <span className="text-sm font-medium text-foreground">
                         Select All ({filteredItems.length})
                       </span>
                     </div>
 
                     {selectedItems.length > 0 && (
                       <>
-                        <span className="text-[#E8E0D8]">|</span>
-                        <span className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                        <span className="text-border">|</span>
+                        <span className="text-sm text-foreground-muted">
                           {selectedItems.length} selected
                         </span>
                       </>
@@ -482,15 +318,13 @@ export default function WishlistPage() {
                   </div>
                 </div>
 
-                {/* View & Sort Controls */}
                 <div className="flex items-center gap-4">
-                  {/* Category Filter */}
                   <div className="hidden md:flex items-center gap-2">
-                    <Filter size={16} className="text-[#6B6B6B]" />
+                    <Filter size={16} className="text-foreground-muted" />
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="bg-transparent text-sm text-[#2C2C2C] dark:text-gray-300 focus:outline-none"
+                      className="bg-transparent text-sm text-foreground focus:outline-none"
                     >
                       {categories.map((category) => (
                         <option key={category} value={category}>
@@ -500,14 +334,13 @@ export default function WishlistPage() {
                     </select>
                   </div>
 
-                  {/* View Toggle */}
-                  <div className="flex items-center gap-1 bg-[#F4EFEA] dark:bg-gray-800 p-1 rounded-lg">
+                  <div className="flex items-center gap-1 bg-background-secondary p-1 rounded-lg">
                     <button
                       onClick={() => setViewMode("grid")}
                       className={`p-2 rounded transition-colors ${
                         viewMode === "grid"
-                          ? "bg-white dark:bg-gray-700 text-[#2C3E3E] dark:text-white shadow-sm"
-                          : "text-[#6B6B6B] hover:text-[#C17B4D]"
+                          ? "bg-white dark:bg-gray-700 text-foreground shadow-sm"
+                          : "text-foreground-muted hover:text-accent"
                       }`}
                     >
                       <Grid size={18} />
@@ -516,24 +349,23 @@ export default function WishlistPage() {
                       onClick={() => setViewMode("list")}
                       className={`p-2 rounded transition-colors ${
                         viewMode === "list"
-                          ? "bg-white dark:bg-gray-700 text-[#2C3E3E] dark:text-white shadow-sm"
-                          : "text-[#6B6B6B] hover:text-[#C17B4D]"
+                          ? "bg-white dark:bg-gray-700 text-foreground shadow-sm"
+                          : "text-foreground-muted hover:text-accent"
                       }`}
                     >
                       <List size={18} />
                     </button>
                   </div>
 
-                  {/* Sort Dropdown */}
                   <div className="relative">
                     <SortAsc
                       size={16}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B6B6B]"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted"
                     />
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="pl-10 pr-8 py-2 rounded-lg border border-[#E8E0D8] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#2C2C2C] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#C17B4D] appearance-none text-sm"
+                      className="pl-10 pr-8 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent appearance-none text-sm"
                     >
                       {sortOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -545,17 +377,16 @@ export default function WishlistPage() {
                 </div>
               </div>
 
-              {/* Selected Items Actions */}
               {selectedItems.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-[#E8E0D8] dark:border-gray-800">
+                <div className="mt-6 pt-6 border-t border-border">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <span className="font-medium text-[#2C2C2C] dark:text-white">
+                      <span className="font-medium text-foreground">
                         {selectedItems.length} items selected
                       </span>
-                      <span className="text-[#6B6B6B] dark:text-gray-400">
+                      <span className="text-foreground-muted">
                         Total:{" "}
-                        <span className="font-bold text-[#C17B4D]">
+                        <span className="font-bold text-accent">
                           ${selectedValue.toFixed(2)}
                         </span>
                       </span>
@@ -564,12 +395,12 @@ export default function WishlistPage() {
                     <div className="flex flex-wrap gap-3">
                       <Button
                         onClick={handleAddSelectedToCart}
-                        disabled={isLoading}
-                        className="gap-2 bg-[#2C3E3E] hover:bg-[#4A6B6B]"
+                        disabled={isMovingToCart}
+                        className="gap-2 bg-primary hover:bg-primary-light"
                       >
-                        {isLoading ? (
+                        {isMovingToCart ? (
                           <>
-                            <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <Loader2 size={16} className="animate-spin" />
                             Adding...
                           </>
                         ) : (
@@ -583,7 +414,8 @@ export default function WishlistPage() {
                       <Button
                         onClick={handleRemoveSelected}
                         variant="outline"
-                        className="gap-2 text-[#C17B7B] hover:text-[#C17B7B] border-[#C17B7B]/30 hover:bg-[#C17B7B]/10"
+                        disabled={isRemoving}
+                        className="gap-2 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10"
                       >
                         <Trash2 size={16} />
                         Remove
@@ -594,36 +426,52 @@ export default function WishlistPage() {
               )}
             </div>
 
-            {/* Wishlist Items */}
-            {viewMode === "grid" ? (
-              // Grid View
+            {sortedItems.length === 0 ? (
+              <div className="text-center py-16 bg-background-secondary/50 backdrop-blur-sm rounded-2xl border border-border">
+                <div className="h-20 w-20 bg-background-tertiary rounded-full flex items-center justify-center mx-auto mb-6">
+                  <AlertCircle className="text-foreground-muted" size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-3">
+                  No items found
+                </h3>
+                <p className="text-foreground-muted mb-8 max-w-md mx-auto">
+                  No wishlist items match your current filters. Try a different
+                  category.
+                </p>
+                <Button
+                  onClick={() => setFilterCategory("All")}
+                  variant="outline"
+                  className="border-border hover:bg-background-secondary"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortedItems.map((item) => (
-                  <div key={item.id} className="relative group">
-                    {/* Selection Checkbox */}
+                  <div key={item.product._id} className="relative group">
                     <div className="absolute top-4 left-4 z-10">
                       <input
                         type="checkbox"
-                        checked={selectedItems.includes(item.id)}
-                        onChange={() => handleSelectItem(item.id)}
-                        className="h-5 w-5 text-[#C17B4D] rounded border-[#E8E0D8] focus:ring-[#C17B4D] bg-white"
+                        checked={selectedItems.includes(item.product._id)}
+                        onChange={() => handleSelectItem(item.product._id)}
+                        className="h-5 w-5 text-accent rounded border-border focus:ring-accent bg-background"
                       />
                     </div>
 
-                    {/* Remove Button */}
                     <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex items-center justify-center text-gray-400 hover:text-[#C17B7B] opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveItem(item.product._id)}
+                      disabled={isRemoving}
+                      className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center text-foreground-muted hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                     >
                       <Trash2 size={18} />
                     </button>
 
                     <ProductCard product={item.product} />
 
-                    {/* Added Date */}
-                    <div className="text-xs text-[#6B6B6B] dark:text-gray-400 mt-2 text-center">
+                    <div className="text-xs text-foreground-muted mt-2 text-center">
                       Added{" "}
-                      {new Date(item.addedDate).toLocaleDateString("en-US", {
+                      {new Date(item.addedAt).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
@@ -633,48 +481,52 @@ export default function WishlistPage() {
                 ))}
               </div>
             ) : (
-              // List View
               <div className="space-y-4">
                 {sortedItems.map((item) => (
                   <div
-                    key={item.id}
-                    className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg overflow-hidden group border border-[#E8E0D8] dark:border-gray-800"
+                    key={item.product._id}
+                    className="bg-background-secondary/50 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden group border border-border"
                   >
                     <div className="p-4 md:p-6">
                       <div className="flex flex-col md:flex-row gap-6">
-                        {/* Selection Checkbox */}
                         <div className="flex items-start">
                           <input
                             type="checkbox"
-                            checked={selectedItems.includes(item.id)}
-                            onChange={() => handleSelectItem(item.id)}
-                            className="h-5 w-5 text-[#C17B4D] rounded border-[#E8E0D8] focus:ring-[#C17B4D] mt-1"
+                            checked={selectedItems.includes(item.product._id)}
+                            onChange={() => handleSelectItem(item.product._id)}
+                            className="h-5 w-5 text-accent rounded border-border focus:ring-accent mt-1"
                           />
                         </div>
 
-                        {/* Product Image */}
                         <div className="md:w-48 shrink-0">
-                          <div className="aspect-square bg-[#F4EFEA] dark:bg-gray-800 rounded-xl overflow-hidden">
-                            <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-[#D4C4B7]/20 to-[#C17B4D]/20 dark:from-gray-800 dark:to-gray-900">
-                              <span className="text-5xl">🛒</span>
-                            </div>
+                          <div className="aspect-square bg-background-tertiary rounded-xl overflow-hidden">
+                            {item.product.images?.[0]?.url ? (
+                              <img
+                                src={item.product.images[0].url}
+                                alt={item.product.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center">
+                                <span className="text-5xl">🛒</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Product Info */}
                         <div className="flex-1">
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div>
                               <div className="flex items-center gap-3 mb-2">
                                 <Link
                                   href={`/categories/${getCategoryName(item.product.category).toLowerCase()}`}
-                                  className="text-sm text-[#C17B4D] hover:underline"
+                                  className="text-sm text-accent hover:underline"
                                 >
                                   {getCategoryName(item.product.category)}
                                 </Link>
-                                <span className="text-xs text-[#6B6B6B] dark:text-gray-400">
+                                <span className="text-xs text-foreground-muted">
                                   Added{" "}
-                                  {new Date(item.addedDate).toLocaleDateString(
+                                  {new Date(item.addedAt).toLocaleDateString(
                                     "en-US",
                                     {
                                       month: "short",
@@ -684,59 +536,65 @@ export default function WishlistPage() {
                                 </span>
                               </div>
 
-                              <h3 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-2">
+                              <h3 className="text-xl font-bold text-foreground mb-2">
                                 <Link
-                                  href={`/products/${item.product.slug}`}
-                                  className="hover:text-[#C17B4D] transition-colors"
+                                  href={`/products/${item.product._id}`}
+                                  className="hover:text-accent transition-colors"
                                 >
                                   {item.product.name}
                                 </Link>
                               </h3>
 
-                              <p className="text-[#6B6B6B] dark:text-gray-400 mb-4 line-clamp-2">
+                              <p className="text-foreground-muted mb-4 line-clamp-2">
                                 {item.product.description}
                               </p>
 
-                              {/* Tags */}
                               {item.product.tags &&
                                 item.product.tags.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mb-4">
-                                    {item.product.tags.map((tag) => (
-                                      <span
-                                        key={tag}
-                                        className="px-2 py-1 bg-[#F4EFEA] dark:bg-gray-800 text-[#6B6B6B] dark:text-gray-300 text-xs rounded-full"
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
+                                    {item.product.tags
+                                      .slice(0, 3)
+                                      .map((tag) => (
+                                        <span
+                                          key={tag}
+                                          className="px-2 py-1 bg-background-tertiary text-foreground-muted text-xs rounded-full"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
                                   </div>
                                 )}
                             </div>
 
-                            {/* Price & Actions */}
                             <div className="shrink-0">
                               <div className="text-right mb-4">
-                                <div className="text-2xl font-bold text-[#2C2C2C] dark:text-white">
+                                <div className="text-2xl font-bold text-foreground">
                                   ${item.product.price.toFixed(2)}
                                 </div>
                                 {item.product.comparePrice && (
-                                  <div className="text-lg line-through text-[#6B6B6B] dark:text-gray-500">
+                                  <div className="text-lg line-through text-foreground-muted">
                                     ${item.product.comparePrice.toFixed(2)}
                                   </div>
                                 )}
                               </div>
 
                               <div className="flex flex-col gap-2">
-                                <Link href={`/products/${item.product.slug}`}>
+                                <Link href={`/products/${item.product._id}`}>
                                   <Button
                                     variant="outline"
-                                    className="w-full gap-2 border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                                    className="w-full gap-2 border-border hover:bg-background-secondary"
                                   >
                                     <Eye size={16} />
                                     View Details
                                   </Button>
                                 </Link>
-                                <Button className="w-full gap-2 bg-[#2C3E3E] hover:bg-[#4A6B6B]">
+                                <Button
+                                  onClick={() =>
+                                    moveToCart({ productId: item.product._id })
+                                  }
+                                  disabled={isMovingToCart}
+                                  className="w-full gap-2 bg-primary hover:bg-primary-light"
+                                >
                                   <ShoppingBag size={16} />
                                   Add to Cart
                                 </Button>
@@ -745,10 +603,10 @@ export default function WishlistPage() {
                           </div>
                         </div>
 
-                        {/* Remove Button */}
                         <button
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="md:self-start text-gray-400 hover:text-[#C17B7B] opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleRemoveItem(item.product._id)}
+                          disabled={isRemoving}
+                          className="md:self-start text-foreground-muted hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                         >
                           <Trash2 size={20} />
                         </button>
@@ -758,54 +616,34 @@ export default function WishlistPage() {
                 ))}
               </div>
             )}
-
-            {/* No Results */}
-            {sortedItems.length === 0 && (
-              <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-[#E8E0D8] dark:border-gray-800">
-                <div className="h-20 w-20 bg-[#F4EFEA] dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <AlertCircle className="text-[#6B6B6B]" size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-3">
-                  No items found
-                </h3>
-                <p className="text-[#6B6B6B] dark:text-gray-400 mb-8 max-w-md mx-auto">
-                  No wishlist items match your current filters. Try a different
-                  category.
-                </p>
-                <Button
-                  onClick={() => setFilterCategory("All")}
-                  variant="outline"
-                  className="border-[#E8E0D8] hover:bg-[#F4EFEA]"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            )}
           </div>
 
-          {/* Sidebar */}
           <div className="lg:w-1/4">
             <div className="sticky top-24 space-y-6">
-              {/* Wishlist Actions */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-[#E8E0D8] dark:border-gray-800">
-                <h2 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-6">
+              <div className="bg-background-secondary/50 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-border">
+                <h2 className="text-xl font-bold text-foreground mb-6">
                   Wishlist Actions
                 </h2>
 
                 <div className="space-y-4">
                   <Button
                     onClick={handleShareWishlist}
+                    disabled={isGeneratingShareLink || items.length === 0}
                     variant="outline"
-                    className="w-full justify-start gap-3 border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                    className="w-full justify-start gap-3 border-border hover:bg-background-secondary"
                   >
-                    <Share2 size={18} className="text-[#C17B4D]" />
+                    {isGeneratingShareLink ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Share2 size={18} className="text-accent" />
+                    )}
                     Share Wishlist
                   </Button>
 
                   <Link href="/">
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-3 border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                      className="w-full justify-start gap-3 border-border hover:bg-background-secondary"
                     >
                       <ChevronLeft size={18} />
                       Continue Shopping
@@ -814,119 +652,88 @@ export default function WishlistPage() {
 
                   <Button
                     onClick={handleClearWishlist}
+                    disabled={isClearing || items.length === 0}
                     variant="outline"
-                    className="w-full justify-start gap-3 text-[#C17B7B] hover:text-[#C17B7B] border-[#C17B7B]/30 hover:bg-[#C17B7B]/10"
+                    className="w-full justify-start gap-3 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10"
                   >
-                    <Trash2 size={18} />
+                    {isClearing ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={18} />
+                    )}
                     Clear Wishlist
                   </Button>
                 </div>
               </div>
 
-              {/* Price Alert */}
-              <div className="bg-linear-to-r from-[#2C3E3E]/10 to-[#C17B4D]/10 dark:from-[#2C3E3E]/20 dark:to-[#C17B4D]/20 rounded-2xl p-6 border border-[#2C3E3E]/20">
-                <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
+              <div className="bg-linear-to-r from-primary/10 to-accent/10 rounded-2xl p-6 border border-primary/20">
+                <h3 className="font-bold text-foreground mb-4">
                   Get Price Alerts
                 </h3>
-                <p className="text-sm text-[#6B6B6B] dark:text-gray-400 mb-4">
+                <p className="text-sm text-foreground-muted mb-4">
                   We'll notify you when items in your wishlist go on sale
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-[#2C3E3E]/20 flex items-center justify-center">
-                      <span className="text-[#2C3E3E]">🔔</span>
+                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-primary">🔔</span>
                     </div>
                     <div>
-                      <div className="font-medium text-[#2C2C2C] dark:text-white">
+                      <div className="font-medium text-foreground">
                         Email Alerts
                       </div>
-                      <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                      <div className="text-sm text-foreground-muted">
                         When prices drop
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-[#C17B4D]/20 flex items-center justify-center">
-                      <span className="text-[#C17B4D]">📱</span>
+                    <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center">
+                      <span className="text-accent">📱</span>
                     </div>
                     <div>
-                      <div className="font-medium text-[#2C2C2C] dark:text-white">
+                      <div className="font-medium text-foreground">
                         Push Notifications
                       </div>
-                      <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                      <div className="text-sm text-foreground-muted">
                         On your devices
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <Button className="w-full mt-6 bg-[#2C3E3E] hover:bg-[#4A6B6B]">
+                <Button className="w-full mt-6 bg-primary hover:bg-primary-light">
                   Enable Alerts
                 </Button>
               </div>
 
-              {/* Recently Viewed */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-[#E8E0D8] dark:border-gray-800">
-                <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
-                  Recently Viewed
-                </h3>
-                <div className="space-y-4">
-                  {initialWishlistItems.slice(0, 3).map((item) => (
-                    <Link
-                      key={item.id}
-                      href={`/products/${item.product.slug}`}
-                      className="flex items-center gap-3 group"
-                    >
-                      <div className="h-16 w-16 bg-[#F4EFEA] dark:bg-gray-800 rounded-lg flex items-center justify-center shrink-0">
-                        <span className="text-xl">🛒</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-[#2C2C2C] dark:text-white group-hover:text-[#C17B4D] truncate transition-colors">
-                          {item.product.name}
-                        </div>
-                        <div className="text-sm text-[#6B6B6B] dark:text-gray-400">
-                          ${item.product.price.toFixed(2)}
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                <Link
-                  href="/recently-viewed"
-                  className="inline-block w-full text-center mt-4 text-[#C17B4D] hover:text-[#D49A6A] text-sm transition-colors"
-                >
-                  View All
-                </Link>
-              </div>
-
-              {/* Wishlist Tips */}
-              <div className="bg-linear-to-r from-[#C17B4D]/10 to-[#D4C4B7]/10 dark:from-[#C17B4D]/20 dark:to-[#D4C4B7]/20 rounded-2xl p-6 border border-[#C17B4D]/20">
-                <h3 className="font-bold text-[#2C2C2C] dark:text-white mb-4">
+              <div className="bg-linear-to-r from-accent/10 to-secondary/10 rounded-2xl p-6 border border-accent/20">
+                <h3 className="font-bold text-foreground mb-4">
                   Wishlist Tips
                 </h3>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-[#C17B4D] mt-2"></div>
-                    <span className="text-sm text-[#6B6B6B] dark:text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-accent mt-2"></div>
+                    <span className="text-sm text-foreground-muted">
                       Items may go out of stock quickly
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-[#C17B4D] mt-2"></div>
-                    <span className="text-sm text-[#6B6B6B] dark:text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-accent mt-2"></div>
+                    <span className="text-sm text-foreground-muted">
                       Prices are updated daily
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-[#C17B4D] mt-2"></div>
-                    <span className="text-sm text-[#6B6B6B] dark:text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-accent mt-2"></div>
+                    <span className="text-sm text-foreground-muted">
                       Share your wishlist for gift ideas
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-[#C17B4D] mt-2"></div>
-                    <span className="text-sm text-[#6B6B6B] dark:text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-accent mt-2"></div>
+                    <span className="text-sm text-foreground-muted">
                       Get notified when items go on sale
                     </span>
                   </li>
@@ -936,62 +743,75 @@ export default function WishlistPage() {
           </div>
         </div>
 
-        {/* Recommendations */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-white mb-8">
-            Based on Your Wishlist
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {initialWishlistItems.slice(0, 4).map((item) => (
-              <ProductCard key={item.id} product={item.product} />
-            ))}
-          </div>
-        </div>
-
-        {/* Share Section */}
-        <div className="mt-12 bg-linear-to-r from-[#2C3E3E] to-[#4A6B6B] text-white rounded-2xl p-8 md:p-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="max-w-lg">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Share Your Wishlist
-              </h2>
-              <p className="text-[#D4C4B7] mb-6">
-                Let friends and family know what you're interested in. Perfect
-                for birthdays, holidays, or just because!
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={handleShareWishlist}
-                  className="bg-white text-[#2C3E3E] hover:bg-[#F4EFEA] gap-3"
-                >
-                  <Share2 size={18} />
-                  Copy Share Link
-                </Button>
-                <Button
-                  variant="outline"
-                  className="text-white border-white hover:bg-white/10 gap-3"
-                >
-                  <span>📧</span>
-                  Email Wishlist
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex -space-x-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="h-12 w-12 rounded-full border-2 border-[#4A6B6B] bg-linear-to-br from-[#2C3E3E] to-[#C17B4D] flex items-center justify-center"
-                >
-                  <span className="text-white font-bold">U{i}</span>
-                </div>
+        {items.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-foreground mb-8">
+              Based on Your Wishlist
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {items.slice(0, 4).map((item) => (
+                <ProductCard key={item.product._id} product={item.product} />
               ))}
-              <div className="h-12 w-12 rounded-full border-2 border-[#4A6B6B] bg-[#2C3E3E] flex items-center justify-center">
-                <span className="text-white font-bold">+12</span>
+            </div>
+          </div>
+        )}
+
+        {items.length > 0 && (
+          <div className="mt-12 bg-linear-to-r from-primary to-primary-light text-white rounded-2xl p-8 md:p-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="max-w-lg">
+                <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                  Share Your Wishlist
+                </h2>
+                <p className="text-white/80 mb-6">
+                  Let friends and family know what you're interested in. Perfect
+                  for birthdays, holidays, or just because!
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={handleShareWishlist}
+                    disabled={isGeneratingShareLink}
+                    className="bg-white text-primary hover:bg-white/90 gap-3"
+                  >
+                    {isGeneratingShareLink ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Share2 size={18} />
+                    )}
+                    Copy Share Link
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="text-white border-white hover:bg-white/10 gap-3"
+                  >
+                    <span>📧</span>
+                    Email Wishlist
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex -space-x-4">
+                {items.slice(0, 5).map((item, i) => (
+                  <div
+                    key={item.product._id}
+                    className="h-12 w-12 rounded-full border-2 border-primary-light bg-gradient-to-br from-primary to-accent flex items-center justify-center"
+                  >
+                    <span className="text-white font-bold text-xs">
+                      {item.product.name.charAt(0)}
+                    </span>
+                  </div>
+                ))}
+                {items.length > 5 && (
+                  <div className="h-12 w-12 rounded-full border-2 border-primary-light bg-primary flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">
+                      +{items.length - 5}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

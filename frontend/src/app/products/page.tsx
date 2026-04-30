@@ -16,7 +16,6 @@ export default function ProductsPage() {
   const searchParams = useSearchParams();
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  // Get filter params from URL
   const category = searchParams.get("category") || undefined;
   const sort = searchParams.get("sort") || "-createdAt";
   const minPrice = searchParams.get("minPrice") || undefined;
@@ -43,8 +42,8 @@ export default function ProductsPage() {
     },
     {
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
       retry: 2,
     },
   );
@@ -54,7 +53,6 @@ export default function ProductsPage() {
   const totalPages = productsData?.totalPages || 0;
   const currentPage = productsData?.currentPage || 1;
 
-  // Get unique categories and brands for filters from the products data
   const categories = [
     ...new Set(
       products.map((p) =>
@@ -117,14 +115,23 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8 animate-slide-down">
-          <h1 className="text-4xl font-bold text-gradient-earth mb-2">
-            Our Products
-          </h1>
-          <p className="text-foreground-muted">
-            Discover our collection of {totalCount} amazing products
-          </p>
+          <div className="relative">
+            <div className="absolute -top-4 left-0 w-20 h-1 bg-gradient-to-r from-accent to-primary rounded-full"></div>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-3 tracking-tight">
+              Our <span className="text-accent">Products</span>
+            </h1>
+
+            <div className="flex items-center gap-3 mt-2">
+              <div className="w-12 h-0.5 bg-accent/50"></div>
+              <p className="text-foreground-muted text-base md:text-lg">
+                Discover our collection of{" "}
+                <span className="font-semibold text-accent">{totalCount}</span>{" "}
+                amazing products
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -133,12 +140,12 @@ export default function ProductsPage() {
             <Button
               onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
               variant="outline"
-              className="w-full gap-2 border-border"
+              className="w-full gap-2 border-border hover:border-accent hover:bg-accent/5 transition-all duration-300"
             >
               <Filter size={18} />
               Filters
               {hasActiveFilters && (
-                <span className="ml-2 h-2 w-2 rounded-full bg-accent" />
+                <span className="ml-2 h-2 w-2 rounded-full bg-accent animate-pulse" />
               )}
             </Button>
           </div>
@@ -173,7 +180,7 @@ export default function ProductsPage() {
               <Button
                 onClick={clearFilters}
                 variant="ghost"
-                className="mt-4 w-full gap-2 text-accent hover:text-accent-light"
+                className="mt-4 w-full gap-2 text-accent hover:text-accent-light hover:bg-accent/10 transition-all duration-300"
               >
                 <RefreshCw size={16} />
                 Clear All Filters
@@ -185,18 +192,32 @@ export default function ProductsPage() {
           <div className="lg:w-3/4">
             {/* Header with sort and results count */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <div className="text-sm text-foreground-muted">
+              <div className="text-sm text-foreground-muted bg-background-secondary/50 px-4 py-2 rounded-full">
                 {!isLoading && products.length > 0 ? (
                   <>
-                    Showing {(currentPage - 1) * 12 + 1} -{" "}
-                    {Math.min(currentPage * 12, totalCount)} of {totalCount}{" "}
+                    Showing{" "}
+                    <span className="font-semibold text-foreground">
+                      {(currentPage - 1) * 12 + 1}
+                    </span>{" "}
+                    -{" "}
+                    <span className="font-semibold text-foreground">
+                      {Math.min(currentPage * 12, totalCount)}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold text-accent">
+                      {totalCount}
+                    </span>{" "}
                     products
                   </>
                 ) : (
                   <span>Loading products...</span>
                 )}
               </div>
-              <ProductSort currentSort={sort} />
+
+              {/* Sort Dropdown with higher z-index */}
+              <div className="relative z-50">
+                <ProductSort currentSort={sort} />
+              </div>
             </div>
 
             {/* Products Grid */}
@@ -228,7 +249,7 @@ export default function ProductsPage() {
                 )}
               </>
             ) : (
-              <div className="text-center py-16 bg-background-secondary rounded-2xl border border-border">
+              <div className="text-center py-16 bg-background-secondary/50 backdrop-blur-sm rounded-2xl border border-border">
                 <div className="h-20 w-20 bg-background-tertiary rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg
                     className="w-10 h-10 text-foreground-muted"
@@ -254,7 +275,7 @@ export default function ProductsPage() {
                   <Button
                     onClick={clearFilters}
                     variant="outline"
-                    className="mt-6 gap-2"
+                    className="mt-6 gap-2 border-accent text-accent hover:bg-accent hover:text-white transition-all duration-300"
                   >
                     <RefreshCw size={16} />
                     Clear All Filters
@@ -269,7 +290,6 @@ export default function ProductsPage() {
   );
 }
 
-// Skeleton component for loading state
 function ProductGridSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

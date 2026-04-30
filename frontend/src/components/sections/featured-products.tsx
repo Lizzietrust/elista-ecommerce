@@ -90,7 +90,7 @@ export default function FeaturedProducts() {
 
         <div className="text-center mt-12">
           <Link
-            href="/products?featured=true"
+            href="/products"
             className="inline-flex items-center gap-2 text-accent font-semibold border-2 border-accent py-3 px-8 rounded-lg hover:bg-accent/10 transition-all duration-300 hover:scale-105"
           >
             View All Products

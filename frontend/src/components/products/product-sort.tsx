@@ -1,21 +1,23 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, Check } from "lucide-react";
 
-const sortOptions = [
-  { value: "newest", label: "Newest" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-  { value: "name-asc", label: "Name: A to Z" },
-  { value: "name-desc", label: "Name: Z to A" },
-  { value: "rating", label: "Highest Rated" },
+interface SortOption {
+  value: string;
+  label: string;
+}
+
+const sortOptions: SortOption[] = [
+  { value: "-createdAt", label: "Newest First" },
+  { value: "createdAt", label: "Oldest First" },
+  { value: "-price", label: "Price: High to Low" },
+  { value: "price", label: "Price: Low to High" },
+  { value: "-averageRating", label: "Highest Rated" },
+  { value: "-salesCount", label: "Best Selling" },
+  { value: "name", label: "Name: A to Z" },
+  { value: "-name", label: "Name: Z to A" },
 ];
 
 interface ProductSortProps {
@@ -23,44 +25,83 @@ interface ProductSortProps {
 }
 
 export default function ProductSort({
-  currentSort = "newest",
+  currentSort = "-createdAt",
 }: ProductSortProps) {
   const router = useRouter();
-  const currentLabel =
-    sortOptions.find((opt) => opt.value === currentSort)?.label || "Newest";
+  const searchParams = useSearchParams();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleSortChange = (value: string) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("sort", value);
+  const currentOption =
+    sortOptions.find((opt) => opt.value === currentSort) || sortOptions[0];
+
+  const handleSortChange = (sortValue: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("sort", sortValue);
+    params.set("page", "1"); // Reset to first page when sorting
     router.push(`/products?${params.toString()}`);
+    setIsOpen(false);
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted hover:text-accent transition-all duration-200">
-          Sort by: {currentLabel}
-          <ChevronDown className="h-4 w-4" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-56 bg-card border-border shadow-lg"
+    <div className="relative z-50" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent-light transition-all duration-300 shadow-md font-medium"
       >
-        {sortOptions.map((option) => (
-          <DropdownMenuItem
-            key={option.value}
-            onClick={() => handleSortChange(option.value)}
-            className={`cursor-pointer transition-colors duration-200 ${
-              currentSort === option.value
-                ? "bg-accent/10 text-accent font-medium"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            {option.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <span>Sort by: </span>
+        <span className="font-bold">{currentOption.label}</span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {isOpen && (
+        <>
+          {/* Backdrop for mobile */}
+          <div
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div className="absolute right-0 mt-2 w-64 bg-background border border-border rounded-lg shadow-2xl overflow-hidden animate-slide-down z-50">
+            <div className="py-2">
+              {sortOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleSortChange(option.value)}
+                  className={`w-full px-4 py-2 text-left transition-colors duration-150 flex items-center justify-between group hover:bg-accent/10 ${
+                    currentSort === option.value
+                      ? "bg-accent/10 text-accent font-semibold"
+                      : "text-foreground"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {currentSort === option.value && (
+                    <Check size={16} className="text-accent" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -19,6 +19,15 @@ interface ProductCardProps {
   product: Product;
 }
 
+const isNewArrival = (createdAt: string | undefined): boolean => {
+  if (!createdAt) return false;
+
+  const productDate = new Date(createdAt);
+  const now = new Date();
+  const daysDiff = (now.getTime() - productDate.getTime()) / (1000 * 3600 * 24);
+  return daysDiff <= 30;
+};
+
 export function ProductCard({ product }: ProductCardProps) {
   console.log({ product });
 
@@ -152,6 +161,12 @@ export function ProductCard({ product }: ProductCardProps) {
                 />
               )}
             </button>
+          )}
+
+          {isNewArrival(product.createdAt) && product.isActive && (
+            <div className="absolute top-2 left-2 rounded-full bg-accent px-2 py-1 text-xs font-semibold text-accent-foreground z-10 shadow-md">
+              NEW
+            </div>
           )}
 
           {product.isFeatured && (

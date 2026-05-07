@@ -19,9 +19,13 @@ export interface ProductQueryParams {
   featured?: boolean;
   search?: string;
   seller?: string;
+  days?: number;
 }
 
-export interface ProductListResponse extends PaginatedApiResponse<Product> {}
+export interface ProductListResponse extends PaginatedApiResponse<Product> {
+  categories?: string[];
+  brands?: string[];
+}
 
 export interface ProductFiltersResponseData {
   categories: string[];
@@ -37,10 +41,20 @@ export interface ProductDetailsResponseData {
   relatedProducts: Product[];
 }
 
+export interface SpecialProductsResponse {
+  success: boolean;
+  count: number;
+  data: Product[];
+}
+
+export interface NewArrivalsResponse {
+  success: boolean;
+  count: number;
+  data: Product[];
+}
+
 export const productApi = {
-  getProducts: async (
-    params: ProductQueryParams = {},
-  ): Promise<ProductListResponse> => {
+  getAllProducts: async (params?: ProductQueryParams): Promise<any> => {
     const {
       page = 1,
       limit = 12,
@@ -53,7 +67,7 @@ export const productApi = {
       featured,
       search,
       seller,
-    } = params;
+    } = params || {};
 
     const queryParams: Record<string, any> = { page, limit, sort };
 
@@ -93,12 +107,48 @@ export const productApi = {
     };
   },
 
+  getProducts: async (
+    params: ProductQueryParams = {},
+  ): Promise<ProductListResponse> => {
+    return productApi.getAllProducts(params);
+  },
+
+  getNewArrivals: async (params?: {
+    limit?: number;
+    days?: number;
+  }): Promise<NewArrivalsResponse> => {
+    const response = await typedApiClient.get<NewArrivalsResponse>(
+      "/products/new-arrivals",
+      { params },
+    );
+    return response;
+  },
+
+  getFeaturedProducts: async (params?: {
+    limit?: number;
+    category?: string;
+  }): Promise<any> => {
+    return typedApiClient.get("/products/featured", { params });
+  },
+
+  getBestSellers: async (params?: { limit?: number }): Promise<any> => {
+    return typedApiClient.get("/products/best-sellers", { params });
+  },
+
+  getProductById: async (id: string): Promise<any> => {
+    return typedApiClient.get(`/products/${id}`);
+  },
+
+  searchProducts: async (searchTerm: string, limit?: number): Promise<any> => {
+    return typedApiClient.get("/products/search", {
+      params: { q: searchTerm, limit },
+    });
+  },
+
   getById: async (
     id: string,
   ): Promise<BaseApiResponse<ProductDetailsResponseData>> => {
-    return typedApiClient.get<BaseApiResponse<ProductDetailsResponseData>>(
-      `/products/${id}`,
-    );
+    return productApi.getProductById(id);
   },
 
   getBySlug: async (
@@ -113,37 +163,38 @@ export const productApi = {
     query: string,
     limit: number = 20,
   ): Promise<BaseApiResponse<Product[]>> => {
-    return typedApiClient.get<BaseApiResponse<Product[]>>("/products/search", {
-      params: { q: query, limit },
-    });
+    return productApi.searchProducts(query, limit);
   },
 
   getFeatured: async (
     limit: number = 8,
   ): Promise<BaseApiResponse<Product[]>> => {
-    return typedApiClient.get<BaseApiResponse<Product[]>>(
-      "/products/featured",
-      { params: { limit } },
-    );
+    const response = await productApi.getFeaturedProducts({ limit });
+    return {
+      success: response.success,
+      data: response.data?.data || response.data,
+    } as BaseApiResponse<Product[]>;
   },
 
-  getNewArrivals: async (
+  getNewArrivalsLegacy: async (
     limit: number = 12,
     days: number = 30,
   ): Promise<BaseApiResponse<Product[]>> => {
-    return typedApiClient.get<BaseApiResponse<Product[]>>(
-      "/products/new-arrivals",
-      { params: { limit, days } },
-    );
+    const response = await productApi.getNewArrivals({ limit, days });
+    return {
+      success: response.success,
+      data: response.data,
+    } as BaseApiResponse<Product[]>;
   },
 
-  getBestSellers: async (
+  getBestSellersLegacy: async (
     limit: number = 12,
   ): Promise<BaseApiResponse<Product[]>> => {
-    return typedApiClient.get<BaseApiResponse<Product[]>>(
-      "/products/best-sellers",
-      { params: { limit } },
-    );
+    const response = await productApi.getBestSellers({ limit });
+    return {
+      success: response.success,
+      data: response.data?.data || response.data,
+    } as BaseApiResponse<Product[]>;
   },
 
   getProductsByCategory: async (

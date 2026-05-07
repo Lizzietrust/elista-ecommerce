@@ -14,6 +14,7 @@ import {
   ProductFiltersResponseData,
   ProductDetailsResponseData,
   Category,
+  SpecialProductsResponse,
 } from "@/lib/api/products";
 import { BaseApiResponse } from "../api/client";
 
@@ -35,8 +36,116 @@ export const productKeys = {
   filters: () => [...productKeys.all, "filters"] as const,
 };
 
-// Main products query hook
-export const useProducts = (
+interface UseProductsOptions {
+  endpoint?: "all" | "new-arrivals" | "featured" | "best-sellers";
+  params?: ProductQueryParams & { limit?: number; days?: number };
+  options?: Omit<UseQueryOptions<any, Error>, "queryKey" | "queryFn">;
+}
+
+export const useProducts = ({
+  endpoint = "all",
+  params = {},
+  options = {},
+}: UseProductsOptions = {}) => {
+  let queryFn;
+  let queryKey = ["products", endpoint, params];
+
+  switch (endpoint) {
+    case "new-arrivals":
+      queryFn = async () => {
+        const response = await productApi.getNewArrivals({
+          limit: params.limit,
+          days: params.days,
+        });
+
+        return response.data;
+      };
+      break;
+    case "featured":
+      queryFn = async () => {
+        const response = await productApi.getFeaturedProducts({
+          limit: params.limit,
+          category: params.category,
+        });
+
+        return response.data?.data || response.data || [];
+      };
+      break;
+    case "best-sellers":
+      queryFn = async () => {
+        const response = await productApi.getBestSellers({
+          limit: params.limit,
+        });
+
+        return response.data?.data || response.data || [];
+      };
+      break;
+    default:
+      queryFn = () => productApi.getAllProducts(params);
+  }
+
+  return useQuery({
+    queryKey,
+    queryFn,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    ...options,
+  });
+};
+
+export const useNewArrivals = (
+  limit: number = 12,
+  days: number = 30,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
+) => {
+  return useQuery<Product[], Error>({
+    queryKey: [...productKeys.newArrivals(), { limit, days }],
+    queryFn: async () => {
+      const response = await productApi.getNewArrivals({ limit, days });
+
+      return response.data || [];
+    },
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
+};
+
+export const useFeaturedProducts = (
+  limit: number = 8,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
+) => {
+  return useQuery<Product[], Error>({
+    queryKey: [...productKeys.featured(), { limit }],
+    queryFn: async () => {
+      const response = await productApi.getFeaturedProducts({ limit });
+
+      return response.data?.data || response.data || [];
+    },
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
+};
+
+export const useBestSellers = (
+  limit: number = 12,
+  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
+) => {
+  return useQuery<Product[], Error>({
+    queryKey: [...productKeys.bestSellers(), { limit }],
+    queryFn: async () => {
+      const response = await productApi.getBestSellers({ limit });
+
+      return response.data?.data || response.data || [];
+    },
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
+};
+
+export const useProductsStandard = (
   params: ProductQueryParams = {},
   options?: Omit<
     UseQueryOptions<ProductListResponse, Error>,
@@ -45,15 +154,14 @@ export const useProducts = (
 ) => {
   return useQuery<ProductListResponse, Error>({
     queryKey: productKeys.list(params),
-    queryFn: () => productApi.getProducts(params),
+    queryFn: () => productApi.getAllProducts(params),
     placeholderData: (previousData) => previousData,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
     ...options,
   });
 };
 
-// Fixed: Simplified infinite scroll products hook
 export const useInfiniteProducts = (
   params: Omit<ProductQueryParams, "page"> = {},
   options?: Omit<
@@ -80,7 +188,7 @@ export const useInfiniteProducts = (
   >({
     queryKey: productKeys.list(params),
     queryFn: ({ pageParam = 1 }) =>
-      productApi.getProducts({ ...params, page: pageParam }),
+      productApi.getAllProducts({ ...params, page: pageParam }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       if (lastPage.currentPage < lastPage.totalPages) {
@@ -101,7 +209,6 @@ export const useInfiniteProducts = (
   });
 };
 
-// Single product hook
 export const useProduct = (
   id: string,
   options?: Omit<UseQueryOptions<Product, Error>, "queryKey" | "queryFn">,
@@ -109,7 +216,7 @@ export const useProduct = (
   return useQuery<Product, Error>({
     queryKey: productKeys.detail(id),
     queryFn: async () => {
-      const response = await productApi.getById(id);
+      const response = await productApi.getProductById(id);
       return response.data.product;
     },
     enabled: !!id,
@@ -119,24 +226,25 @@ export const useProduct = (
   });
 };
 
-// Product by slug hook
 export const useProductById = (
   id: string,
-  options?: Omit<UseQueryOptions<ProductDetailsResponseData, Error>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseQueryOptions<ProductDetailsResponseData, Error>,
+    "queryKey" | "queryFn"
+  >,
 ) => {
-   return useQuery<ProductDetailsResponseData, Error>({
-     queryKey: [...productKeys.detail(id), "byId"],
-     queryFn: async () => {
-       const response = await productApi.getById(id);
-       return response.data;
-     },
-     enabled: !!id,
-     staleTime: 1000 * 60 * 10,
-     gcTime: 1000 * 60 * 60,
-     ...options,
-   });
+  return useQuery<ProductDetailsResponseData, Error>({
+    queryKey: [...productKeys.detail(id), "byId"],
+    queryFn: async () => {
+      const response = await productApi.getProductById(id);
+      return response.data;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 60,
+    ...options,
+  });
 };
-
 
 export const useProductDetails = (
   id: string,
@@ -148,7 +256,7 @@ export const useProductDetails = (
   return useQuery<ProductDetailsResponseData, Error>({
     queryKey: [...productKeys.detail(id), "details"],
     queryFn: async () => {
-      const response = await productApi.getById(id);
+      const response = await productApi.getProductById(id);
       return response.data;
     },
     enabled: !!id,
@@ -158,59 +266,6 @@ export const useProductDetails = (
   });
 };
 
-// Featured products hook
-export const useFeaturedProducts = (
-  limit: number = 8,
-  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
-) => {
-  return useQuery<Product[], Error>({
-    queryKey: [...productKeys.featured(), { limit }],
-    queryFn: async () => {
-      const response = await productApi.getFeatured(limit);
-      return response.data;
-    },
-    staleTime: 1000 * 60 * 15,
-    gcTime: 1000 * 60 * 60,
-    ...options,
-  });
-};
-
-// New arrivals hook
-export const useNewArrivals = (
-  limit: number = 12,
-  days: number = 30,
-  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
-) => {
-  return useQuery<Product[], Error>({
-    queryKey: [...productKeys.newArrivals(), { limit, days }],
-    queryFn: async () => {
-      const response = await productApi.getNewArrivals(limit, days);
-      return response.data;
-    },
-    staleTime: 1000 * 60 * 15,
-    gcTime: 1000 * 60 * 60,
-    ...options,
-  });
-};
-
-// Best sellers hook
-export const useBestSellers = (
-  limit: number = 12,
-  options?: Omit<UseQueryOptions<Product[], Error>, "queryKey" | "queryFn">,
-) => {
-  return useQuery<Product[], Error>({
-    queryKey: [...productKeys.bestSellers(), { limit }],
-    queryFn: async () => {
-      const response = await productApi.getBestSellers(limit);
-      return response.data;
-    },
-    staleTime: 1000 * 60 * 15,
-    gcTime: 1000 * 60 * 60,
-    ...options,
-  });
-};
-
-// Search products hook
 export const useSearchProducts = (
   query: string,
   limit: number = 20,
@@ -219,7 +274,7 @@ export const useSearchProducts = (
   return useQuery<Product[], Error>({
     queryKey: productKeys.search(query),
     queryFn: async () => {
-      const response = await productApi.search(query, limit);
+      const response = await productApi.searchProducts(query, limit);
       return response.data;
     },
     enabled: query.trim().length > 0,
@@ -229,7 +284,6 @@ export const useSearchProducts = (
   });
 };
 
-// Products by category hook
 export const useProductsByCategory = (
   categoryId: string,
   params: Omit<ProductQueryParams, "category"> = {},
@@ -248,7 +302,6 @@ export const useProductsByCategory = (
   });
 };
 
-// Product filters hook
 export const useProductFilters = (
   options?: Omit<
     UseQueryOptions<BaseApiResponse<ProductFiltersResponseData>, Error>,
@@ -264,7 +317,6 @@ export const useProductFilters = (
   });
 };
 
-// Related products hook
 export const useRelatedProducts = (
   productId: string,
   limit: number = 4,
@@ -283,7 +335,6 @@ export const useRelatedProducts = (
   });
 };
 
-// Category hooks
 export const useCategories = (
   params?: {
     featured?: boolean;
@@ -336,7 +387,6 @@ export const useCategoryBySlug = (
   });
 };
 
-// Export aliases for backward compatibility
 export { productKeys as productQueryKeys };
 export type { ProductQueryParams as GetProductsParams };
 export type { ProductListResponse as GetProductsResponse };

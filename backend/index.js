@@ -18,6 +18,7 @@ import paymentRoutes from "./routes/PaymentRoutes.js";
 import reviewRoutes from "./routes/ReviewRoutes.js";
 import wishlistRoutes from "./routes/WishlistRoutes.js";
 import campaignRoutes from "./routes/CampaignRoutes.js";
+import newsletterRoutes from "./routes/NewsletterRoutes.js";
 
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import Campaign from "./models/Campaign.js";
@@ -92,6 +93,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/campaigns", campaignRoutes);
+app.use("/api/newsletter", newsletterRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -147,7 +149,6 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
-// Add test error handling endpoints (development only)
 if (process.env.NODE_ENV === "development") {
   app.get("/api/test/error/validation", (req, res, next) => {
     const error = new Error("Validation error test");
@@ -172,7 +173,6 @@ if (process.env.NODE_ENV === "development") {
   });
 
   app.get("/api/test/error/async", async (req, res, next) => {
-    // This will be caught by asyncHandler
     throw new Error("Async error test");
   });
 }
@@ -185,13 +185,10 @@ if (process.env.NODE_ENV === "development") {
 //   next();
 // });
 
-// Handle 404 routes - Use the imported notFoundHandler
 app.use(notFoundHandler);
 
-// Error handling middleware (should be last)
 app.use(errorHandler);
 
-// Graceful shutdown
 process.on("SIGTERM", () => {
   console.log("SIGTERM received. Shutting down gracefully...");
   server.close(() => {
@@ -214,7 +211,6 @@ process.on("SIGINT", () => {
   });
 });
 
-// Connect to MongoDB and start server
 mongoose
   .connect(databaseURL, {
     serverSelectionTimeoutMS: 30000,
@@ -223,19 +219,18 @@ mongoose
     minPoolSize: 5,
   })
   .then(() => {
-    console.log("✅ Ecommerce database connection successful");
+    console.log("Ecommerce database connection successful");
 
     server.listen(port, () => {
-      console.log(`🚀 Ecommerce server is running at http://localhost:${port}`);
+      console.log(`Ecommerce server is running at http://localhost:${port}`);
       console.log(
-        `📚 API Documentation available at http://localhost:${port}/api-docs`,
+        `API Documentation available at http://localhost:${port}/api-docs`,
       );
-      console.log(`🌐 Frontend: ${process.env.FRONTEND_URL}`);
-      console.log(`📦 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`Frontend: ${process.env.FRONTEND_URL}`);
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 
-      // Log test endpoints in development
       if (process.env.NODE_ENV === "development") {
-        console.log("\n🧪 Test Error Endpoints (Development Only):");
+        console.log("\n Test Error Endpoints (Development Only):");
         console.log(`GET  http://localhost:${port}/api/test/error/validation`);
         console.log(`GET  http://localhost:${port}/api/test/error/not-found`);
         console.log(`GET  http://localhost:${port}/api/test/error/server`);
@@ -252,7 +247,6 @@ mongoose
     process.exit(1);
   });
 
-// Handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION! 💥 Shutting down...");
   console.error(err.name, err.message);
@@ -261,7 +255,6 @@ process.on("unhandledRejection", (err) => {
   });
 });
 
-// Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION! 💥 Shutting down...");
   console.error(err.name, err.message);

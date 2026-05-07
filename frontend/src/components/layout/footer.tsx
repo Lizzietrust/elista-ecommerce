@@ -130,36 +130,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Newsletter Signup */}
-        <div className="bg-gradient-warm rounded-2xl p-6 md:p-8 mb-10 border border-border shadow-sm">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="text-center md:text-left">
-              <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
-                <Mail size={24} className="text-accent" />
-                <h3 className="text-xl font-bold text-foreground">
-                  Get the latest updates
-                </h3>
-              </div>
-              <p className="text-muted-foreground">
-                Subscribe to our newsletter for exclusive deals and new arrivals
-              </p>
-            </div>
-            <form className="flex w-full md:w-auto gap-3 flex-col sm:flex-row">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="grow md:w-72 px-4 py-3 rounded-xl border border-border bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-              />
-              <button
-                type="submit"
-                className="bg-primary hover:bg-primary-light text-primary-foreground font-semibold px-8 py-3 rounded-xl transition-all duration-300 whitespace-nowrap shadow-sm hover:shadow-md"
-              >
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
-
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-muted-foreground text-sm">

@@ -189,16 +189,15 @@ export const useCategoriesForDisplay = () => {
 
     // Icons based on category name
     const iconMap: Record<string, string> = {
-      Electronics: "⚡",
-      Fashion: "👗",
-      "Home & Garden": "🏡",
-      Sports: "⚽",
-      Beauty: "💄",
-      Books: "📚",
+      // Electronics: "⚡",
+      // "Home & Garden": "🏡",
       "Home Office": "💼",
       Lighting: "💡",
       "Storage & Organization": "📦",
       "Decor & Accessories": "🎨",
+      "Living Room": "🎨",
+      Bedroom: "🎨",
+      "Kitchen & Dining": "🎨",
     };
 
     return {

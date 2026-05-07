@@ -3,24 +3,18 @@
 import { useState } from "react";
 import { ProductCard } from "@/components/products/product-card";
 import { Loader2, Calendar, TrendingUp } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { productApi } from "@/lib/api/products";
+import { useNewArrivals } from "@/lib/hooks/use-products";
 
 export default function NewArrivalsPage() {
   const [days, setDays] = useState(30);
   const [limit, setLimit] = useState(24);
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["new-arrivals", { limit, days }],
-    queryFn: async () => {
-      const response = await productApi.getNewArrivals({ limit, days });
-      return response;
-    },
-    staleTime: 1000 * 60 * 5,
-  });
-
-  const products = data?.data || [];
-  const totalCount = data?.count || 0;
+  const {
+    data: products = [],
+    isLoading,
+    error,
+    refetch,
+  } = useNewArrivals(limit, days);
 
   const handleDaysChange = (value: number) => {
     setDays(value);
@@ -87,7 +81,7 @@ export default function NewArrivalsPage() {
         <div className="flex items-center gap-2">
           <TrendingUp size={18} className="text-accent" />
           <span className="text-sm font-medium text-muted-foreground">
-            Showing {totalCount} new products
+            Showing {products.length} new products
           </span>
         </div>
 
@@ -137,8 +131,8 @@ export default function NewArrivalsPage() {
             ))}
           </div>
 
-          {/* Load More Button */}
-          {totalCount > limit && (
+          {/* Load More Button - Note: This requires pagination support from API */}
+          {products.length >= limit && (
             <div className="text-center mt-12">
               <button
                 onClick={handleLoadMore}

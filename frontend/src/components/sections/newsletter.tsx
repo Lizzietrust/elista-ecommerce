@@ -1,22 +1,92 @@
 "use client";
 
-import { useState } from "react";
-import { Send, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Check, AlertCircle } from "lucide-react";
+import { useSubscribeToNewsletter } from "@/lib/hooks/use-newsletter";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState("");
+  const [displayError, setDisplayError] = useState("");
+  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const {
+    mutate: subscribe,
+    isPending: isLoading,
+    error: mutationError,
+    reset: resetMutation,
+  } = useSubscribeToNewsletter();
+
+  useEffect(() => {
+    if (mutationError?.message) {
+      const errorMessage = mutationError.message;
+      setDisplayError(errorMessage);
+
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+
+      errorTimeoutRef.current = setTimeout(() => {
+        setDisplayError("");
+        resetMutation();
+      }, 5000);
+    }
+
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+    };
+  }, [mutationError, resetMutation]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, connect to your email service here
-    console.log("Submitting email:", email);
-    setSubmitted(true);
+
+    const emailToSubmit = email;
+    setLastSubmittedEmail(emailToSubmit);
+
     setEmail("");
 
-    // Reset success message after 5 seconds
-    setTimeout(() => setSubmitted(false), 5000);
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+    setDisplayError("");
+    resetMutation();
+
+    subscribe(
+      { email: emailToSubmit, source: "newsletter_form" },
+      {
+        onSuccess: () => {
+          setSubmitted(true);
+          setLastSubmittedEmail("");
+
+          setTimeout(() => setSubmitted(false), 5000);
+        },
+        onError: () => {
+          inputRef.current?.focus();
+        },
+      },
+    );
   };
+
+  const handleRetry = () => {
+    if (lastSubmittedEmail) {
+      setEmail(lastSubmittedEmail);
+      setDisplayError("");
+      resetMutation();
+
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  };
+
+  const isDuplicateError = displayError === "Email already subscribed";
+  const hasError = !!displayError;
 
   return (
     <section className="py-12 md:py-16 bg-gradient-forest text-white">
@@ -47,22 +117,59 @@ export default function Newsletter() {
               onSubmit={handleSubmit}
               className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto"
             >
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="grow px-6 py-4 rounded-xl bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-4 focus:ring-accent/50 transition-all duration-300"
-                required
-              />
+              <div className="flex-1">
+                <input
+                  ref={inputRef}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className={`w-full px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all duration-300 border ${
+                    hasError ? "border-red-400" : "border-white/20"
+                  }`}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
               <button
                 type="submit"
-                className="bg-accent hover:bg-accent-light text-white font-semibold py-4 px-8 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 whitespace-nowrap hover:scale-105 shadow-lg hover:shadow-xl"
+                disabled={isLoading}
+                className="bg-accent hover:bg-accent-light text-white font-semibold py-4 px-8 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 whitespace-nowrap hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send size={20} />
-                Subscribe Now
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Subscribing...
+                  </>
+                ) : (
+                  <>
+                    <Send size={20} />
+                    Subscribe Now
+                  </>
+                )}
               </button>
             </form>
+          )}
+
+          {hasError && !submitted && (
+            <div className="mt-4 p-4 bg-red-500/10 border border-red-400 rounded-lg max-w-md mx-auto animate-fade-in">
+              <div className="flex items-center justify-center gap-2">
+                <AlertCircle size={16} className="text-red-400" />
+                <p className="text-red-400 text-sm">
+                  {isDuplicateError
+                    ? "This email is already subscribed to our newsletter."
+                    : displayError}
+                </p>
+                {!isDuplicateError && lastSubmittedEmail && (
+                  <button
+                    onClick={handleRetry}
+                    className="text-xs text-accent hover:text-accent-light underline ml-2 transition-colors duration-200"
+                  >
+                    Try again
+                  </button>
+                )}
+              </div>
+            </div>
           )}
 
           <p className="text-secondary-light text-sm mt-6">

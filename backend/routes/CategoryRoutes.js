@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getAllCategories,
+  getPaginatedCategories,
   getCategoryById,
   createCategory,
   updateCategory,
@@ -22,14 +23,13 @@ import {
 
 const router = express.Router();
 
-// Public routes
 router.get("/", getAllCategories);
+router.get("/paginated", getPaginatedCategories);
 router.get("/tree", getCategoryTree);
 router.get("/featured", getFeaturedCategories);
 router.get("/:id", getCategoryById);
 router.get("/:id/products", getCategoryWithProducts);
 
-// Protected routes (Admin only)
 router.use(protect);
 router.use(authorize("admin"));
 
@@ -38,7 +38,7 @@ router.post(
   uploadCategoryImage,
   processCategoryImage,
   validateCategory,
-  createCategory
+  createCategory,
 );
 
 router.put(
@@ -46,14 +46,13 @@ router.put(
   uploadCategoryImage,
   processCategoryImage,
   validateCategoryUpdate,
-  updateCategory
+  updateCategory,
 );
 
 router.patch("/:id/toggle-active", toggleCategoryActive);
 router.patch("/:id/order", updateCategoryOrder);
 router.delete("/:id", deleteCategory);
 
-// Admin stats
 router.get("/stats/overview", getCategoryStats);
 
 export default router;

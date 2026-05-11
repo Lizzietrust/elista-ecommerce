@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { ChevronRight, Package } from "lucide-react";
 
 interface CategoryCardProps {
   id: string;
   name: string;
   count: number;
   icon?: string;
-  image?: string;
+  image?: string | { url: string; altText?: string } | null;
   gradient?: string;
+  description?: string;
 }
 
 export default function CategoryCard({
@@ -18,51 +20,86 @@ export default function CategoryCard({
   count,
   icon,
   image,
-  gradient = "from-slate-700 to-slate-900",
+  gradient = "from-primary/20 to-accent/20",
+  description,
 }: CategoryCardProps) {
+  const imageUrl = typeof image === "string" ? image : image?.url;
+  const imageAlt = typeof image === "object" ? image?.altText : name;
+
   return (
-    <Link
-      href={`/products?category=${id}`}
-      className="group relative overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 block"
-    >
-      {/* Background gradient */}
-      <div className={`h-48 bg-linear-to-br ${gradient} relative`}>
-        {/* Background image */}
-        {image && (
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        )}
-
-        {/* Persistent subtle dark scrim so text is always readable */}
-        <div className="absolute inset-0 bg-black/30" />
-
-        {/* Hover scrim — deepens slightly, never goes full dark */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-
-        {/* Content — always visible, shifts up gently on hover */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10">
-          {icon && (
-            <span className="text-4xl mb-3 drop-shadow transition-transform duration-300 group-hover:-translate-y-1">
-              {icon}
-            </span>
+    <Link href={`/products?category=${id}`} className="group block h-full">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 h-full flex flex-col transform hover:-translate-y-1">
+        {/* Category Image Section */}
+        <div className="relative h-52 overflow-hidden bg-linear-to-br from-muted to-muted/50">
+          {imageUrl ? (
+            <>
+              <Image
+                src={imageUrl}
+                alt={imageAlt || name}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+              {/* Dark overlay for better contrast */}
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300" />
+            </>
+          ) : (
+            <div
+              className={`w-full h-full bg-linear-to-br ${gradient} flex items-center justify-center`}
+            >
+              <span className="text-8xl transform group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                {icon || "📁"}
+              </span>
+            </div>
           )}
-          <h3 className="text-xl font-bold tracking-wide drop-shadow transition-transform duration-300 group-hover:-translate-y-1">
-            {name}
-          </h3>
 
-          {/* "Shop Now" pill — hidden by default, fades in on hover */}
-          <span className="mt-3 px-4 py-1 rounded-full text-sm font-semibold bg-white/20 backdrop-blur-sm border border-white/40 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-            Shop Now →
-          </span>
+          {/* Category badge on image */}
+          <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1">
+            <span className="text-xs font-medium text-white">
+              {count} {count === 1 ? "item" : "items"}
+            </span>
+          </div>
         </div>
 
-        {/* Item count badge — top-right corner */}
-        <div className="absolute top-3 right-3 z-10 bg-white/15 backdrop-blur-sm border border-white/30 text-white text-xs font-semibold py-0.5 px-2.5 rounded-full">
-          {count}+
+        {/* Category Info Section */}
+        <div className="p-5 flex-1 flex flex-col">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="text-xl font-bold text-foreground group-hover:text-accent transition-colors line-clamp-1">
+              {name}
+            </h3>
+            <div className="bg-accent/10 rounded-full p-1.5 group-hover:bg-accent/20 transition-colors shrink-0 ml-2">
+              <ChevronRight
+                className="text-accent transition-colors"
+                size={16}
+              />
+            </div>
+          </div>
+
+          {description && (
+            <p className="text-muted-foreground mb-4 line-clamp-2 text-sm flex-1">
+              {description}
+            </p>
+          )}
+
+          {/* Stats Section */}
+          <div className="flex items-center justify-between pt-3 mt-auto border-t border-border">
+            <div className="flex items-center gap-2">
+              <div className="bg-accent/10 rounded-full p-1.5">
+                <Package size={14} className="text-accent" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-foreground">
+                  {count.toLocaleString()}
+                </span>
+                <span className="text-xs text-muted-foreground ml-1">
+                  products
+                </span>
+              </div>
+            </div>
+            <span className="text-sm font-medium text-accent group-hover:text-accent/80 transition-colors">
+              Shop Now →
+            </span>
+          </div>
         </div>
       </div>
     </Link>

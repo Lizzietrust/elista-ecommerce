@@ -41,9 +41,21 @@ export interface CategoryQueryParams {
   isActive?: string | boolean;
   featured?: boolean;
   parent?: string | null;
+  page?: number;
   limit?: number;
+  search?: string;
   sort?: string;
+  order?: "asc" | "desc";
   includeProducts?: boolean;
+}
+
+export interface PaginatedCategoriesResponse {
+  success: boolean;
+  count: number;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  data: Category[];
 }
 
 export const categoryApi = {
@@ -54,6 +66,19 @@ export const categoryApi = {
       method: "GET",
       url: "/categories",
       params,
+    });
+  },
+
+  getPaginated: (
+    params?: CategoryQueryParams,
+  ): Promise<PaginatedCategoriesResponse> => {
+    return apiRequest({
+      method: "GET",
+      url: "/categories/paginated",
+      params: {
+        ...params,
+        isActive: params?.isActive !== undefined ? params.isActive : true,
+      },
     });
   },
 

@@ -5,7 +5,6 @@ import ErrorResponse from "../utils/ErrorResponse.js";
 import multer from "multer";
 import path from "path";
 
-// Create a simple multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/categories/");
@@ -33,16 +32,12 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Create upload middleware
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter,
 });
 
-// @desc    Get all categories
-// @route   GET /api/categories
-// @access  Public
 export const getAllCategories = asyncHandler(async (req, res, next) => {
   const {
     isActive = "true",
@@ -53,20 +48,16 @@ export const getAllCategories = asyncHandler(async (req, res, next) => {
     includeProducts = "false",
   } = req.query;
 
-  // Build query
   let query = {};
 
-  // Filter by active status
   if (isActive !== "all") {
     query.isActive = isActive === "true";
   }
 
-  // Filter by featured
   if (featured !== undefined) {
     query.featured = featured === "true";
   }
 
-  // Filter by parent (null for root categories, specific ID for subcategories)
   if (parent !== undefined) {
     if (parent === "null" || parent === "root") {
       query.parent = null;
@@ -75,7 +66,6 @@ export const getAllCategories = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Build sort object
   let sortObj = {};
   if (sort) {
     const sortFields = sort.split(",");
@@ -86,12 +76,10 @@ export const getAllCategories = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Execute query
   const categories = await Category.find(query)
     .sort(sortObj)
     .limit(parseInt(limit));
 
-  // If includeProducts is true, populate products count
   if (includeProducts === "true") {
     const categoriesWithProducts = await Promise.all(
       categories.map(async (category) => {
@@ -120,9 +108,98 @@ export const getAllCategories = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get category by ID
-// @route   GET /api/categories/:id
-// @access  Public
+export const getPaginatedCategories = asyncHandler(async (req, res, next) => {
+  const {
+    page = 1,
+    limit = 12,
+    search = "",
+    sort = "sortOrder",
+    order = "asc",
+    parent = null,
+    isActive = "true",
+    featured,
+  } = req.query;
+
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
+  const skip = (pageNum - 1) * limitNum;
+
+  let query = {};
+
+  if (isActive !== "all") {
+    query.isActive = isActive === "true";
+  }
+
+  if (featured !== undefined) {
+    query.featured = featured === "true";
+  }
+
+  if (parent !== undefined) {
+    if (parent === "null" || parent === "root") {
+      query.parent = null;
+    } else if (parent) {
+      query.parent = parent;
+    }
+  }
+
+  if (search && search.trim()) {
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+      { slug: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  let sortObj = {};
+  const sortOrderValue = order === "desc" ? -1 : 1;
+
+  switch (sort) {
+    case "name":
+      sortObj.name = sortOrderValue;
+      break;
+    case "productCount":
+      sortObj.productCount = sortOrderValue;
+      break;
+    case "createdAt":
+      sortObj.createdAt = sortOrderValue;
+      break;
+    case "updatedAt":
+      sortObj.updatedAt = sortOrderValue;
+      break;
+    case "sortOrder":
+      sortObj.sortOrder = sortOrderValue;
+      break;
+    default:
+      sortObj.sortOrder = 1;
+  }
+
+  const categories = await Category.find(query)
+    .sort(sortObj)
+    .skip(skip)
+    .limit(limitNum)
+    .populate("parent", "name slug");
+
+  const total = await Category.countDocuments(query);
+  const totalPages = Math.ceil(total / limitNum);
+
+  res.status(200).json({
+    success: true,
+    count: categories.length,
+    total,
+    totalPages,
+    currentPage: pageNum,
+    data: categories,
+    pagination: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+    },
+  });
+});
+
 export const getCategoryById = asyncHandler(async (req, res, next) => {
   const category = await Category.findById(req.params.id);
 
@@ -132,7 +209,6 @@ export const getCategoryById = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Get parent category if exists
   let parentCategory = null;
   if (category.parent) {
     parentCategory = await Category.findById(category.parent).select(
@@ -140,13 +216,11 @@ export const getCategoryById = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Get subcategories
   const subcategories = await Category.find({
     parent: category._id,
     isActive: true,
   }).select("name slug description image productCount");
 
-  // Get active products count
   const activeProductsCount = await Product.countDocuments({
     category: category._id,
     isActive: true,
@@ -163,11 +237,7 @@ export const getCategoryById = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Create new category
-// @route   POST /api/categories
-// @access  Private/Admin
 export const createCategory = asyncHandler(async (req, res, next) => {
-  // Check if category with same name already exists
   const existingCategory = await Category.findOne({
     name: { $regex: new RegExp(`^${req.body.name}$`, "i") },
   });
@@ -181,20 +251,17 @@ export const createCategory = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Validate parent category if provided
   if (req.body.parent) {
     const parentCategory = await Category.findById(req.body.parent);
     if (!parentCategory) {
       return next(new ErrorResponse("Parent category not found", 404));
     }
 
-    // Prevent circular references
     if (req.body.parent === req.params.id) {
       return next(new ErrorResponse("Category cannot be its own parent", 400));
     }
   }
 
-  // Handle uploaded image
   if (req.file) {
     req.body.image = {
       url: req.file.path,
@@ -203,7 +270,6 @@ export const createCategory = asyncHandler(async (req, res, next) => {
     };
   }
 
-  // Set sortOrder if not provided
   if (!req.body.sortOrder) {
     const maxSortOrder = await Category.findOne()
       .sort("-sortOrder")
@@ -211,7 +277,6 @@ export const createCategory = asyncHandler(async (req, res, next) => {
     req.body.sortOrder = maxSortOrder ? maxSortOrder.sortOrder + 1 : 0;
   }
 
-  // Create category
   const category = await Category.create(req.body);
 
   res.status(201).json({
@@ -221,9 +286,6 @@ export const createCategory = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update category
-// @route   PUT /api/categories/:id
-// @access  Private/Admin
 export const updateCategory = asyncHandler(async (req, res, next) => {
   let category = await Category.findById(req.params.id);
 
@@ -233,7 +295,6 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if category with same name already exists (excluding current category)
   if (req.body.name && req.body.name !== category.name) {
     const existingCategory = await Category.findOne({
       name: { $regex: new RegExp(`^${req.body.name}$`, "i") },
@@ -250,20 +311,16 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Validate parent category if being updated
   if (req.body.parent && req.body.parent !== category.parent?.toString()) {
-    // Prevent setting parent to self
     if (req.body.parent === req.params.id) {
       return next(new ErrorResponse("Category cannot be its own parent", 400));
     }
 
-    // Check if parent exists
     const parentCategory = await Category.findById(req.body.parent);
     if (!parentCategory) {
       return next(new ErrorResponse("Parent category not found", 404));
     }
 
-    // Prevent circular references (check if new parent is a descendant of this category)
     const isDescendant = await checkDescendantCategories(
       req.body.parent,
       req.params.id,
@@ -275,21 +332,16 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Handle image upload
   if (req.file) {
-    // For now, just set the new image
-    // If you're using Cloudinary, you'll need to implement deletion of old images
     req.body.image = {
       url: req.file.path,
       publicId: req.file.filename,
       altText: req.body.imageAltText || category.name,
     };
   } else if (req.body.removeImage === "true") {
-    // Remove image if requested
     req.body.image = null;
   }
 
-  // Update category
   category = await Category.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -302,9 +354,6 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Delete category
-// @route   DELETE /api/categories/:id
-// @access  Private/Admin
 export const deleteCategory = asyncHandler(async (req, res, next) => {
   const category = await Category.findById(req.params.id);
 
@@ -314,7 +363,6 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if category has products
   const productCount = await Product.countDocuments({ category: category._id });
   if (productCount > 0) {
     return next(
@@ -325,7 +373,6 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if category has subcategories
   const subcategoryCount = await Category.countDocuments({
     parent: category._id,
   });
@@ -338,10 +385,6 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // For now, skip Cloudinary deletion since we're using local storage
-  // If you're using Cloudinary, implement image deletion here
-
-  // Delete category
   await category.deleteOne();
 
   res.status(200).json({
@@ -351,20 +394,13 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Upload category image middleware
-// @route   Middleware
-// @access  Private
 export const uploadCategoryImage = upload.single("image");
 
-// @desc    Process category image middleware
-// @route   Middleware
-// @access  Private
 export const processCategoryImage = asyncHandler(async (req, res, next) => {
   if (!req.file) {
     return next();
   }
 
-  // Add image data to req.body
   req.body.image = {
     url: req.file.path,
     publicId: req.file.filename,
@@ -374,18 +410,13 @@ export const processCategoryImage = asyncHandler(async (req, res, next) => {
   next();
 });
 
-// @desc    Get category tree (hierarchical structure)
-// @route   GET /api/categories/tree
-// @access  Public
 export const getCategoryTree = asyncHandler(async (req, res, next) => {
   const { includeProducts = "false", maxDepth = 3 } = req.query;
 
-  // Get all categories
   const allCategories = await Category.find({
     isActive: true,
   }).sort("sortOrder");
 
-  // Build tree structure
   const buildTree = (parentId = null, depth = 0) => {
     if (depth >= parseInt(maxDepth)) return [];
 
@@ -417,12 +448,10 @@ export const getCategoryTree = asyncHandler(async (req, res, next) => {
 
   const categoryTree = buildTree();
 
-  // If includeProducts is true, add product information
   if (includeProducts === "true") {
     const enhancedTree = await Promise.all(
       categoryTree.map(async (category) => {
         const enhanceCategory = async (cat) => {
-          // Get featured products for this category
           const featuredProducts = await Product.find({
             category: cat._id,
             isActive: true,
@@ -431,7 +460,6 @@ export const getCategoryTree = asyncHandler(async (req, res, next) => {
             .select("name price images slug averageRating")
             .limit(4);
 
-          // Enhance children recursively
           const enhancedChildren = await Promise.all(
             cat.children.map((child) => enhanceCategory(child)),
           );
@@ -461,9 +489,6 @@ export const getCategoryTree = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get category with products
-// @route   GET /api/categories/:id/products
-// @access  Public
 export const getCategoryWithProducts = asyncHandler(async (req, res, next) => {
   const category = await Category.findById(req.params.id);
 
@@ -471,7 +496,6 @@ export const getCategoryWithProducts = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Category not found", 404));
   }
 
-  // Get query parameters for products
   const {
     page = 1,
     limit = 12,
@@ -484,32 +508,27 @@ export const getCategoryWithProducts = asyncHandler(async (req, res, next) => {
 
   const skip = (page - 1) * limit;
 
-  // Build product query
   let productQuery = {
     category: category._id,
     isActive: true,
   };
 
-  // Price filter
   if (minPrice || maxPrice) {
     productQuery.price = {};
     if (minPrice) productQuery.price.$gte = Number(minPrice);
     if (maxPrice) productQuery.price.$lte = Number(maxPrice);
   }
 
-  // Rating filter
   if (rating) {
     productQuery.averageRating = { $gte: Number(rating) };
   }
 
-  // Stock filter
   if (inStock === "true") {
     productQuery.stock = { $gt: 0 };
   } else if (inStock === "false") {
     productQuery.stock = { $lte: 0 };
   }
 
-  // Build sort object
   let sortObj = {};
   if (sort) {
     const sortFields = sort.split(",");
@@ -520,7 +539,6 @@ export const getCategoryWithProducts = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Get products
   const products = await Product.find(productQuery)
     .select("name price images slug category averageRating stock featured")
     .populate("category", "name slug")
@@ -531,13 +549,11 @@ export const getCategoryWithProducts = asyncHandler(async (req, res, next) => {
   const totalProducts = await Product.countDocuments(productQuery);
   const totalPages = Math.ceil(totalProducts / limit);
 
-  // Get subcategories
   const subcategories = await Category.find({
     parent: category._id,
     isActive: true,
   }).select("name slug description image productCount");
 
-  // Get parent category if exists
   let parentCategory = null;
   if (category.parent) {
     parentCategory = await Category.findById(category.parent).select(
@@ -571,25 +587,20 @@ export const getCategoryWithProducts = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get featured categories
-// @route   GET /api/categories/featured
-// @access  Public
 export const getFeaturedCategories = asyncHandler(async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 8;
 
   const categories = await Category.find({
     featured: true,
     isActive: true,
-    parent: null, // Only root categories
+    parent: null,
   })
     .select("name slug description image productCount")
     .sort("sortOrder")
     .limit(limit);
 
-  // Add product count and featured products
   const enhancedCategories = await Promise.all(
     categories.map(async (category) => {
-      // Get featured products for this category
       const featuredProducts = await Product.find({
         category: category._id,
         isActive: true,
@@ -613,9 +624,6 @@ export const getFeaturedCategories = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Toggle category active status
-// @route   PATCH /api/categories/:id/toggle-active
-// @access  Private/Admin
 export const toggleCategoryActive = asyncHandler(async (req, res, next) => {
   const category = await Category.findById(req.params.id);
 
@@ -623,7 +631,6 @@ export const toggleCategoryActive = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Category not found", 404));
   }
 
-  // If deactivating, check if category has active products
   if (category.isActive) {
     const activeProductCount = await Product.countDocuments({
       category: category._id,
@@ -639,10 +646,8 @@ export const toggleCategoryActive = asyncHandler(async (req, res, next) => {
       );
     }
 
-    // Also deactivate subcategories
     await Category.updateMany({ parent: category._id }, { isActive: false });
   } else {
-    // If activating, also activate parent if it's inactive
     if (category.parent) {
       const parentCategory = await Category.findById(category.parent);
       if (parentCategory && !parentCategory.isActive) {
@@ -672,9 +677,6 @@ export const toggleCategoryActive = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update category order
-// @route   PATCH /api/categories/:id/order
-// @access  Private/Admin
 export const updateCategoryOrder = asyncHandler(async (req, res, next) => {
   const { sortOrder, parent = null } = req.body;
 
@@ -688,15 +690,12 @@ export const updateCategoryOrder = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Category not found", 404));
   }
 
-  // Update sort order for this category
   category.sortOrder = parseInt(sortOrder);
 
-  // Update parent if provided
   if (parent !== undefined) {
     if (parent === null || parent === "null") {
       category.parent = null;
     } else {
-      // Validate parent exists
       const parentCategory = await Category.findById(parent);
       if (!parentCategory) {
         return next(new ErrorResponse("Parent category not found", 404));
@@ -707,7 +706,6 @@ export const updateCategoryOrder = asyncHandler(async (req, res, next) => {
 
   await category.save();
 
-  // Reorder other categories if necessary
   if (parent !== undefined) {
     await reorderCategories(category.parent);
   }
@@ -719,11 +717,7 @@ export const updateCategoryOrder = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get category statistics
-// @route   GET /api/categories/stats/overview
-// @access  Private/Admin
 export const getCategoryStats = asyncHandler(async (req, res, next) => {
-  // Get basic category stats
   const stats = await Category.aggregate([
     {
       $group: {
@@ -750,13 +744,11 @@ export const getCategoryStats = asyncHandler(async (req, res, next) => {
     },
   ]);
 
-  // Get categories with most products
   const topCategories = await Category.find({ isActive: true })
     .select("name slug productCount isActive featured")
     .sort("-productCount")
     .limit(10);
 
-  // Get categories by depth
   const categoriesByDepth = await Category.aggregate([
     {
       $graphLookup: {
@@ -786,7 +778,6 @@ export const getCategoryStats = asyncHandler(async (req, res, next) => {
     },
   ]);
 
-  // Get category growth over time
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -849,7 +840,6 @@ export const getCategoryStats = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Helper function to check if a category is a descendant of another
 const checkDescendantCategories = async (parentId, childId) => {
   if (parentId === childId) return true;
 
@@ -859,14 +849,12 @@ const checkDescendantCategories = async (parentId, childId) => {
   return checkDescendantCategories(parentCategory.parent, childId);
 };
 
-// Helper function to reorder categories
 const reorderCategories = async (parentId = null) => {
   const categories = await Category.find({
     parent: parentId,
     isActive: true,
   }).sort("sortOrder");
 
-  // Update sortOrder to be sequential
   await Promise.all(
     categories.map(async (category, index) => {
       if (category.sortOrder !== index) {

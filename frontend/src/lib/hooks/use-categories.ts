@@ -5,14 +5,23 @@ import {
   CategoryWithProducts,
   CategoryTree,
   CategoryQueryParams,
+  PaginatedCategoriesResponse,
 } from "@/lib/api/categories";
 import { BaseApiResponse } from "../api/client";
+import {
+  formatCategories,
+  FormattedCategory,
+} from "@/lib/utils/formatCategories";
 
 export const categoryKeys = {
   all: ["categories"] as const,
   lists: () => [...categoryKeys.all, "list"] as const,
   list: (params: CategoryQueryParams) =>
     [...categoryKeys.lists(), params] as const,
+  paginated: (params: CategoryQueryParams) =>
+    [...categoryKeys.all, "paginated", params] as const,
+  paginatedFormatted: (params: CategoryQueryParams) =>
+    [...categoryKeys.all, "paginated", "formatted", params] as const,
   details: () => [...categoryKeys.all, "detail"] as const,
   detail: (id: string) => [...categoryKeys.details(), id] as const,
   detailBySlug: (slug: string) =>
@@ -21,6 +30,68 @@ export const categoryKeys = {
   featured: () => [...categoryKeys.all, "featured"] as const,
   withProducts: (id: string) =>
     [...categoryKeys.all, "with-products", id] as const,
+};
+
+export const usePaginatedFormattedCategories = (
+  params: CategoryQueryParams = {},
+  options?: Omit<
+    UseQueryOptions<
+      {
+        data: FormattedCategory[];
+        total: number;
+        totalPages: number;
+        currentPage: number;
+      },
+      Error
+    >,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  const { formatted, ...apiParams } = params as any;
+
+  return useQuery<
+    {
+      data: FormattedCategory[];
+      total: number;
+      totalPages: number;
+      currentPage: number;
+    },
+    Error
+  >({
+    queryKey: categoryKeys.paginatedFormatted(apiParams),
+    queryFn: async () => {
+      const response = await categoryApi.getPaginated(apiParams);
+      const formattedData = formatCategories(response.data || []);
+      return {
+        data: formattedData,
+        total: response.total || 0,
+        totalPages: response.totalPages || 0,
+        currentPage: response.currentPage || 1,
+      };
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    ...options,
+  });
+};
+
+export const usePaginatedCategories = (
+  params: CategoryQueryParams = {},
+  options?: Omit<
+    UseQueryOptions<PaginatedCategoriesResponse, Error>,
+    "queryKey" | "queryFn"
+  >,
+) => {
+  return useQuery<PaginatedCategoriesResponse, Error>({
+    queryKey: categoryKeys.paginated(params),
+    queryFn: async () => {
+      const response = await categoryApi.getPaginated(params);
+      return response;
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    ...options,
+  });
 };
 
 export const useCategories = (
@@ -50,12 +121,13 @@ export const useActiveCategories = (
 };
 
 export const useRootCategories = (
+  limit?: number,
   options?: Omit<
     UseQueryOptions<BaseApiResponse<Category[]>, Error>,
     "queryKey" | "queryFn"
   >,
 ) => {
-  return useCategories({ parent: null, isActive: true }, options);
+  return useCategories({ parent: null, isActive: true, limit }, options);
 };
 
 export const useCategoryById = (
@@ -168,51 +240,15 @@ export const useCategoryStats = () => {
   };
 };
 
-// Transform categories for UI display (like the CategoryGrid component)
 export const useCategoriesForDisplay = () => {
-  const {
-    data: categoriesData,
-    isLoading,
-    error,
-  } = useRootCategories({ limit: 6 });
+  const { data: categoriesData, isLoading, error } = useRootCategories(6);
 
-  const displayCategories = categoriesData?.data?.map((category, index) => {
-    // Define gradients based on category name or index
-    const gradients = [
-      "from-[#2C3E3E] to-[#4A6B6B]",
-      "from-[#C17B4D] to-[#D49A6A]",
-      "from-[#6B8E6B] to-[#8BAA8B]",
-      "from-[#D4C4B7] to-[#E8DED5]",
-      "from-[#C17B7B] to-[#D49A9A]",
-      "from-[#8B6B4D] to-[#A88B6D]",
-    ];
-
-    // Icons based on category name
-    const iconMap: Record<string, string> = {
-      // Electronics: "⚡",
-      // "Home & Garden": "🏡",
-      "Home Office": "💼",
-      Lighting: "💡",
-      "Storage & Organization": "📦",
-      "Decor & Accessories": "🎨",
-      "Living Room": "🎨",
-      Bedroom: "🎨",
-      "Kitchen & Dining": "🎨",
-    };
-
-    return {
-      _id: category._id,
-      name: category.name,
-      slug: category.slug,
-      count: category.productCount,
-      gradient: gradients[index % gradients.length],
-      icon: iconMap[category.name] || "🛍️",
-      image: category.image?.url,
-    };
-  });
+  const displayCategories = categoriesData?.data
+    ? formatCategories(categoriesData.data)
+    : [];
 
   return {
-    categories: displayCategories || [],
+    categories: displayCategories,
     isLoading,
     error,
   };

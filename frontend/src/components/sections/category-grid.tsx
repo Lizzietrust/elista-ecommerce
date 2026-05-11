@@ -2,7 +2,7 @@
 
 import { useCategoriesForDisplay } from "@/lib/hooks/use-categories";
 import { Loader2 } from "lucide-react";
-import CategoryCard from "../ui/category-card";
+import CategoryCard from "@/components/ui/category-card";
 
 export default function CategoryGrid() {
   const { categories, isLoading, error } = useCategoriesForDisplay();
@@ -42,6 +42,7 @@ export default function CategoryGrid() {
                 icon={category.icon}
                 image={category.image}
                 gradient={category.gradient}
+                description={category.description}
               />
             ))}
           </div>

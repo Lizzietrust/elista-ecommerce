@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSelectedLayoutSegment } from "next/navigation";
 import { ShoppingCart, User, Search, Menu, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,16 +12,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCart } from "@/lib/hooks/use-cart";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { useCartContext } from "../providers/cart-provider";
 
+const navItems = [
+  { name: "Home", path: "/", exact: true },
+  { name: "Products", path: "/products", exact: false },
+  { name: "Categories", path: "/categories", exact: false },
+  { name: "Deals", path: "/deals", exact: false },
+  { name: "About", path: "/about", exact: false },
+];
+
 export default function Header() {
+  const pathname = usePathname();
+  const segment = useSelectedLayoutSegment();
   const cart = useCartContext();
-  const wishlist = useWishlist();
+  const { data: wishlistData } = useWishlist();
+
+  const wishlistItemCount = wishlistData?.wishlist?.itemCount ?? 0;
+
+  const isActive = (path: string, exact: boolean = false) => {
+    if (exact) {
+      return pathname === path;
+    }
+    return pathname === path || pathname?.startsWith(`${path}/`);
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container flex h-16 items-center justify-between md:px-8 px-4 mx-auto">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 group">
@@ -30,40 +49,24 @@ export default function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/"
-              className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors duration-200"
-            >
-              Home
-            </Link>
-            <Link
-              href="/products"
-              className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors duration-200"
-            >
-              Products
-            </Link>
-            <Link
-              href="/categories"
-              className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors duration-200"
-            >
-              Categories
-            </Link>
-            <Link
-              href="/deals"
-              className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors duration-200"
-            >
-              Deals
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors duration-200"
-            >
-              About
-            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={`text-sm font-medium transition-colors duration-200 ${
+                  isActive(item.path, item.exact)
+                    ? "text-accent font-semibold"
+                    : "text-muted-foreground hover:text-accent"
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Search - existing code */}
           <div className="hidden md:flex items-center">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -85,12 +88,16 @@ export default function Header() {
           {/* Wishlist Link */}
           <Link
             href="/wishlist"
-            className="relative p-2 rounded-lg text-muted-foreground hover:text-accent hover:bg-muted transition-colors duration-200"
+            className={`relative p-2 rounded-lg transition-colors duration-200 ${
+              isActive("/wishlist")
+                ? "text-accent bg-muted"
+                : "text-muted-foreground hover:text-accent hover:bg-muted"
+            }`}
           >
             <Heart size={20} />
-            {wishlist.itemCount > 0 && (
+            {wishlistItemCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {wishlist.itemCount}
+                {wishlistItemCount}
               </span>
             )}
           </Link>
@@ -98,7 +105,11 @@ export default function Header() {
           {/* Cart Link */}
           <Link
             href="/cart"
-            className="relative p-2 rounded-lg text-muted-foreground hover:text-accent hover:bg-muted transition-colors duration-200"
+            className={`relative p-2 rounded-lg transition-colors duration-200 ${
+              isActive("/cart")
+                ? "text-accent bg-muted"
+                : "text-muted-foreground hover:text-accent hover:bg-muted"
+            }`}
           >
             <ShoppingCart className="h-5 w-5" />
             {cart.itemCount > 0 && (
@@ -108,6 +119,7 @@ export default function Header() {
             )}
           </Link>
 
+          {/* User Dropdown - existing code */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -122,7 +134,11 @@ export default function Header() {
               <DropdownMenuItem asChild>
                 <Link
                   href="/account"
-                  className="text-foreground hover:text-accent"
+                  className={`w-full ${
+                    isActive("/account")
+                      ? "text-accent font-semibold"
+                      : "text-foreground hover:text-accent"
+                  }`}
                 >
                   My Account
                 </Link>
@@ -130,7 +146,11 @@ export default function Header() {
               <DropdownMenuItem asChild>
                 <Link
                   href="/orders"
-                  className="text-foreground hover:text-accent"
+                  className={`w-full ${
+                    isActive("/orders")
+                      ? "text-accent font-semibold"
+                      : "text-foreground hover:text-accent"
+                  }`}
                 >
                   My Orders
                 </Link>
@@ -138,7 +158,11 @@ export default function Header() {
               <DropdownMenuItem asChild>
                 <Link
                   href="/wishlist"
-                  className="text-foreground hover:text-accent"
+                  className={`w-full ${
+                    isActive("/wishlist")
+                      ? "text-accent font-semibold"
+                      : "text-foreground hover:text-accent"
+                  }`}
                 >
                   Wishlist
                 </Link>

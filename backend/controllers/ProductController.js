@@ -7,7 +7,6 @@ import multer from "multer";
 import path from "path";
 import mongoose from "mongoose";
 
-// Create a simple multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/products/");
@@ -109,7 +108,6 @@ const buildProductQuery = async (queryParams, userId = null) => {
     query.seller = seller;
   }
 
-  // Search filter
   if (search) {
     query.$or = [
       { name: { $regex: search, $options: "i" } },
@@ -119,7 +117,6 @@ const buildProductQuery = async (queryParams, userId = null) => {
     ];
   }
 
-  // Build sort object
   let sortObj = {};
   if (sort) {
     const sortFields = sort.split(",");
@@ -141,7 +138,6 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
 
   const skip = (page - 1) * limit;
 
-  // Execute query with pagination
   const products = await Product.find(query)
     .populate("category", "name slug")
     .populate("seller", "name email")
@@ -149,11 +145,9 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     .skip(skip)
     .limit(limit);
 
-  // Get total count for pagination
   const total = await Product.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
 
-  // Add to recently viewed for authenticated users
   if (req.user && products.length > 0) {
     const user = req.user;
     products.forEach((product) => {
@@ -188,7 +182,6 @@ export const getProductById = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if product is active (unless admin/seller is viewing)
   if (
     !product.isActive &&
     (!req.user || (req.user.role !== "admin" && req.user.role !== "seller"))
@@ -196,7 +189,6 @@ export const getProductById = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Product is not available", 404));
   }
 
-  // Add to recently viewed for authenticated users
   if (req.user) {
     try {
       await req.user.addToRecentlyViewed(product._id);
@@ -205,14 +197,13 @@ export const getProductById = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Get related products - FIXED: Properly populate category
   const relatedProducts = await Product.find({
     category: product.category,
     _id: { $ne: product._id },
     isActive: true,
   })
     .select("name price images slug averageRating category")
-    .populate("category", "name slug") // Add this line to populate category
+    .populate("category", "name slug")
     .limit(4);
 
   res.status(200).json({
@@ -280,41 +271,31 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check permissions
   if (req.user.role === "seller" && product.seller.toString() !== req.user.id) {
     return next(
       new ErrorResponse("Not authorized to update this product", 403),
     );
   }
 
-  // Handle uploaded images
   if (req.files && req.files.length > 0) {
     req.body.images = req.files.map((file) => file.path);
-
-    // Delete old images from Cloudinary if needed
-    // Note: You might want to implement image cleanup logic here
   }
 
-  // Handle category change
   if (req.body.category && req.body.category !== product.category.toString()) {
-    // Decrement old category count
     await Category.findByIdAndUpdate(product.category, {
       $inc: { productCount: -1 },
     });
 
-    // Increment new category count
     await Category.findByIdAndUpdate(req.body.category, {
       $inc: { productCount: 1 },
     });
 
-    // Validate new category exists
     const newCategory = await Category.findById(req.body.category);
     if (!newCategory) {
       return next(new ErrorResponse("New category not found", 404));
     }
   }
 
-  // Update product
   product = await Product.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -327,9 +308,6 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Delete product
-// @route   DELETE /api/products/:id
-// @access  Private/Admin/Seller
 export const deleteProduct = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(req.params.id);
 
@@ -339,21 +317,15 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check permissions
   if (req.user.role === "seller" && product.seller.toString() !== req.user.id) {
     return next(
       new ErrorResponse("Not authorized to delete this product", 403),
     );
   }
 
-  // Check if product has orders
-  // Need to import Order model if you're using it
-  // const hasOrders = await Order.exists({ "orderItems.product": product._id });
-  // For now, we'll skip this check since Order model might not be imported
-  const hasOrders = false; // Temporary fix
+  const hasOrders = false;
 
   if (hasOrders) {
-    // Soft delete by marking as inactive
     product.isActive = false;
     await product.save();
 
@@ -365,24 +337,17 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Delete product images from Cloudinary
   if (product.images && product.images.length > 0) {
-    // You would implement Cloudinary deletion logic here
-    // For example:
-    // await Promise.all(product.images.map(image => cloudinary.uploader.destroy(image)))
   }
 
-  // Remove product from category count
   if (product.category) {
     await Category.findByIdAndUpdate(product.category, {
       $inc: { productCount: -1 },
     });
   }
 
-  // Delete product reviews
   await Review.deleteMany({ product: product._id });
 
-  // Delete the product
   await product.deleteOne();
 
   res.status(200).json({
@@ -392,20 +357,13 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Upload product images middleware
-// @route   Middleware
-// @access  Private
-export const uploadProductImages = upload.array("images", 10); // Max 10 images
+export const uploadProductImages = upload.array("images", 10);
 
-// @desc    Process product images middleware
-// @route   Middleware
-// @access  Private
 export const processProductImages = asyncHandler(async (req, res, next) => {
   if (!req.files || req.files.length === 0) {
     return next();
   }
 
-  // Add image URLs to req.body
   req.body.images = req.files.map((file) => ({
     url: file.path,
     publicId: file.filename,
@@ -486,9 +444,6 @@ export const getProductsByCategory = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get new arrivals
-// @route   GET /api/products/new-arrivals
-// @access  Public
 export const getNewArrivals = asyncHandler(async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 12;
   const daysAgo = parseInt(req.query.days) || 30;
@@ -512,13 +467,9 @@ export const getNewArrivals = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get best sellers
-// @route   GET /api/products/best-sellers
-// @access  Public
 export const getBestSellers = asyncHandler(async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 12;
 
-  // This requires order tracking - for now, we'll use products with highest rating and salesCount
   const products = await Product.find({
     isActive: true,
     stock: { $gt: 0 },
@@ -535,9 +486,6 @@ export const getBestSellers = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Search products
-// @route   GET /api/products/search
-// @access  Public
 export const searchProducts = asyncHandler(async (req, res, next) => {
   const { q: searchTerm, limit = 20 } = req.query;
 
@@ -550,7 +498,6 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Search in multiple fields
   const searchQuery = {
     $or: [
       { name: { $regex: searchTerm, $options: "i" } },
@@ -567,43 +514,13 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
     .populate("category", "name slug")
     .limit(parseInt(limit));
 
-  // Get search suggestions
-  const suggestions = await Product.aggregate([
-    {
-      $match: {
-        name: { $regex: searchTerm, $options: "i" },
-        isActive: true,
-      },
-    },
-    {
-      $project: {
-        name: 1,
-        category: 1,
-        _id: 0,
-      },
-    },
-    {
-      $group: {
-        _id: "$name",
-        category: { $first: "$category" },
-      },
-    },
-    {
-      $limit: 5,
-    },
-  ]);
-
   res.status(200).json({
     success: true,
     count: products.length,
     data: products,
-    suggestions: suggestions.map((s) => s._id),
   });
 });
 
-// @desc    Get related products
-// @route   GET /api/products/related/:productId
-// @access  Public
 export const getRelatedProducts = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(req.params.productId);
 
@@ -633,11 +550,8 @@ export const getRelatedProducts = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update product stock
-// @route   PATCH /api/products/:id/stock
-// @access  Private/Admin/Seller
 export const updateProductStock = asyncHandler(async (req, res, next) => {
-  const { operation, quantity } = req.body; // operation: 'add', 'subtract', 'set'
+  const { operation, quantity } = req.body;
   const productId = req.params.id;
 
   if (!["add", "subtract", "set"].includes(operation)) {
@@ -659,7 +573,6 @@ export const updateProductStock = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Product not found", 404));
   }
 
-  // Check permissions for sellers
   if (req.user.role === "seller" && product.seller.toString() !== req.user.id) {
     return next(
       new ErrorResponse("Not authorized to update this product", 403),
@@ -702,9 +615,6 @@ export const updateProductStock = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Toggle product active status
-// @route   PATCH /api/products/:id/toggle-active
-// @access  Private/Admin/Seller
 export const toggleProductActive = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(req.params.id);
 
@@ -712,7 +622,6 @@ export const toggleProductActive = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Product not found", 404));
   }
 
-  // Check permissions for sellers
   if (req.user.role === "seller" && product.seller.toString() !== req.user.id) {
     return next(
       new ErrorResponse("Not authorized to update this product", 403),
@@ -735,9 +644,6 @@ export const toggleProductActive = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get products by seller
-// @route   GET /api/products/seller/my-products
-// @access  Private/Seller/Admin
 export const getProductsBySeller = asyncHandler(async (req, res, next) => {
   const { query, sort, page, limit } = buildProductQuery(
     req.query,
@@ -756,7 +662,6 @@ export const getProductsBySeller = asyncHandler(async (req, res, next) => {
   const total = await Product.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
 
-  // Get seller stats
   const stats = await Product.aggregate([
     { $match: { seller: req.user.id } },
     {
@@ -788,11 +693,8 @@ export const getProductsBySeller = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get product statistics (Admin only)
-// @route   GET /api/products/stats/overview
-// @access  Private/Admin
 export const getProductStats = asyncHandler(async (req, res, next) => {
-  const { timeRange = "month" } = req.query; // day, week, month, year
+  const { timeRange = "month" } = req.query;
 
   const timeRanges = {
     day: 1,
@@ -805,7 +707,6 @@ export const getProductStats = asyncHandler(async (req, res, next) => {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  // Get basic stats
   const stats = await Product.aggregate([
     {
       $group: {
@@ -829,7 +730,6 @@ export const getProductStats = asyncHandler(async (req, res, next) => {
     },
   ]);
 
-  // Get new products over time
   const newProducts = await Product.aggregate([
     {
       $match: {
@@ -869,7 +769,6 @@ export const getProductStats = asyncHandler(async (req, res, next) => {
     },
   ]);
 
-  // Get products by category
   const byCategory = await Product.aggregate([
     {
       $group: {
@@ -929,9 +828,6 @@ export const getProductStats = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Bulk update products
-// @route   POST /api/products/bulk-update
-// @access  Private/Admin
 export const bulkUpdateProducts = asyncHandler(async (req, res, next) => {
   const { productIds, updateData, operation } = req.body;
 
@@ -943,7 +839,6 @@ export const bulkUpdateProducts = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Please provide update data", 400));
   }
 
-  // Validate product IDs
   const validProductIds = await Product.find({
     _id: { $in: productIds },
   }).select("_id");
@@ -952,7 +847,6 @@ export const bulkUpdateProducts = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Some product IDs are invalid", 400));
   }
 
-  // Perform bulk update
   const result = await Product.updateMany(
     { _id: { $in: productIds } },
     updateData,

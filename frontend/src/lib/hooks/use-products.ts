@@ -274,12 +274,23 @@ export const useSearchProducts = (
   return useQuery<Product[], Error>({
     queryKey: productKeys.search(query),
     queryFn: async () => {
-      const response = await productApi.searchProducts(query, limit);
-      return response.data;
+      try {
+        const response = await productApi.searchProducts(query, limit);
+
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        console.error("Search products query error:", error);
+
+        return [];
+      }
     },
-    enabled: query.trim().length > 0,
+    enabled:
+      options?.enabled !== undefined
+        ? options.enabled
+        : query.trim().length > 0,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
+    retry: 1,
     ...options,
   });
 };

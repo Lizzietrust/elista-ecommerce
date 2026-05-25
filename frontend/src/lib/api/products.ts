@@ -2,6 +2,7 @@ import {
   typedApiClient,
   BaseApiResponse,
   PaginatedApiResponse,
+  optionalAuthRequest,
 } from "./client";
 
 export type { Product, ProductImage, Category } from "@/types";
@@ -139,10 +140,23 @@ export const productApi = {
     return typedApiClient.get(`/products/${id}`);
   },
 
-  searchProducts: async (searchTerm: string, limit?: number): Promise<any> => {
-    return typedApiClient.get("/products/search", {
-      params: { q: searchTerm, limit },
-    });
+  searchProducts: async (query: string, limit: number = 20) => {
+    try {
+      const response = await typedApiClient.get<BaseApiResponse<Product[]>>(
+        `/products/search`,
+        { params: { q: query, limit } },
+      );
+      return {
+        success: true,
+        data: Array.isArray(response.data) ? response.data : [],
+      } as BaseApiResponse<Product[]>;
+    } catch (error) {
+      console.error("Search products error:", error);
+      return {
+        success: true,
+        data: [],
+      } as BaseApiResponse<Product[]>;
+    }
   },
 
   getById: async (

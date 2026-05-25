@@ -79,11 +79,18 @@ const PUBLIC_ENDPOINTS = [
   "/api/products/new-arrivals",
   "/api/products/featured",
   "/api/products/best-sellers",
+  "/api/products/search",
+  "/products/search",
+  "/products/featured",
+  "/products/new-arrivals",
+  "/products/best-sellers",
 ];
 
 const isPublicEndpoint = (url?: string): boolean => {
   if (!url) return false;
-  return PUBLIC_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+
+  const path = url.split("?")[0];
+  return PUBLIC_ENDPOINTS.some((endpoint) => path.includes(endpoint));
 };
 
 apiClient.interceptors.response.use(
@@ -92,7 +99,6 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError<ErrorResponseData>) => {
     const { response, config } = error;
-
     const originalRequest = config as AxiosRequestConfig & { _retry?: boolean };
 
     if (response) {
@@ -100,7 +106,7 @@ apiClient.interceptors.response.use(
         case 401:
           if (isPublicEndpoint(originalRequest?.url)) {
             console.debug(
-              "Unauthorized access on public endpoint, continuing normally",
+              "Public endpoint accessed without auth, returning empty data",
             );
 
             return Promise.reject({
@@ -108,6 +114,7 @@ apiClient.interceptors.response.use(
               message: "Authentication required for this operation",
               data: response?.data,
               isPublicEndpoint: true,
+              shouldFallbackToEmptyData: true,
             });
           }
 
@@ -221,8 +228,10 @@ export async function optionalAuthRequest<T = any>(
     return { data: response as T, isAuthenticated: true };
   } catch (error: any) {
     if (error.status === 401 && error.isPublicEndpoint) {
+      console.log(`Public endpoint ${url} returned 401, returning empty data`);
       return { data: null, isAuthenticated: false };
     }
+
     throw error;
   }
 }

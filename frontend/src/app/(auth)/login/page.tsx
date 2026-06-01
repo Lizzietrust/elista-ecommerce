@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "react-hot-toast";
+import { useAuth } from "@/providers/auth-provider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isLoading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -59,17 +59,11 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success("Successfully logged in!");
+    const success = await login(formData.email, formData.password);
+    if (success) {
       router.push("/");
-    } catch (error) {
+    } else {
       setErrors({ general: "Invalid email or password" });
-      toast.error("Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -119,7 +113,7 @@ export default function LoginPage() {
                   : "border-[#E8E0D8] focus:border-[#C17B4D] focus:ring-[#C17B4D]"
               } bg-white dark:bg-gray-800 text-[#2C2C2C] dark:text-white focus:outline-none focus:ring-2`}
               placeholder="you@example.com"
-              disabled={isLoading}
+              disabled={authLoading}
             />
           </div>
           {errors.email && (
@@ -160,7 +154,7 @@ export default function LoginPage() {
                   : "border-[#E8E0D8] focus:border-[#C17B4D] focus:ring-[#C17B4D]"
               } bg-white dark:bg-gray-800 text-[#2C2C2C] dark:text-white focus:outline-none focus:ring-2`}
               placeholder="Enter your password"
-              disabled={isLoading}
+              disabled={authLoading}
             />
             <button
               type="button"
@@ -184,7 +178,7 @@ export default function LoginPage() {
               checked={formData.rememberMe}
               onChange={handleChange}
               className="h-4 w-4 text-[#C17B4D] rounded border-[#E8E0D8] focus:ring-[#C17B4D]"
-              disabled={isLoading}
+              disabled={authLoading}
             />
             <span className="ml-2 text-sm text-[#6B6B6B] dark:text-gray-300">
               Remember me
@@ -196,9 +190,9 @@ export default function LoginPage() {
         <Button
           type="submit"
           className="w-full py-3 text-lg bg-[#2C3E3E] hover:bg-[#4A6B6B] transition-all"
-          disabled={isLoading}
+          disabled={authLoading}
         >
-          {isLoading ? (
+          {authLoading ? (
             <div className="flex items-center justify-center gap-2">
               <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               Signing in...
@@ -224,7 +218,7 @@ export default function LoginPage() {
           <button
             type="button"
             className="flex items-center justify-center gap-3 py-3 px-4 border border-[#E8E0D8] rounded-xl hover:bg-[#F4EFEA] dark:hover:bg-gray-800 transition-colors"
-            disabled={isLoading}
+            disabled={authLoading}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -252,7 +246,7 @@ export default function LoginPage() {
           <button
             type="button"
             className="flex items-center justify-center gap-3 py-3 px-4 border border-[#E8E0D8] rounded-xl hover:bg-[#F4EFEA] dark:hover:bg-gray-800 transition-colors"
-            disabled={isLoading}
+            disabled={authLoading}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />

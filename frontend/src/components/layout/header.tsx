@@ -20,9 +20,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCart } from "@/lib/hooks/use-cart";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
-import { useCartContext } from "../providers/cart-provider";
+import { useCartContext } from "../../providers/cart-provider";
 import { useState, useEffect, useRef } from "react";
 import { useSearchProducts } from "@/lib/hooks/use-products";
 

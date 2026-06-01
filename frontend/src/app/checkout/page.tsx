@@ -18,7 +18,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCartContext } from "@/components/providers/cart-provider";
+import { useCartContext } from "@/providers/cart-provider";
 import { toast } from "react-hot-toast";
 
 const paymentMethods = [
@@ -83,7 +83,6 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
 
-  // Form states
   const [shippingInfo, setShippingInfo] = useState({
     firstName: "",
     lastName: "",

@@ -16,7 +16,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCartContext } from "@/components/providers/cart-provider";
+import { useCartContext } from "@/providers/cart-provider";
 import { toast } from "react-hot-toast";
 
 const promoCodes = [

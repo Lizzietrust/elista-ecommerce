@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useAuth } from "../providers/auth-provider";
+import { useAuth } from "../../providers/auth-provider";
 import { apiClient } from "@/lib/api/client";
 
 interface Campaign {

@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import CampaignBanner from "@/components/campaign/CampaignBanner";
+import { headers } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,14 +24,21 @@ export const metadata: Metadata = {
     "home decor",
   ],
   authors: [{ name: "Elista" }],
-  // viewport: "width=device-width, initial-scale=1",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  const isAuthPage =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password");
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
@@ -44,12 +52,12 @@ export default function RootLayout({
             <AuthProvider>
               <CartProvider>
                 <div className="flex min-h-screen flex-col bg-[#FDF8F5] dark:bg-[#2C2C2C]">
-                  <Header />
+                  {!isAuthPage && <Header />}
                   <main className="flex-1">
-                    <CampaignBanner />
+                    {!isAuthPage && <CampaignBanner />}
                     {children}
                   </main>
-                  <Footer />
+                  {!isAuthPage && <Footer />}
                 </div>
                 <Toaster />
               </CartProvider>

@@ -20,11 +20,11 @@ export const getReviews = asyncHandler(async (req, res, next) => {
   const query = {};
 
   if (product) {
-    query.product = product;
+    query.product = new mongoose.Types.ObjectId(product);
   }
 
   if (user) {
-    query.user = user;
+    query.user = new mongoose.Types.ObjectId(user);
   }
 
   if (rating) {
@@ -53,7 +53,7 @@ export const getReviews = asyncHandler(async (req, res, next) => {
 
   if (product) {
     const stats = await Review.aggregate([
-      { $match: { product: mongoose.Types.ObjectId(product) } },
+      { $match: { product: new mongoose.Types.ObjectId(product) } },
       {
         $group: {
           _id: "$product",
@@ -276,12 +276,16 @@ export const getProductReviews = asyncHandler(async (req, res, next) => {
 
   const productId = req.params.productId;
 
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return next(new ErrorResponse("Invalid product ID", 400));
+  }
+
   const product = await Product.findById(productId);
   if (!product) {
     return next(new ErrorResponse("Product not found", 404));
   }
 
-  const query = { product: productId };
+  const query = { product: new mongoose.Types.ObjectId(productId) };
 
   if (rating) {
     query.rating = parseInt(rating);
@@ -308,7 +312,7 @@ export const getProductReviews = asyncHandler(async (req, res, next) => {
   ]);
 
   const ratingStats = await Review.aggregate([
-    { $match: { product: mongoose.Types.ObjectId(productId) } },
+    { $match: { product: new mongoose.Types.ObjectId(productId) } },
     {
       $group: {
         _id: "$product",
@@ -387,13 +391,13 @@ export const getUserReviews = asyncHandler(async (req, res, next) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const [reviews, total] = await Promise.all([
-    Review.find({ user: userId })
+    Review.find({ user: new mongoose.Types.ObjectId(userId) })
       .populate("product", "name images price")
       .sort("-createdAt")
       .skip(skip)
       .limit(parseInt(limit))
       .lean(),
-    Review.countDocuments({ user: userId }),
+    Review.countDocuments({ user: new mongoose.Types.ObjectId(userId) }),
   ]);
 
   res.status(200).json({
@@ -528,7 +532,7 @@ export const getHelpfulReviews = asyncHandler(async (req, res, next) => {
 const updateProductRating = async (productId) => {
   try {
     const stats = await Review.aggregate([
-      { $match: { product: mongoose.Types.ObjectId(productId) } },
+      { $match: { product: new mongoose.Types.ObjectId(productId) } },
       {
         $group: {
           _id: "$product",

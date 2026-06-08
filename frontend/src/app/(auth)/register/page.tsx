@@ -94,6 +94,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
     const success = await register(
       formData.name,
       formData.email,
@@ -101,8 +102,11 @@ export default function RegisterPage() {
       formData.confirmPassword,
       formData.phone,
     );
+
     if (success) {
-      toast.success("Account created! Please check your email to verify.");
+      toast.success(
+        "Welcome to Elista! Your account has been created successfully.",
+      );
       router.push("/");
     } else {
       setErrors({

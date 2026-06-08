@@ -9,19 +9,15 @@ import sendEmail, {
 import asyncHandler from "../utils/asyncHandler.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
 
-// Helper functions for token generation
 const generateJWTToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
 
-// Send JWT Token in response
 const sendTokenResponse = (user, statusCode, res) => {
-  // Create token
   const token = generateJWTToken(user._id);
 
-  // Cookie options - FIXED: Use maxAge instead of expires
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -30,10 +26,8 @@ const sendTokenResponse = (user, statusCode, res) => {
       parseInt(process.env.JWT_COOKIE_EXPIRE || "7") * 24 * 60 * 60 * 1000,
   };
 
-  // Set cookie
   res.cookie("token", token, cookieOptions);
 
-  // Remove password from output
   user.password = undefined;
 
   res.status(statusCode).json({
@@ -43,11 +37,7 @@ const sendTokenResponse = (user, statusCode, res) => {
   });
 };
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
 export const register = asyncHandler(async (req, res, next) => {
-  // Validate input
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -55,23 +45,20 @@ export const register = asyncHandler(async (req, res, next) => {
 
   const { name, email, password, phone, address } = req.body;
 
-  // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ErrorResponse("User already exists with this email", 400));
   }
 
-  // Create user (auto-verify email)
   const user = await User.create({
     name,
     email,
     password,
     phone,
     address,
-    isEmailVerified: true, // Auto-verify
+    isEmailVerified: true,
   });
 
-  // Send welcome email in background (don't await, but log errors)
   sendWelcomeEmail(user.email, user.name).catch((error) => {
     console.error(
       "Failed to send welcome email (non-blocking):",
@@ -79,18 +66,13 @@ export const register = asyncHandler(async (req, res, next) => {
     );
   });
 
-  // Send token response with cookie
   sendTokenResponse(user, 201, res);
 });
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Validate email and password
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -98,7 +80,6 @@ export const login = async (req, res, next) => {
       });
     }
 
-    // Check for user
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -108,7 +89,6 @@ export const login = async (req, res, next) => {
       });
     }
 
-    // Check if password matches
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
@@ -118,7 +98,6 @@ export const login = async (req, res, next) => {
       });
     }
 
-    // Check if email is verified
     if (!user.isEmailVerified) {
       return res.status(401).json({
         success: false,
@@ -128,7 +107,6 @@ export const login = async (req, res, next) => {
       });
     }
 
-    // Check if account is active
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
@@ -136,11 +114,9 @@ export const login = async (req, res, next) => {
       });
     }
 
-    // Update last login
     user.lastLogin = Date.now();
     await user.save({ validateBeforeSave: false });
 
-    // Send token response
     sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error("Login error:", error);
@@ -152,9 +128,6 @@ export const login = async (req, res, next) => {
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
 export const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id)
@@ -199,13 +172,10 @@ export const getMe = async (req, res, next) => {
   }
 };
 
-// @desc    Logout user / clear cookie
-// @route   GET /api/auth/logout
-// @access  Private
 export const logout = async (req, res, next) => {
   try {
     res.cookie("token", "none", {
-      maxAge: 10 * 1000, // 10 seconds
+      maxAge: 10 * 1000,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -224,9 +194,6 @@ export const logout = async (req, res, next) => {
   }
 };
 
-// @desc    Update user details
-// @route   PUT /api/auth/updatedetails
-// @access  Private
 export const updateDetails = async (req, res, next) => {
   try {
     const fieldsToUpdate = {
@@ -238,12 +205,10 @@ export const updateDetails = async (req, res, next) => {
       gender: req.body.gender,
     };
 
-    // Remove undefined fields
     Object.keys(fieldsToUpdate).forEach(
       (key) => fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key],
     );
 
-    // Check if email is being changed
     if (fieldsToUpdate.email && fieldsToUpdate.email !== req.user.email) {
       const existingUser = await User.findOne({ email: fieldsToUpdate.email });
       if (existingUser && existingUser._id.toString() !== req.user.id) {
@@ -274,9 +239,6 @@ export const updateDetails = async (req, res, next) => {
   }
 };
 
-// @desc    Update password
-// @route   PUT /api/auth/updatepassword
-// @access  Private
 export const updatePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -288,10 +250,8 @@ export const updatePassword = async (req, res, next) => {
       });
     }
 
-    // Get user with password
     const user = await User.findById(req.user.id).select("+password");
 
-    // Check current password
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({
@@ -300,7 +260,6 @@ export const updatePassword = async (req, res, next) => {
       });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 
@@ -315,9 +274,6 @@ export const updatePassword = async (req, res, next) => {
   }
 };
 
-// @desc    Forgot password
-// @route   POST /api/auth/forgot-password
-// @access  Public
 export const forgotPassword = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
 
@@ -330,11 +286,9 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("No user found with that email", 404));
   }
 
-  // Get reset token using User model method
   const resetToken = user.getResetPasswordToken();
   await user.save({ validateBeforeSave: false });
 
-  // Send email using dedicated password reset email function
   const emailSent = await sendPasswordResetEmail(
     user.email,
     user.name,
@@ -354,9 +308,6 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Reset password
-// @route   PUT /api/auth/reset-password/:resettoken
-// @access  Public
 export const resetPassword = async (req, res, next) => {
   try {
     const { resettoken } = req.params;
@@ -369,13 +320,11 @@ export const resetPassword = async (req, res, next) => {
       });
     }
 
-    // Hash token
     const resetPasswordToken = crypto
       .createHash("sha256")
       .update(resettoken)
       .digest("hex");
 
-    // Find user by token and check expiration
     const user = await User.findOne({
       resetPasswordToken,
       resetPasswordExpire: { $gt: Date.now() },
@@ -388,20 +337,17 @@ export const resetPassword = async (req, res, next) => {
       });
     }
 
-    // Set new password
     user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
 
-    // Send confirmation email (non-blocking)
     sendEmail({
       email: user.email,
       subject: "Password Reset Successful - Elista",
       html: "<h1>Password Reset Successful</h1><p>Your password has been successfully reset.</p>",
     }).catch(console.error);
 
-    // Generate new token for auto-login
     const token = generateJWTToken(user._id);
 
     res.status(200).json({
@@ -425,9 +371,6 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
-// @desc    Verify email (keep for compatibility but auto-verify is true)
-// @route   GET /api/auth/verify-email/:token
-// @access  Public
 export const verifyEmail = async (req, res, next) => {
   try {
     const { token } = req.params;
@@ -480,9 +423,6 @@ export const verifyEmail = async (req, res, next) => {
   }
 };
 
-// @desc    Resend verification email
-// @route   POST /api/auth/resend-verification
-// @access  Public
 export const resendVerificationEmail = async (req, res, next) => {
   try {
     const { email } = req.body;

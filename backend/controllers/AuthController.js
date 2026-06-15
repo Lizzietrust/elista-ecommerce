@@ -175,7 +175,7 @@ export const getMe = async (req, res, next) => {
 export const logout = async (req, res, next) => {
   try {
     res.cookie("token", "none", {
-      maxAge: 10 * 1000,
+      expires: new Date(Date.now() + 10 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",

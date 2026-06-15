@@ -6,6 +6,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { CartProvider } from "@/providers/cart-provider";
 import { Toaster } from "@/components/ui/toaster";
+import dynamic from "next/dynamic";
 import LayoutWrapper from "@/components/layout/layout-wrapper";
 
 const inter = Inter({ subsets: ["latin"] });

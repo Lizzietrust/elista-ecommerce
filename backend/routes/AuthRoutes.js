@@ -22,7 +22,6 @@ import {
 
 const router = express.Router();
 
-// Public routes with external validators
 router.post("/register", validateRegistration, register);
 router.post("/login", validateLogin, login);
 router.get("/logout", logout);
@@ -31,11 +30,10 @@ router.put("/reset-password/:resettoken", validateResetPassword, resetPassword);
 router.get("/verify-email/:token", verifyEmail);
 router.post(
   "/resend-verification",
-  validateForgotPassword, // Using same validator as forgot password for email validation
-  resendVerificationEmail
+  validateForgotPassword,
+  resendVerificationEmail,
 );
 
-// Protected routes - all routes below this will use the protect middleware
 router.use(protect);
 router.get("/me", getMe);
 router.put("/updatedetails", updateDetails);

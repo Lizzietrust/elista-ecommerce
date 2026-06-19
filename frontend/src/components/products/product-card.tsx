@@ -14,9 +14,15 @@ import {
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useProductReviews } from "@/lib/hooks/use-reviews";
+import type { WishlistItem } from "@/lib/api/wishlist";
 
 interface ProductCardProps {
   product: Product;
+}
+
+interface CheckInWishlistResponse {
+  isInWishlist: boolean;
+  itemDetails?: WishlistItem;
 }
 
 const isNewArrival = (createdAt: string | undefined): boolean => {
@@ -44,7 +50,8 @@ export function ProductCard({ product }: ProductCardProps) {
       enabled: isAuthenticated && !!productId,
     });
 
-  const isInWishlist = wishlistData?.isInWishlist ?? false;
+  const wishlistCheckData = wishlistData as CheckInWishlistResponse | undefined;
+  const isInWishlist = wishlistCheckData?.isInWishlist ?? false;
 
   const { mutate: toggleWishlist, isPending: isTogglingWishlist } =
     useToggleWishlist();
@@ -103,10 +110,39 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    toggleWishlist({
-      product,
-      isInWishlist,
-    });
+    if (!productId) {
+      toast.error("Invalid product");
+      return;
+    }
+
+    toggleWishlist(
+      {
+        product,
+        isInWishlist,
+      },
+      {
+        onSuccess: (data) => {
+          if (data?.action === "added") {
+            toast.success("Added to wishlist! ❤️", {
+              duration: 2000,
+              position: "bottom-center",
+            });
+          } else if (data?.action === "removed") {
+            toast.success("Removed from wishlist", {
+              duration: 2000,
+              position: "bottom-center",
+            });
+          }
+        },
+        onError: (error: any) => {
+          console.error("Toggle wishlist error:", error);
+          toast.error(error?.message || "Failed to update wishlist", {
+            duration: 3000,
+            position: "bottom-center",
+          });
+        },
+      },
+    );
   };
 
   const getCategoryName = (): string => {

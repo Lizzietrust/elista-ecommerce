@@ -1,7 +1,6 @@
 import { body, validationResult } from "express-validator";
 import User from "../models/User.js";
 
-// Check if email already exists in database
 const checkEmailExists = async (email) => {
   const existingUser = await User.findOne({ email: email.toLowerCase() });
   if (existingUser) {
@@ -10,7 +9,6 @@ const checkEmailExists = async (email) => {
   return true;
 };
 
-// Check if email exists in database (for login/reset)
 const checkEmailExistsForLogin = async (email) => {
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
@@ -19,9 +17,7 @@ const checkEmailExistsForLogin = async (email) => {
   return true;
 };
 
-// Validate password strength
 const validatePasswordStrength = (password) => {
-  // At least 6 characters, one uppercase, one lowercase, one number
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
   if (!passwordRegex.test(password)) {
     throw new Error(
@@ -31,7 +27,6 @@ const validatePasswordStrength = (password) => {
   return true;
 };
 
-// Registration validation
 export const validateRegistration = [
   body("name")
     .trim()
@@ -77,7 +72,6 @@ export const validateRegistration = [
       return true;
     }),
 
-  // Address validation (optional fields)
   body("address.street").optional().trim(),
   body("address.city").optional().trim(),
   body("address.state").optional().trim(),
@@ -96,7 +90,6 @@ export const validateRegistration = [
   },
 ];
 
-// Login validation
 export const validateLogin = [
   body("email")
     .trim()
@@ -126,7 +119,6 @@ export const validateLogin = [
   },
 ];
 
-// Forgot password validation
 export const validateForgotPassword = [
   body("email")
     .trim()
@@ -148,7 +140,6 @@ export const validateForgotPassword = [
   },
 ];
 
-// Reset password validation
 export const validateResetPassword = [
   body("password")
     .trim()
@@ -181,7 +172,6 @@ export const validateResetPassword = [
   },
 ];
 
-// Update password validation (for logged-in users)
 export const validatePasswordUpdate = [
   body("currentPassword")
     .trim()
@@ -227,7 +217,6 @@ export const validatePasswordUpdate = [
   },
 ];
 
-// Resend verification email validation
 export const validateResendVerification = [
   body("email")
     .trim()
@@ -249,7 +238,6 @@ export const validateResendVerification = [
   },
 ];
 
-// User update validation
 export const validateUserUpdate = [
   body("name")
     .optional()
@@ -280,7 +268,6 @@ export const validateUserUpdate = [
     .isIn(["male", "female", "other", "prefer-not-to-say"])
     .withMessage("Invalid gender specified"),
 
-  // Address validation
   body("address.street")
     .optional()
     .trim()
@@ -323,7 +310,6 @@ export const validateUserUpdate = [
   },
 ];
 
-// Product creation validation
 export const validateProduct = [
   body("name")
     .trim()
@@ -419,7 +405,6 @@ export const validateProduct = [
   },
 ];
 
-// Product update validation
 export const validateProductUpdate = [
   body("name")
     .optional()
@@ -511,7 +496,6 @@ export const validateProductUpdate = [
   },
 ];
 
-// Category creation validation
 export const validateCategory = [
   body("name")
     .trim()
@@ -567,7 +551,6 @@ export const validateCategory = [
   },
 ];
 
-// Category update validation
 export const validateCategoryUpdate = [
   body("name")
     .optional()
@@ -622,7 +605,6 @@ export const validateCategoryUpdate = [
   },
 ];
 
-// Review validation - Enhanced version with more fields
 export const validateReview = [
   body("product")
     .notEmpty()
@@ -669,7 +651,6 @@ export const validateReview = [
   },
 ];
 
-// Order validation
 export const validateOrder = [
   body("shippingAddress")
     .notEmpty()
@@ -739,9 +720,6 @@ export const validateOrder = [
   },
 ];
 
-// ================= CART VALIDATORS =================
-
-// Cart item validation (for adding to cart)
 export const validateCartItem = [
   body("productId")
     .notEmpty()
@@ -778,7 +756,6 @@ export const validateCartItem = [
   },
 ];
 
-// Cart update validation (for updating cart item)
 export const validateCartUpdate = [
   body("quantity")
     .optional()
@@ -804,7 +781,6 @@ export const validateCartUpdate = [
   },
 ];
 
-// Coupon validation (for applying coupon)
 export const validateCoupon = [
   body("couponCode")
     .trim()
@@ -827,7 +803,6 @@ export const validateCoupon = [
   },
 ];
 
-// Merge cart validation (for guest to user cart merging)
 export const validateMergeCart = [
   body("guestCart")
     .notEmpty()
@@ -857,7 +832,6 @@ export const validateMergeCart = [
   },
 ];
 
-// Cart item quantity validation
 export const validateCartQuantity = [
   body("quantity")
     .optional()
@@ -881,15 +855,27 @@ export const validateCartQuantity = [
   },
 ];
 
-// ================= END CART VALIDATORS =================
-
-// Wishlist validation
 export const validateWishlistItem = [
-  body("product")
-    .notEmpty()
-    .withMessage("Product ID is required")
-    .isMongoId()
-    .withMessage("Invalid product ID"),
+  body("product").optional().isMongoId().withMessage("Invalid product ID"),
+
+  body("productId").optional().isMongoId().withMessage("Invalid product ID"),
+
+  body().custom((value, { req }) => {
+    const product = req.body.product;
+    const productId = req.body.productId;
+
+    if (!product && !productId) {
+      throw new Error(
+        "Product ID is required (provide either 'product' or 'productId')",
+      );
+    }
+
+    if (!product && productId) {
+      req.body.product = productId;
+    }
+
+    return true;
+  }),
 
   (req, res, next) => {
     const errors = validationResult(req);
@@ -903,7 +889,6 @@ export const validateWishlistItem = [
   },
 ];
 
-// Address validation (for adding/updating addresses)
 export const validateAddress = [
   body("street")
     .trim()
@@ -973,7 +958,6 @@ export const validateAddress = [
   },
 ];
 
-// Payment validation (Stripe only) - COMPLETELY FIXED VERSION
 export const validatePayment = [
   body("paymentMethod")
     .notEmpty()
@@ -990,7 +974,6 @@ export const validatePayment = [
     .isIn(["USD", "EUR", "GBP", "CAD", "AUD"])
     .withMessage("Invalid currency"),
 
-  // Custom validation for card number
   body("cardNumber")
     .custom((value, { req }) => {
       const paymentMethod = req.body.paymentMethod;
@@ -1014,7 +997,6 @@ export const validatePayment = [
       return true;
     }),
 
-  // Custom validation for card expiry
   body("cardExpiry")
     .custom((value, { req }) => {
       const paymentMethod = req.body.paymentMethod;
@@ -1038,7 +1020,6 @@ export const validatePayment = [
       return true;
     }),
 
-  // Custom validation for CVC
   body("cardCVC")
     .custom((value, { req }) => {
       const paymentMethod = req.body.paymentMethod;
@@ -1074,7 +1055,6 @@ export const validatePayment = [
   },
 ];
 
-// Stripe payment validation
 export const validateStripePayment = [
   body("orderId")
     .notEmpty()
@@ -1104,7 +1084,6 @@ export const validateStripePayment = [
   },
 ];
 
-// Stripe checkout session validation
 export const validateStripeCheckoutSession = [
   body("orderId")
     .notEmpty()
@@ -1136,7 +1115,6 @@ export const validateStripeCheckoutSession = [
   },
 ];
 
-// Coupon creation validation (for admin)
 export const validateCouponCreation = [
   body("code")
     .trim()
@@ -1217,7 +1195,6 @@ export const validateCouponCreation = [
   },
 ];
 
-// Payment method validation
 export const validatePaymentMethod = [
   body("paymentMethodId")
     .notEmpty()
@@ -1239,7 +1216,6 @@ export const validatePaymentMethod = [
   },
 ];
 
-// Refund validation (admin only)
 export const validateRefund = [
   body("amount")
     .optional()
@@ -1264,7 +1240,6 @@ export const validateRefund = [
   },
 ];
 
-// Search validation
 export const validateSearch = [
   body("query")
     .trim()
@@ -1312,10 +1287,8 @@ export const validateSearch = [
   },
 ];
 
-// Common middleware to handle validation errors
 export const validateRequest = (validations) => {
   return async (req, res, next) => {
-    // Run all validations
     await Promise.all(validations.map((validation) => validation.run(req)));
 
     const errors = validationResult(req);
@@ -1323,7 +1296,6 @@ export const validateRequest = (validations) => {
       return next();
     }
 
-    // Format errors for consistent response
     const formattedErrors = errors.array().map((error) => ({
       field: error.path,
       message: error.msg,

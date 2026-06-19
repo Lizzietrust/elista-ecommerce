@@ -44,6 +44,7 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
+    // Add token to headers if available
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       if (token) {
@@ -51,6 +52,7 @@ apiClient.interceptors.request.use(
       }
     }
 
+    // Add timestamp to GET requests to prevent caching (except for specific endpoints)
     const shouldAddTimestamp =
       config.method?.toLowerCase() === "get" &&
       !config.url?.includes("/new-arrivals") &&
@@ -97,6 +99,7 @@ const isPublicEndpoint = (url?: string): boolean => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    // Log successful responses for debugging in development
     if (process.env.NODE_ENV === "development") {
       console.log(
         `API ${response.config.method?.toUpperCase()} ${response.config.url}:`,

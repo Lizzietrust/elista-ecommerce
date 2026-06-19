@@ -56,86 +56,96 @@ export interface AddToWishlistResponse {
 
 export const wishlistApi = {
   getWishlist: async (params?: { populate?: boolean; sort?: string }) => {
-    return typedApiClient.get<BaseApiResponse<WishlistResponse>>("/wishlist", {
-      params,
-    });
+    const response = await typedApiClient.get<
+      BaseApiResponse<WishlistResponse>
+    >("/wishlist", { params });
+    return response;
   },
 
   addToWishlist: async (
     productId: string,
     options?: { notes?: string; priority?: string; variant?: string },
   ) => {
-    return typedApiClient.post<BaseApiResponse<AddToWishlistResponse>>(
-      "/wishlist",
-      {
-        productId,
-        ...options,
-      },
-    );
+    const response = await typedApiClient.post<
+      BaseApiResponse<AddToWishlistResponse>
+    >("/wishlist", {
+      product: productId,
+      ...options,
+    });
+    return response;
   },
 
   removeFromWishlist: async (productId: string) => {
-    return typedApiClient.delete<
+    const response = await typedApiClient.delete<
       BaseApiResponse<{
         productId: string;
         wishlist: { id: string; itemCount: number };
       }>
     >(`/wishlist/${productId}`);
+    return response;
   },
 
   checkInWishlist: async (productId: string) => {
-    return typedApiClient.get<
+    const response = await typedApiClient.get<
       BaseApiResponse<{ isInWishlist: boolean; itemDetails?: WishlistItem }>
     >(`/wishlist/check/${productId}`);
+    return response;
   },
 
   clearWishlist: async () => {
-    return typedApiClient.delete<
-      BaseApiResponse<{ wishlist: { id: string; itemCount: number } }>
-    >("/wishlist/clear");
+    const response =
+      await typedApiClient.delete<
+        BaseApiResponse<{ wishlist: { id: string; itemCount: number } }>
+      >("/wishlist/clear");
+    return response;
   },
 
   updateWishlistItem: async (
     productId: string,
     updates: { notes?: string; priority?: string },
   ) => {
-    return typedApiClient.put<BaseApiResponse<{ item: WishlistItem }>>(
-      `/wishlist/${productId}`,
-      updates,
-    );
+    const response = await typedApiClient.put<
+      BaseApiResponse<{ item: WishlistItem }>
+    >(`/wishlist/${productId}`, updates);
+    return response;
   },
 
   moveToCart: async (productId: string, quantity?: number) => {
-    return typedApiClient.post<
+    const response = await typedApiClient.post<
       BaseApiResponse<{
         productId: string;
         movedToCart: boolean;
         wishlist: { id: string; itemCount: number };
       }>
     >(`/wishlist/${productId}/move-to-cart`, { quantity });
+    return response;
   },
 
   getWishlistCount: async () => {
-    return typedApiClient.get<
-      BaseApiResponse<{ count: number; isEmpty: boolean }>
-    >("/wishlist/count");
+    const response =
+      await typedApiClient.get<
+        BaseApiResponse<{ count: number; isEmpty: boolean }>
+      >("/wishlist/count");
+    return response;
   },
 
   generateShareLink: async (expiryDays?: number) => {
-    return typedApiClient.post<
+    const response = await typedApiClient.post<
       BaseApiResponse<{
         shareUrl: string;
         token: string;
         expiresAt: string;
         expiryDays: number;
       }>
-
-        >("/wishlist/share", { expiryDays });
+    >("/wishlist/share", { expiryDays });
+    return response;
   },
 
   revokeShareLink: async () => {
-    return typedApiClient.delete<
-      BaseApiResponse<{ wishlist: { id: string; isPublic: boolean } }>
-    >("/wishlist/share");
+    const response =
+      await typedApiClient.delete<
+        BaseApiResponse<{ wishlist: { id: string; isPublic: boolean } }>
+      >("/wishlist/share");
+    return response;
   },
 };

@@ -7,41 +7,47 @@ import User from "../models/User.js";
 export const getWishlist = asyncHandler(async (req, res, next) => {
   const { populate = "true", sort = "-addedAt" } = req.query;
 
-  // Get or create wishlist for user
   let wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
   if (populate === "true") {
-    // Populate product details
     await wishlist.populate({
       path: "items.product",
       select:
-        "name price images averageRating totalReviews stock isActive discountPercentage comparePrice brand category",
+        "name price images averageRating totalReviews stock isActive discountPercentage comparePrice brand category slug",
       populate: {
         path: "category",
         select: "name slug",
       },
     });
 
-    // Filter out inactive products if needed
     wishlist.items = wishlist.items.filter(
-      (item) => item.product && item.product.isActive,
+      (item) => item.product && item.product.isActive !== false,
     );
 
-    // Sort items
     if (sort === "-addedAt") {
       wishlist.items.sort((a, b) => b.addedAt - a.addedAt);
+    } else if (sort === "addedAt") {
+      wishlist.items.sort((a, b) => a.addedAt - b.addedAt);
     } else if (sort === "price-asc") {
       wishlist.items.sort((a, b) => a.product.price - b.product.price);
     } else if (sort === "price-desc") {
       wishlist.items.sort((a, b) => b.product.price - a.product.price);
+    } else if (sort === "name-asc") {
+      wishlist.items.sort((a, b) =>
+        a.product.name.localeCompare(b.product.name),
+      );
+    } else if (sort === "name-desc") {
+      wishlist.items.sort((a, b) =>
+        b.product.name.localeCompare(a.product.name),
+      );
     } else if (sort === "rating") {
       wishlist.items.sort(
-        (a, b) => b.product.averageRating - a.product.averageRating,
+        (a, b) =>
+          (b.product.averageRating || 0) - (a.product.averageRating || 0),
       );
     }
   }
 
-  // Calculate total estimated cost
   let totalEstimatedCost = 0;
   let inStockCount = 0;
   let outOfStockCount = 0;
@@ -93,13 +99,13 @@ export const getWishlist = asyncHandler(async (req, res, next) => {
 });
 
 export const addToWishlist = asyncHandler(async (req, res, next) => {
-  const { productId, notes, priority, variant } = req.body;
+  const productId = req.body.product || req.body.productId;
+  const { notes, priority, variant } = req.body;
 
   if (!productId) {
     return next(new ErrorResponse("Product ID is required", 400));
   }
 
-  // Check if product exists and is active
   const product = await Product.findOne({
     _id: productId,
     isActive: true,
@@ -109,24 +115,20 @@ export const addToWishlist = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Product not found or not active", 404));
   }
 
-  // Get or create wishlist
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
-  // Check if product already in wishlist
   const alreadyInWishlist = wishlist.hasItem(productId);
 
   if (alreadyInWishlist) {
     return next(new ErrorResponse("Product already in wishlist", 400));
   }
 
-  // Add product to wishlist
   await wishlist.addItem(productId, { notes, priority, variant });
 
-  // Populate the added product for response
   await wishlist.populate({
     path: "items.product",
     match: { _id: productId },
-    select: "name price images averageRating",
+    select: "name price images averageRating stock isActive",
   });
 
   const addedItem = wishlist.items.find(
@@ -151,12 +153,10 @@ export const removeFromWishlist = asyncHandler(async (req, res, next) => {
 
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
-  // Check if product is in wishlist
   if (!wishlist.hasItem(productId)) {
     return next(new ErrorResponse("Product not found in wishlist", 404));
   }
 
-  // Remove product from wishlist
   await wishlist.removeItem(productId);
 
   res.status(200).json({
@@ -219,12 +219,10 @@ export const updateWishlistItem = asyncHandler(async (req, res, next) => {
 
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
-  // Check if product is in wishlist
   if (!wishlist.hasItem(productId)) {
     return next(new ErrorResponse("Product not found in wishlist", 404));
   }
 
-  // Update item
   const itemIndex = wishlist.items.findIndex(
     (item) => item.product.toString() === productId,
   );
@@ -232,12 +230,11 @@ export const updateWishlistItem = asyncHandler(async (req, res, next) => {
   if (itemIndex >= 0) {
     if (notes !== undefined) wishlist.items[itemIndex].notes = notes;
     if (priority !== undefined) wishlist.items[itemIndex].priority = priority;
-    wishlist.items[itemIndex].addedAt = Date.now(); // Update timestamp
+    wishlist.items[itemIndex].addedAt = Date.now();
 
     await wishlist.save();
   }
 
-  // Populate for response
   await wishlist.populate({
     path: "items.product",
     match: { _id: productId },
@@ -263,12 +260,10 @@ export const moveToCart = asyncHandler(async (req, res, next) => {
 
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
-  // Check if product is in wishlist
   if (!wishlist.hasItem(productId)) {
     return next(new ErrorResponse("Product not found in wishlist", 404));
   }
 
-  // Check if product exists and is in stock
   const product = await Product.findOne({
     _id: productId,
     isActive: true,
@@ -308,7 +303,7 @@ export const generateShareLink = asyncHandler(async (req, res, next) => {
 
   const token = await wishlist.generateShareToken(expiryDays);
 
-  const shareUrl = `${process.env.FRONTEND_URL}/wishlist/share/${token}`;
+  const shareUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/wishlist/share/${token}`;
 
   res.status(200).json({
     success: true,
@@ -331,7 +326,6 @@ export const getSharedWishlist = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Invalid or expired share link", 404));
   }
 
-  // Get user info (name only)
   const user = await User.findById(wishlist.user).select("name avatar");
 
   res.status(200).json({
@@ -391,15 +385,13 @@ export const getRecentWishlistItems = asyncHandler(async (req, res, next) => {
 
   const wishlist = await Wishlist.getOrCreateWishlist(req.user.id);
 
-  // Sort by addedAt and limit
   const recentItems = [...wishlist.items]
     .sort((a, b) => b.addedAt - a.addedAt)
     .slice(0, parseInt(limit));
 
-  // Populate product details
   await wishlist.populate({
     path: "items.product",
-    select: "name price images averageRating",
+    select: "name price images averageRating stock isActive",
   });
 
   const populatedItems = recentItems
@@ -469,27 +461,22 @@ export const getWishlistStats = asyncHandler(async (req, res, next) => {
 
   wishlist.items.forEach((item) => {
     if (item.product) {
-      // Total value
       totalValue += item.product.price || 0;
 
-      // Categories
       const categoryName = item.product.category?.name || "Uncategorized";
       categories[categoryName] = (categories[categoryName] || 0) + 1;
 
-      // Price ranges
       const price = item.product.price || 0;
       if (price < 50) priceRanges.under50++;
       else if (price < 100) priceRanges.fiftyTo100++;
       else if (price < 200) priceRanges.hundredTo200++;
       else priceRanges.over200++;
 
-      // Ratings
       if (item.product.averageRating > 0) {
         totalRating += item.product.averageRating;
         ratedItems++;
       }
 
-      // Stock status
       if (item.product.stock > 0) {
         inStockCount++;
       } else {

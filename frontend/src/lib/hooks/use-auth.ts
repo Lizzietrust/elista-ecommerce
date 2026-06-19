@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authApi, userApi } from "@/lib/api/auth";
+import { useRouter } from "next/navigation";
 import type {
   LoginCredentials,
   RegisterCredentials,
@@ -43,27 +44,52 @@ export const useRegister = () => {
   return useMutation({
     mutationFn: (data: RegisterCredentials) => authApi.register(data),
     onSuccess: (data) => {
-      if (typeof window !== "undefined" && data.token) {
+      if (data && data.token && typeof window !== "undefined") {
         localStorage.setItem("token", data.token);
       }
-      queryClient.setQueryData(authKeys.me(), data.user);
+
+      if (data && data.user) {
+        queryClient.setQueryData(authKeys.me(), data.user);
+      }
+
       queryClient.invalidateQueries({ queryKey: authKeys.all });
+    },
+    onError: (error: any) => {
+      console.error("Registration error:", error);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+      }
     },
   });
 };
 
 export const useLogout = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: () => authApi.logout(),
     onSuccess: () => {
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
+
+        sessionStorage.clear();
       }
 
       queryClient.removeQueries({ queryKey: authKeys.all });
       queryClient.clear();
+
+      router.push("/");
+    },
+    onError: (error) => {
+      console.error("Logout error:", error);
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+      }
+      queryClient.removeQueries({ queryKey: authKeys.all });
+      queryClient.clear();
+      router.push("/");
     },
   });
 };

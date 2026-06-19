@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,9 +12,11 @@ export interface ErrorResponseData {
 
 export interface BaseApiResponse<T = any> {
   success: boolean;
-  data: T;
+  data?: T;
   message?: string;
   error?: string;
+  token?: string;
+  user?: any;
   [key: string]: any;
 }
 
@@ -80,22 +82,22 @@ const PUBLIC_ENDPOINTS = [
   "/api/products/featured",
   "/api/products/best-sellers",
   "/api/products/search",
-  "/products/search",
-  "/products/featured",
-  "/products/new-arrivals",
-  "/products/best-sellers",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/verify-email",
 ];
 
 const isPublicEndpoint = (url?: string): boolean => {
   if (!url) return false;
-
   const path = url.split("?")[0];
   return PUBLIC_ENDPOINTS.some((endpoint) => path.includes(endpoint));
 };
 
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response.data;
+  (response) => {
+    return response;
   },
   async (error: AxiosError<ErrorResponseData>) => {
     const { response, config } = error;
@@ -104,31 +106,29 @@ apiClient.interceptors.response.use(
     if (response) {
       switch (response.status) {
         case 401:
-          if (isPublicEndpoint(originalRequest?.url)) {
-            console.debug(
-              "Public endpoint accessed without auth, returning empty data",
-            );
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("token");
+          }
 
+          if (isPublicEndpoint(originalRequest?.url)) {
+            console.debug("Public endpoint accessed without auth");
             return Promise.reject({
               status: response.status,
-              message: "Authentication required for this operation",
-              data: response?.data,
+              message: response.data?.message || "Authentication required",
               isPublicEndpoint: true,
-              shouldFallbackToEmptyData: true,
             });
           }
 
           console.error("Unauthorized access on protected endpoint");
 
           if (typeof window !== "undefined") {
-            localStorage.removeItem("token");
-
             const protectedRoutes = [
               "/checkout",
               "/profile",
               "/orders",
               "/wishlist",
               "/cart",
+              "/account",
             ];
             const currentPath = window.location.pathname;
 
@@ -173,7 +173,7 @@ export async function apiRequest<T = any>(
   config: AxiosRequestConfig,
 ): Promise<T> {
   const response = await apiClient(config);
-  return response as T;
+  return response.data as T;
 }
 
 export const typedApiClient = {
@@ -181,34 +181,39 @@ export const typedApiClient = {
     url: string,
     config?: AxiosRequestConfig,
   ): Promise<T> => {
-    return apiRequest<T>({ method: "GET", url, ...config });
+    const response = await apiClient.get<T>(url, config);
+    return response.data;
   },
   post: async <T = any>(
     url: string,
     data?: any,
     config?: AxiosRequestConfig,
   ): Promise<T> => {
-    return apiRequest<T>({ method: "POST", url, data, ...config });
+    const response = await apiClient.post<T>(url, data, config);
+    return response.data;
   },
   put: async <T = any>(
     url: string,
     data?: any,
     config?: AxiosRequestConfig,
   ): Promise<T> => {
-    return apiRequest<T>({ method: "PUT", url, data, ...config });
+    const response = await apiClient.put<T>(url, data, config);
+    return response.data;
   },
   patch: async <T = any>(
     url: string,
     data?: any,
     config?: AxiosRequestConfig,
   ): Promise<T> => {
-    return apiRequest<T>({ method: "PATCH", url, data, ...config });
+    const response = await apiClient.patch<T>(url, data, config);
+    return response.data;
   },
   delete: async <T = any>(
     url: string,
     config?: AxiosRequestConfig,
   ): Promise<T> => {
-    return apiRequest<T>({ method: "DELETE", url, ...config });
+    const response = await apiClient.delete<T>(url, config);
+    return response.data;
   },
 };
 
@@ -231,7 +236,6 @@ export async function optionalAuthRequest<T = any>(
       console.log(`Public endpoint ${url} returned 401, returning empty data`);
       return { data: null, isAuthenticated: false };
     }
-
     throw error;
   }
 }

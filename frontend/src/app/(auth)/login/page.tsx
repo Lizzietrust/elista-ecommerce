@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
+import { toast } from "react-hot-toast";
 
 const tokens = {
   fg: "#1A1A1A",
@@ -19,7 +20,8 @@ const tokens = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, isLoading: authLoading, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -31,6 +33,21 @@ export default function LoginPage() {
     password?: string;
     general?: string;
   }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirect = searchParams.get("redirect") || "/";
+      router.push(redirect);
+    }
+  }, [isAuthenticated, router, searchParams]);
+
+  useEffect(() => {
+    const verified = searchParams.get("verified");
+    if (verified === "true") {
+      toast.success("Email verified successfully! Please login.");
+    }
+  }, [searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -40,6 +57,9 @@ export default function LoginPage() {
     }));
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+    if (errors.general) {
+      setErrors((prev) => ({ ...prev, general: undefined }));
     }
   };
 
@@ -61,16 +81,34 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || authLoading) return;
+
     if (!validateForm()) return;
-    const success = await login(formData.email, formData.password);
-    if (success) {
-      router.push("/");
-    } else {
-      setErrors({ general: "Invalid email or password. Please try again." });
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      const success = await login(formData.email, formData.password);
+
+      if (success) {
+        toast.success("Welcome back! Redirecting...");
+      } else {
+        setErrors({
+          general: "Invalid email or password. Please try again.",
+        });
+        toast.error("Login failed. Please check your credentials.");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      const errorMessage = error?.message || "An unexpected error occurred";
+      setErrors({ general: errorMessage });
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  /* Shared input style */
   const inputBase: React.CSSProperties = {
     width: "100%",
     padding: "10px 14px",
@@ -88,9 +126,10 @@ export default function LoginPage() {
     borderColor: tokens.destructive,
   };
 
+  const isLoading = authLoading || isSubmitting;
+
   return (
     <div>
-      {/* Heading */}
       <h1
         className="text-4xl font-semibold mb-1 tracking-tight"
         style={{ fontFamily: tokens.serif, color: tokens.fg }}
@@ -133,7 +172,7 @@ export default function LoginPage() {
             value={formData.email}
             onChange={handleChange}
             placeholder="Type your email"
-            disabled={authLoading}
+            disabled={isLoading}
             style={errors.email ? inputError : inputBase}
             onFocus={(e) => {
               if (!errors.email) {
@@ -172,7 +211,7 @@ export default function LoginPage() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Type your password"
-              disabled={authLoading}
+              disabled={isLoading}
               style={{
                 ...(errors.password ? inputError : inputBase),
                 paddingRight: "42px",
@@ -217,7 +256,7 @@ export default function LoginPage() {
                 checked={formData.rememberMe}
                 onChange={handleChange}
                 className="sr-only peer"
-                disabled={authLoading}
+                disabled={isLoading}
               />
               <div
                 className="w-4 h-4 rounded flex items-center justify-center transition-all"
@@ -257,23 +296,28 @@ export default function LoginPage() {
         {/* Submit */}
         <button
           type="submit"
-          disabled={authLoading}
+          disabled={isLoading}
           className="w-full py-3 rounded-lg text-sm font-medium tracking-wide transition-all mt-1"
           style={{
             backgroundColor: tokens.accent,
             color: "#fff",
-            opacity: authLoading ? 0.7 : 1,
+            opacity: isLoading ? 0.7 : 1,
+            cursor: isLoading ? "not-allowed" : "pointer",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              tokens.accentDark;
+            if (!isLoading) {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                tokens.accentDark;
+            }
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              tokens.accent;
+            if (!isLoading) {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                tokens.accent;
+            }
           }}
         >
-          {authLoading ? (
+          {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               Signing in...
@@ -304,7 +348,7 @@ export default function LoginPage() {
         {/* Google */}
         <button
           type="button"
-          disabled={authLoading}
+          disabled={isLoading}
           className="w-full flex items-center justify-center gap-3 py-3 rounded-lg text-sm font-medium transition-all"
           style={{
             border: `1.5px solid ${tokens.border}`,

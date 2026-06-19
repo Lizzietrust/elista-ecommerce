@@ -1,4 +1,4 @@
-import { typedApiClient, BaseApiResponse } from "./client";
+import { typedApiClient } from "./client";
 import type {
   User,
   LoginCredentials,
@@ -32,9 +32,11 @@ export const authApi = {
     return response;
   },
 
-  logout: async (): Promise<BaseApiResponse<null>> => {
-    const response =
-      await typedApiClient.get<BaseApiResponse<null>>("/auth/logout");
+  logout: async (): Promise<{ success: boolean; message?: string }> => {
+    const response = await typedApiClient.get<{
+      success: boolean;
+      message?: string;
+    }>("/auth/logout");
     return response;
   },
 
@@ -61,11 +63,11 @@ export const authApi = {
 
   forgotPassword: async (
     data: ForgotPasswordData,
-  ): Promise<BaseApiResponse<null>> => {
-    const response = await typedApiClient.post<BaseApiResponse<null>>(
-      "/auth/forgot-password",
-      data,
-    );
+  ): Promise<{ success: boolean; message?: string }> => {
+    const response = await typedApiClient.post<{
+      success: boolean;
+      message?: string;
+    }>("/auth/forgot-password", data);
     return response;
   },
 
@@ -89,11 +91,11 @@ export const authApi = {
 
   resendVerificationEmail: async (
     email: string,
-  ): Promise<BaseApiResponse<null>> => {
-    const response = await typedApiClient.post<BaseApiResponse<null>>(
-      "/auth/resend-verification",
-      { email },
-    );
+  ): Promise<{ success: boolean; message?: string }> => {
+    const response = await typedApiClient.post<{
+      success: boolean;
+      message?: string;
+    }>("/auth/resend-verification", { email });
     return response;
   },
 };

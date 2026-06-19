@@ -97,6 +97,12 @@ const isPublicEndpoint = (url?: string): boolean => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `API ${response.config.method?.toUpperCase()} ${response.config.url}:`,
+        response.data,
+      );
+    }
     return response;
   },
   async (error: AxiosError<ErrorResponseData>) => {
@@ -104,10 +110,14 @@ apiClient.interceptors.response.use(
     const originalRequest = config as AxiosRequestConfig & { _retry?: boolean };
 
     if (response) {
+      console.error(`API Error ${response.status}:`, response.data);
+
       switch (response.status) {
         case 401:
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("token");
+          if (!config?.url?.includes("/auth/")) {
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("token");
+            }
           }
 
           if (isPublicEndpoint(originalRequest?.url)) {

@@ -1,4 +1,3 @@
-// providers/auth-provider.tsx
 "use client";
 
 import {
@@ -38,11 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user is already logged in (token exists)
   const hasToken =
     typeof window !== "undefined" && !!localStorage.getItem("token");
 
-  // Fetch current user
   const {
     data: currentUser,
     isLoading: isUserLoading,
@@ -55,7 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useRegister();
   const logoutMutation = useLogout();
 
-  // Update user state when query data changes
   useEffect(() => {
     if (currentUser) {
       setUser(currentUser);
@@ -91,9 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     } catch (error) {
       console.error("Logout failed:", error);
-      // Force clear even if API call fails
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
+        sessionStorage.clear();
       }
       setUser(null);
     }
@@ -108,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone: string,
     ): Promise<boolean> => {
       try {
+        console.log("Attempting registration...");
         const response = await registerMutation.mutateAsync({
           name,
           email,
@@ -115,10 +112,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           confirmPassword,
           phone,
         });
-        setUser(response.user);
-        return true;
+
+        console.log("Registration response:", response);
+
+        if (response && response.user) {
+          setUser(response.user);
+          return true;
+        }
+
+        console.error("Invalid response structure:", response);
+        return false;
       } catch (error) {
-        console.error("Registration failed:", error);
+        console.error("Registration failed in provider:", error);
         return false;
       }
     },

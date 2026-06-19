@@ -26,6 +26,8 @@ import { useCartContext } from "../../providers/cart-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { useState, useEffect, useRef } from "react";
 import { useSearchProducts } from "@/lib/hooks/use-products";
+import { LogoutButton } from "@/components/auth/logout-button";
+import { WishlistResponse } from "@/types/auth";
 
 const navItems = [
   { name: "Home", path: "/", exact: true },
@@ -38,7 +40,7 @@ const navItems = [
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const cart = useCartContext();
   const { data: wishlistData } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,7 +49,8 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const wishlistCount = wishlistData?.wishlist?.itemCount || 0;
+  const wishlistCount =
+    (wishlistData as WishlistResponse)?.wishlist?.itemCount || 0;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -86,11 +89,6 @@ export default function Header() {
     setSearchQuery(productName);
     router.push(`/search?q=${encodeURIComponent(productName)}`);
     setShowSuggestions(false);
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    router.push("/");
   };
 
   const isActive = (path: string, exact: boolean = false) => {
@@ -322,7 +320,6 @@ export default function Header() {
                   </span>
                 )}
               </Link>
-
               {/* Cart Link */}
               <Link
                 href="/cart"
@@ -380,11 +377,7 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/account"
-                      className={`w-full cursor-pointer ${
-                        isActive("/account")
-                          ? "text-accent font-semibold"
-                          : "text-foreground hover:text-accent"
-                      }`}
+                      className="w-full cursor-pointer text-foreground hover:text-accent"
                     >
                       My Account
                     </Link>
@@ -392,11 +385,7 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/orders"
-                      className={`w-full cursor-pointer ${
-                        isActive("/orders")
-                          ? "text-accent font-semibold"
-                          : "text-foreground hover:text-accent"
-                      }`}
+                      className="w-full cursor-pointer text-foreground hover:text-accent"
                     >
                       My Orders
                     </Link>
@@ -404,21 +393,18 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/wishlist"
-                      className={`w-full cursor-pointer ${
-                        isActive("/wishlist")
-                          ? "text-accent font-semibold"
-                          : "text-foreground hover:text-accent"
-                      }`}
+                      className="w-full cursor-pointer text-foreground hover:text-accent"
                     >
                       Wishlist
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-border" />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-destructive hover:text-destructive cursor-pointer"
-                  >
-                    Logout
+                  <DropdownMenuItem>
+                    <LogoutButton
+                      variant="ghost"
+                      size="default"
+                      className="w-full justify-start px-2 py-1.5 text-sm font-normal text-destructive hover:text-destructive"
+                    />
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -494,15 +480,11 @@ export default function Header() {
                 >
                   My Orders
                 </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="block text-sm font-medium text-destructive hover:text-destructive-light transition-colors"
-                >
-                  Logout
-                </button>
+                <LogoutButton
+                  variant="ghost"
+                  size="default"
+                  className="block w-full text-left text-sm font-medium text-destructive hover:text-destructive-light transition-colors px-0 py-2"
+                />
               </>
             )}
           </nav>

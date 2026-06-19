@@ -114,6 +114,7 @@ apiClient.interceptors.response.use(
 
       switch (response.status) {
         case 401:
+          // Only clear token for non-auth endpoints
           if (!config?.url?.includes("/auth/")) {
             if (typeof window !== "undefined") {
               localStorage.removeItem("token");

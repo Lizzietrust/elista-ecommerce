@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: currentUser,
     isLoading: isUserLoading,
     isError,
+    refetch,
   } = useCurrentUser({
     enabled: hasToken,
   });
@@ -71,14 +72,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           password,
         });
-        setUser(response.user);
-        return true;
-      } catch (error) {
-        console.error("Login failed:", error);
+
+        console.log("Login response:", response);
+
+        if (response && response.user) {
+          setUser(response.user);
+          await refetch();
+          return true;
+        }
         return false;
+      } catch (error: any) {
+        console.error("Login failed:", error);
+        const errorMessage = error?.message || "Login failed";
+        throw new Error(errorMessage);
       }
     },
-    [loginMutation],
+    [loginMutation, refetch],
   );
 
   const logout = useCallback(async (): Promise<void> => {
@@ -117,17 +126,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (response && response.user) {
           setUser(response.user);
+          await refetch();
           return true;
         }
 
         console.error("Invalid response structure:", response);
         return false;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Registration failed in provider:", error);
-        return false;
+        const errorMessage = error?.message || "Registration failed";
+        throw new Error(errorMessage);
       }
     },
-    [registerMutation],
+    [registerMutation, refetch],
   );
 
   return (

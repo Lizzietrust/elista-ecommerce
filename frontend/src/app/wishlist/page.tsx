@@ -382,7 +382,7 @@ export default function WishlistPage() {
                       <select
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
-                        className="bg-transparent text-sm text-foreground focus:outline-none"
+                        className="bg-background text-sm text-foreground focus:outline-none"
                       >
                         {categories.map((category) => (
                           <option key={category} value={category}>

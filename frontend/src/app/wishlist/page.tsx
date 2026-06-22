@@ -29,6 +29,8 @@ import {
 } from "@/lib/hooks/use-wishlist";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw } from "lucide-react";
+import type { ProductCategory } from "@/types";
+import type { WishlistResponse, WishlistItem } from "@/lib/api/wishlist";
 
 const sortOptions = [
   { value: "-addedAt", label: "Date Added: Newest" },
@@ -39,6 +41,34 @@ const sortOptions = [
   { value: "name-desc", label: "Name: Z to A" },
   { value: "rating", label: "Highest Rated" },
 ];
+
+const getCategoryName = (
+  category: string | ProductCategory | undefined,
+): string => {
+  if (!category) return "Uncategorized";
+  if (typeof category === "string") return category;
+  if (typeof category === "object" && category.name) return category.name;
+  return "Uncategorized";
+};
+
+interface WishlistData {
+  items: WishlistItem[];
+  summary: {
+    totalItems: number;
+    totalEstimatedCost: number;
+    inStockCount: number;
+    outOfStockCount: number;
+    averageRating: number;
+  };
+  wishlist: {
+    _id: string;
+    name: string;
+    itemCount: number;
+    isPublic: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
 
 export default function WishlistPage() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -54,61 +84,66 @@ export default function WishlistPage() {
   const { mutate: generateShareLink, isPending: isGeneratingShareLink } =
     useGenerateShareLink();
 
-  const wishlist = wishlistData?.data;
-  const items = wishlist?.items || [];
-  const summary = wishlist?.summary;
-  const wishlistId = wishlist?.wishlist?._id;
+  const data = wishlistData as WishlistData | undefined;
 
-  const getCategoryName = (category: any): string => {
-    if (!category) return "Uncategorized";
-    if (typeof category === "string") return category;
-    if (typeof category === "object" && category.name) return category.name;
-    return "Uncategorized";
-  };
+  const items = data?.items || [];
+  const summary = data?.summary;
+  const wishlistInfo = data?.wishlist;
 
   const categories = [
     "All",
-    ...new Set(items.map((item) => getCategoryName(item.product.category))),
+    ...new Set(
+      items.map((item: WishlistItem) => getCategoryName(item.product.category)),
+    ),
   ].filter(Boolean);
 
   const filteredItems = items.filter(
-    (item) =>
+    (item: WishlistItem) =>
       filterCategory === "All" ||
       getCategoryName(item.product.category) === filterCategory,
   );
 
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    switch (sortBy) {
-      case "-addedAt":
-        return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
-      case "addedAt":
-        return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
-      case "price-asc":
-        return a.product.price - b.product.price;
-      case "price-desc":
-        return b.product.price - a.product.price;
-      case "name-asc":
-        return a.product.name.localeCompare(b.product.name);
-      case "name-desc":
-        return b.product.name.localeCompare(a.product.name);
-      case "rating":
-        return (b.product.averageRating || 0) - (a.product.averageRating || 0);
-      default:
-        return 0;
-    }
-  });
+  const sortedItems = [...filteredItems].sort(
+    (a: WishlistItem, b: WishlistItem) => {
+      switch (sortBy) {
+        case "-addedAt":
+          return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+        case "addedAt":
+          return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
+        case "price-asc":
+          return a.product.price - b.product.price;
+        case "price-desc":
+          return b.product.price - a.product.price;
+        case "name-asc":
+          return a.product.name.localeCompare(b.product.name);
+        case "name-desc":
+          return b.product.name.localeCompare(a.product.name);
+        case "rating":
+          return (
+            (b.product.averageRating || 0) - (a.product.averageRating || 0)
+          );
+        default:
+          return 0;
+      }
+    },
+  );
 
   const totalItems = items.length;
-  const totalValue = items.reduce((sum, item) => sum + item.product.price, 0);
+  const totalValue = items.reduce(
+    (sum: number, item: WishlistItem) => sum + item.product.price,
+    0,
+  );
   const selectedValue = items
-    .filter((item) => selectedItems.includes(item.product._id))
-    .reduce((sum, item) => sum + item.product.price, 0);
+    .filter((item: WishlistItem) => selectedItems.includes(item.product._id))
+    .reduce((sum: number, item: WishlistItem) => sum + item.product.price, 0);
 
   const handleSelectAll = () => {
     if (selectedItems.length === filteredItems.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(filteredItems.map((item) => item.product._id));
+      setSelectedItems(
+        filteredItems.map((item: WishlistItem) => item.product._id),
+      );
     }
   };
 
@@ -124,22 +159,43 @@ export default function WishlistPage() {
     removeFromWishlist(productId, {
       onSuccess: () => {
         setSelectedItems((prev) => prev.filter((id) => id !== productId));
+        refetch();
       },
     });
   };
 
   const handleRemoveSelected = () => {
-    selectedItems.forEach((productId) => {
-      removeFromWishlist(productId);
+    const promises = selectedItems.map((productId) => {
+      return new Promise((resolve) => {
+        removeFromWishlist(productId, {
+          onSuccess: resolve,
+          onError: resolve,
+        });
+      });
     });
-    setSelectedItems([]);
+
+    Promise.all(promises).then(() => {
+      setSelectedItems([]);
+      refetch();
+    });
   };
 
   const handleAddSelectedToCart = async () => {
-    for (const productId of selectedItems) {
-      moveToCart({ productId });
-    }
+    const promises = selectedItems.map((productId) => {
+      return new Promise((resolve) => {
+        moveToCart(
+          { productId },
+          {
+            onSuccess: resolve,
+            onError: resolve,
+          },
+        );
+      });
+    });
+
+    await Promise.all(promises);
     setSelectedItems([]);
+    refetch();
   };
 
   const handleShareWishlist = () => {
@@ -159,6 +215,7 @@ export default function WishlistPage() {
       clearWishlist(undefined, {
         onSuccess: () => {
           setSelectedItems([]);
+          refetch();
         },
       });
     }
@@ -212,7 +269,7 @@ export default function WishlistPage() {
     );
   }
 
-  if (items.length === 0) {
+  if (!isLoading && !isError && items.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -265,7 +322,7 @@ export default function WishlistPage() {
                 My Wishlist
               </h1>
               <p className="text-foreground-muted mt-2">
-                Save items you love and come back to them later
+                {items.length} {items.length === 1 ? "item" : "items"} saved
               </p>
             </div>
 
@@ -319,20 +376,22 @@ export default function WishlistPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="hidden md:flex items-center gap-2">
-                    <Filter size={16} className="text-foreground-muted" />
-                    <select
-                      value={filterCategory}
-                      onChange={(e) => setFilterCategory(e.target.value)}
-                      className="bg-transparent text-sm text-foreground focus:outline-none"
-                    >
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {categories.length > 2 && (
+                    <div className="hidden md:flex items-center gap-2">
+                      <Filter size={16} className="text-foreground-muted" />
+                      <select
+                        value={filterCategory}
+                        onChange={(e) => setFilterCategory(e.target.value)}
+                        className="bg-transparent text-sm text-foreground focus:outline-none"
+                      >
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-1 bg-background-secondary p-1 rounded-lg">
                     <button
@@ -448,7 +507,7 @@ export default function WishlistPage() {
               </div>
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortedItems.map((item) => (
+                {sortedItems.map((item: WishlistItem) => (
                   <div key={item.product._id} className="relative group">
                     <div className="absolute top-4 left-4 z-10">
                       <input
@@ -482,7 +541,7 @@ export default function WishlistPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {sortedItems.map((item) => (
+                {sortedItems.map((item: WishlistItem) => (
                   <div
                     key={item.product._id}
                     className="bg-background-secondary/50 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden group border border-border"
@@ -500,9 +559,14 @@ export default function WishlistPage() {
 
                         <div className="md:w-48 shrink-0">
                           <div className="aspect-square bg-background-tertiary rounded-xl overflow-hidden">
-                            {item.product.images?.[0]?.url ? (
+                            {item.product.images &&
+                            item.product.images.length > 0 ? (
                               <img
-                                src={item.product.images[0].url}
+                                src={
+                                  typeof item.product.images[0] === "string"
+                                    ? item.product.images[0]
+                                    : item.product.images[0].url
+                                }
                                 alt={item.product.name}
                                 className="h-full w-full object-cover"
                               />
@@ -549,17 +613,18 @@ export default function WishlistPage() {
                                 {item.product.description}
                               </p>
 
-                              {item.product.tags &&
-                                item.product.tags.length > 0 && (
+                              {/* Features section - using features instead of tags */}
+                              {item.product.features &&
+                                item.product.features.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mb-4">
-                                    {item.product.tags
+                                    {item.product.features
                                       .slice(0, 3)
-                                      .map((tag) => (
+                                      .map((feature: string, index: number) => (
                                         <span
-                                          key={tag}
+                                          key={index}
                                           className="px-2 py-1 bg-background-tertiary text-foreground-muted text-xs rounded-full"
                                         >
-                                          {tag}
+                                          {feature}
                                         </span>
                                       ))}
                                   </div>
@@ -589,9 +654,14 @@ export default function WishlistPage() {
                                   </Button>
                                 </Link>
                                 <Button
-                                  onClick={() =>
-                                    moveToCart({ productId: item.product._id })
-                                  }
+                                  onClick={() => {
+                                    moveToCart(
+                                      { productId: item.product._id },
+                                      {
+                                        onSuccess: () => refetch(),
+                                      },
+                                    );
+                                  }}
                                   disabled={isMovingToCart}
                                   className="w-full gap-2 bg-primary hover:bg-primary-light"
                                 >
@@ -749,7 +819,7 @@ export default function WishlistPage() {
               Based on Your Wishlist
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {items.slice(0, 4).map((item) => (
+              {items.slice(0, 4).map((item: WishlistItem) => (
                 <ProductCard key={item.product._id} product={item.product} />
               ))}
             </div>
@@ -791,10 +861,10 @@ export default function WishlistPage() {
               </div>
 
               <div className="flex -space-x-4">
-                {items.slice(0, 5).map((item, i) => (
+                {items.slice(0, 5).map((item: WishlistItem, i: number) => (
                   <div
                     key={item.product._id}
-                    className="h-12 w-12 rounded-full border-2 border-primary-light bg-gradient-to-br from-primary to-accent flex items-center justify-center"
+                    className="h-12 w-12 rounded-full border-2 border-primary-light bg-linear-to-br from-primary to-accent flex items-center justify-center"
                   >
                     <span className="text-white font-bold text-xs">
                       {item.product.name.charAt(0)}

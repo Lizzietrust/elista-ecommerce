@@ -4,7 +4,6 @@ import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
-import { CartProvider } from "@/providers/cart-provider";
 import { Toaster } from "@/components/ui/toaster";
 import dynamic from "next/dynamic";
 import LayoutWrapper from "@/components/layout/layout-wrapper";
@@ -40,10 +39,9 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <AuthProvider>
-              <CartProvider>
-                <LayoutWrapper>{children}</LayoutWrapper>
-                <Toaster />
-              </CartProvider>
+              {/* Remove CartProvider - we're using TanStack Query directly */}
+              <LayoutWrapper>{children}</LayoutWrapper>
+              <Toaster />
             </AuthProvider>
           </ThemeProvider>
         </QueryProvider>

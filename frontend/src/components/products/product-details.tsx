@@ -29,17 +29,51 @@ import {
   Eye,
   Calendar,
   Zap,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/product-card";
 import { useProductById } from "@/lib/hooks/use-products";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useCheckInWishlist,
+  useToggleWishlist,
+} from "@/lib/hooks/use-wishlist";
+import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import type { WishlistItem } from "@/lib/api/wishlist";
+import type { ProductCategory } from "@/types";
 
 interface ProductDetailsProps {
   productId: string;
 }
 
+interface CheckInWishlistResponse {
+  isInWishlist: boolean;
+  itemDetails?: WishlistItem;
+}
+
+const getCategoryName = (
+  category: string | ProductCategory | undefined,
+): string => {
+  if (!category) return "Products";
+  if (typeof category === "string") return category;
+  if (typeof category === "object" && category.name) return category.name;
+  return "Products";
+};
+
+const getCategorySlug = (
+  category: string | ProductCategory | undefined,
+): string => {
+  if (!category) return "products";
+  if (typeof category === "object" && category.slug) return category.slug;
+  if (typeof category === "string")
+    return category.toLowerCase().replace(/\s+/g, "-");
+  return "products";
+};
+
 export function ProductDetails({ productId }: ProductDetailsProps) {
+  const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -47,6 +81,20 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const [activeTab, setActiveTab] = useState("description");
 
   const { data, isLoading, error } = useProductById(productId, {});
+
+  const isAuthenticated =
+    typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
+
+  const { data: wishlistData, isLoading: isCheckingWishlist } =
+    useCheckInWishlist(productId, {
+      enabled: isAuthenticated && !!productId,
+    });
+
+  const wishlistCheckData = wishlistData as CheckInWishlistResponse | undefined;
+  const isInWishlist = wishlistCheckData?.isInWishlist ?? false;
+
+  const { mutate: toggleWishlist, isPending: isTogglingWishlist } =
+    useToggleWishlist();
 
   if (isLoading) {
     return <ProductDetailsSkeleton />;
@@ -96,6 +144,58 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     });
   };
 
+  const handleToggleWishlist = () => {
+    if (!isAuthenticated) {
+      toast.error("Please login to manage your wishlist", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+      router.push("/login");
+      return;
+    }
+
+    if (!productId) {
+      toast.error("Invalid product");
+      return;
+    }
+
+    toggleWishlist(
+      {
+        product,
+        isInWishlist,
+      },
+      {
+        onSuccess: (data) => {
+          if (data?.action === "added") {
+            toast.success("Added to wishlist! ❤️", {
+              duration: 2000,
+              position: "bottom-center",
+            });
+          } else if (data?.action === "removed") {
+            toast.success("Removed from wishlist", {
+              duration: 2000,
+              position: "bottom-center",
+            });
+          }
+        },
+        onError: (error: any) => {
+          console.error("Toggle wishlist error:", error);
+          toast.error(error?.message || "Failed to update wishlist", {
+            duration: 3000,
+            position: "bottom-center",
+          });
+        },
+      },
+    );
+  };
+
+  const isLoadingWishlist = isCheckingWishlist || isTogglingWishlist;
+
+  const categoryName = getCategoryName(product.category);
+  const categorySlug = getCategorySlug(product.category);
+
+  const reviewCount = product.reviewCount || product.ratingsCount || 0;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Breadcrumb */}
@@ -123,10 +223,10 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
               className="rotate-180 text-foreground-muted"
             />
             <Link
-              href={`/categories/${product.category?.name?.toLowerCase() || "products"}`}
+              href={`/categories/${categorySlug}`}
               className="text-foreground-muted hover:text-accent transition-colors duration-300"
             >
-              {product.category?.name || "Products"}
+              {categoryName}
             </Link>
             <ChevronLeft
               size={14}
@@ -148,8 +248,16 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
               <div className="aspect-square rounded-xl bg-background-secondary flex items-center justify-center overflow-hidden relative">
                 {product.images && product.images[selectedImage] ? (
                   <Image
-                    src={product.images[selectedImage].url}
-                    alt={product.images[selectedImage].altText || product.name}
+                    src={
+                      typeof product.images[selectedImage] === "string"
+                        ? product.images[selectedImage]
+                        : product.images[selectedImage].url
+                    }
+                    alt={
+                      typeof product.images[selectedImage] === "object"
+                        ? product.images[selectedImage].alt || product.name
+                        : product.name
+                    }
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-700"
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -159,7 +267,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                   <div className="text-8xl animate-bounce">🪑</div>
                 )}
                 {discountPercentage > 0 && (
-                  <div className="absolute top-4 right-4 bg-gradient-to-r from-destructive to-accent text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg z-10">
+                  <div className="absolute top-4 right-4 bg-linear-to-r from-destructive to-accent text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg z-10">
                     -{discountPercentage}% OFF
                   </div>
                 )}
@@ -169,27 +277,36 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
             {/* Thumbnail Images */}
             {product.images && product.images.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-2 justify-center">
-                {product.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`shrink-0 w-20 h-20 rounded-xl bg-white dark:bg-gray-800 border-2 overflow-hidden transition-all duration-300 ${
-                      selectedImage === index
-                        ? "border-accent shadow-lg scale-105"
-                        : "border-border hover:border-accent"
-                    }`}
-                  >
-                    <div className="w-full h-full relative">
-                      <Image
-                        src={image.url}
-                        alt={image.altText || product.name}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                      />
-                    </div>
-                  </button>
-                ))}
+                {product.images.map((image, index) => {
+                  const imageUrl =
+                    typeof image === "string" ? image : image.url;
+                  const imageAlt =
+                    typeof image === "object"
+                      ? image.alt || product.name
+                      : product.name;
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`shrink-0 w-20 h-20 rounded-xl bg-white dark:bg-gray-800 border-2 overflow-hidden transition-all duration-300 ${
+                        selectedImage === index
+                          ? "border-accent shadow-lg scale-105"
+                          : "border-border hover:border-accent"
+                      }`}
+                    >
+                      <div className="w-full h-full relative">
+                        <Image
+                          src={imageUrl}
+                          alt={imageAlt}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -260,11 +377,11 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
               <div className="mb-6">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <Link
-                    href={`/categories/${product.category?.name?.toLowerCase() || "#"}`}
+                    href={`/categories/${categorySlug}`}
                     className="text-sm font-semibold text-accent hover:underline inline-flex items-center gap-1"
                   >
                     <Tag size={14} />
-                    {product.category?.name || "Product"}
+                    {categoryName}
                   </Link>
                   {product.brand && (
                     <>
@@ -277,7 +394,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                       </span>
                     </>
                   )}
-                  {product.featured && (
+                  {product.isFeatured && (
                     <>
                       <span className="text-border">•</span>
                       <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-bold rounded-full inline-flex items-center gap-1">
@@ -301,7 +418,10 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                           key={i}
                           size={18}
                           fill={
-                            i < Math.floor(product.averageRating || 0)
+                            i <
+                            Math.floor(
+                              product.averageRating || product.rating || 0,
+                            )
                               ? "currentColor"
                               : "none"
                           }
@@ -310,11 +430,13 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                       ))}
                     </div>
                     <span className="text-lg font-bold text-foreground">
-                      {(product.averageRating || 0).toFixed(1)}
+                      {(product.averageRating || product.rating || 0).toFixed(
+                        1,
+                      )}
                     </span>
                   </div>
                   <span className="text-foreground-muted">
-                    ({product.totalReviews || 0} reviews)
+                    ({reviewCount} reviews)
                   </span>
                   <div
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
@@ -354,7 +476,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                       <span className="text-xl line-through text-foreground-muted">
                         ${product.comparePrice.toFixed(2)}
                       </span>
-                      <span className="px-2 py-1 bg-gradient-to-r from-destructive to-accent text-white text-sm font-bold rounded-full shadow-md">
+                      <span className="px-2 py-1 bg-linear-to-r from-destructive to-accent text-white text-sm font-bold rounded-full shadow-md">
                         Save $
                         {(product.comparePrice - product.price).toFixed(2)}
                       </span>
@@ -467,17 +589,47 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                     />
                   </Button>
 
+                  {/* Wishlist Button */}
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-12 w-12 border-2 border-border hover:border-accent hover:bg-accent/5 transition-all duration-300 group"
+                    onClick={handleToggleWishlist}
+                    disabled={isLoadingWishlist || !isAuthenticated}
+                    className="h-12 w-12 border-2 border-border hover:border-accent hover:bg-accent/5 transition-all duration-300 group relative"
+                    aria-label={
+                      isInWishlist ? "Remove from wishlist" : "Add to wishlist"
+                    }
                   >
-                    <Heart
-                      size={20}
-                      className="text-foreground-muted group-hover:text-accent transition-colors"
-                    />
+                    {isLoadingWishlist ? (
+                      <Loader2 size={20} className="animate-spin text-accent" />
+                    ) : (
+                      <Heart
+                        size={20}
+                        className={`transition-all duration-300 ${
+                          isInWishlist
+                            ? "fill-destructive text-destructive scale-110"
+                            : "text-foreground-muted group-hover:text-accent group-hover:scale-110"
+                        }`}
+                        fill={isInWishlist ? "currentColor" : "none"}
+                      />
+                    )}
                   </Button>
                 </div>
+
+                {/* Show login message if not authenticated */}
+                {!isAuthenticated && (
+                  <div className="mt-4 p-3 bg-warning/10 rounded-xl border border-warning/20">
+                    <p className="text-sm text-warning">
+                      <Link
+                        href="/login"
+                        className="font-semibold underline hover:no-underline"
+                      >
+                        Sign in
+                      </Link>{" "}
+                      to add items to your wishlist
+                    </p>
+                  </div>
+                )}
 
                 {product.stock < 10 && product.stock > 0 && (
                   <div className="mt-4 p-3 bg-accent/10 rounded-xl border border-accent/20">
@@ -694,7 +846,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 </p>
               </div>
               <Link
-                href={`/categories/${product.category?.name?.toLowerCase() || "products"}`}
+                href={`/categories/${categorySlug}`}
                 className="text-accent hover:text-accent-light transition-colors font-semibold inline-flex items-center gap-2 group"
               >
                 View All
@@ -720,7 +872,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   );
 }
 
-// Skeleton component for loading state
 function ProductDetailsSkeleton() {
   return (
     <div className="min-h-screen bg-background">

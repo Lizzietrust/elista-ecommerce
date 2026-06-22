@@ -149,3 +149,18 @@ export const wishlistApi = {
     return response;
   },
 };
+
+export interface SharedWishlistResponse {
+  wishlist: {
+    id: string;
+    name: string;
+    itemCount: number;
+    createdAt: string;
+    shareExpiresAt: string;
+  };
+  user: {
+    name: string;
+    avatar?: string;
+  };
+  items: WishlistItem[];
+}

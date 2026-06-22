@@ -27,7 +27,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { useState, useEffect, useRef } from "react";
 import { useSearchProducts } from "@/lib/hooks/use-products";
 import { LogoutButton } from "@/components/auth/logout-button";
-import type { CartCountResponse } from "@/lib/api/cart";
+import type { WishlistResponse } from "@/types/auth";
 
 const navItems = [
   { name: "Home", path: "/", exact: true },
@@ -46,8 +46,7 @@ export default function Header() {
     enabled: isAuthenticated,
   });
 
-  const cartCount = cartCountData as CartCountResponse | undefined;
-  const cartItemCount = cartCount?.itemCount || 0;
+  const cartItemCount = cartCountData?.itemCount || 0;
 
   const { data: wishlistData } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,7 +55,8 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const wishlistCount = (wishlistData as any)?.wishlist?.itemCount || 0;
+  const wishlistCount =
+    (wishlistData as WishlistResponse)?.wishlist?.itemCount || 0;
 
   useEffect(() => {
     const timer = setTimeout(() => {

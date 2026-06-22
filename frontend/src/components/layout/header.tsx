@@ -22,12 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
-import { useCartContext } from "../../providers/cart-provider";
+import { useCartCount } from "@/lib/hooks/use-cart";
 import { useAuth } from "@/providers/auth-provider";
 import { useState, useEffect, useRef } from "react";
 import { useSearchProducts } from "@/lib/hooks/use-products";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { WishlistResponse } from "@/types/auth";
+import type { CartCountResponse } from "@/lib/api/cart";
 
 const navItems = [
   { name: "Home", path: "/", exact: true },
@@ -41,7 +41,14 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const cart = useCartContext();
+
+  const { data: cartCountData, isLoading: isCartCountLoading } = useCartCount({
+    enabled: isAuthenticated,
+  });
+
+  const cartCount = cartCountData as CartCountResponse | undefined;
+  const cartItemCount = cartCount?.itemCount || 0;
+
   const { data: wishlistData } = useWishlist();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -49,8 +56,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const wishlistCount =
-    (wishlistData as WishlistResponse)?.wishlist?.itemCount || 0;
+  const wishlistCount = (wishlistData as any)?.wishlist?.itemCount || 0;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -320,7 +326,8 @@ export default function Header() {
                   </span>
                 )}
               </Link>
-              {/* Cart Link */}
+
+              {/* Cart Link - Using API cart count */}
               <Link
                 href="/cart"
                 className={`relative p-2 rounded-lg transition-colors duration-200 ${
@@ -330,9 +337,9 @@ export default function Header() {
                 }`}
               >
                 <ShoppingCart className="h-5 w-5" />
-                {cart.itemCount > 0 && (
+                {cartItemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                    {cart.itemCount > 99 ? "99+" : cart.itemCount}
+                    {cartItemCount > 99 ? "99+" : cartItemCount}
                   </span>
                 )}
               </Link>

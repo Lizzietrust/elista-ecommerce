@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star, ShoppingCart, Heart, Loader2 } from "lucide-react";
+import { Star, ShoppingCart, Heart, Loader2, Check } from "lucide-react";
 import { Product, Category, ProductImage } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { useCart } from "@/lib/hooks/use-cart";
+import { useAddToCart } from "@/lib/hooks/use-cart";
 import {
   useCheckInWishlist,
   useToggleWishlist,
@@ -15,6 +15,7 @@ import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useProductReviews } from "@/lib/hooks/use-reviews";
 import type { WishlistItem } from "@/lib/api/wishlist";
+import { useState } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -38,7 +39,9 @@ export function ProductCard({ product }: ProductCardProps) {
   console.log({ product });
 
   const router = useRouter();
-  const { addItem } = useCart();
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
+
+  const { mutate: addToCart, isPending: isAddingToCart } = useAddToCart();
 
   const isAuthenticated =
     typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
@@ -81,20 +84,26 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    try {
-      addItem({
-        product,
-        quantity: 1,
-        price: product.price,
-      });
-      toast.success("Added to cart!", {
-        duration: 2000,
+    if (product.stock === 0) {
+      toast.error("Product is out of stock", {
+        duration: 3000,
         position: "bottom-center",
       });
-    } catch (error) {
-      toast.error("Failed to add to cart");
-      console.error("Add to cart error:", error);
+      return;
     }
+
+    addToCart(
+      { productId, quantity: 1 },
+      {
+        onSuccess: () => {
+          setIsAddedToCart(true);
+          setTimeout(() => setIsAddedToCart(false), 2000);
+        },
+        onError: (error) => {
+          console.error("Add to cart error:", error);
+        },
+      },
+    );
   };
 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
@@ -232,12 +241,22 @@ export function ProductCard({ product }: ProductCardProps) {
           {isAuthenticated && (
             <Button
               size="icon"
-              className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 bg-primary hover:bg-primary-light hover:scale-105"
+              className={`absolute bottom-2 right-2 transition-all duration-200 z-10 ${
+                isAddedToCart
+                  ? "bg-success hover:bg-success-light"
+                  : "bg-primary hover:bg-primary-light opacity-0 group-hover:opacity-100 group-hover:scale-105"
+              }`}
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              aria-label="Add to cart"
+              disabled={product.stock === 0 || isAddingToCart}
+              aria-label={isAddedToCart ? "Added to cart" : "Add to cart"}
             >
-              <ShoppingCart className="h-4 w-4" />
+              {isAddingToCart ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isAddedToCart ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <ShoppingCart className="h-4 w-4" />
+              )}
             </Button>
           )}
         </div>

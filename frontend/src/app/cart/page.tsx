@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -14,10 +14,22 @@ import {
   RefreshCw,
   X,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCartContext } from "@/providers/cart-provider";
 import { toast } from "react-hot-toast";
+import {
+  useCart,
+  useRemoveFromCart,
+  useClearCart,
+  useUpdateCartItemQuantity,
+  useIncrementCartItem,
+  useDecrementCartItem,
+  useApplyCoupon,
+  useRemoveCoupon,
+} from "@/lib/hooks/use-cart";
+import { useAuth } from "@/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 const promoCodes = [
   { code: "WELCOME10", discount: 10, description: "10% off first order" },
@@ -26,25 +38,56 @@ const promoCodes = [
 ];
 
 export default function CartPage() {
-  const cart = useCartContext();
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      toast.error("Please login to view your cart", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+      router.push("/login?redirect=/cart");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  const {
+    data: cartData,
+    isLoading: isCartLoading,
+    refetch,
+  } = useCart({
+    enabled: isAuthenticated,
+  });
+
+  const { mutate: removeFromCart, isPending: isRemoving } = useRemoveFromCart();
+  const { mutate: clearCart, isPending: isClearing } = useClearCart();
+  const { mutate: updateQuantity, isPending: isUpdating } =
+    useUpdateCartItemQuantity();
+  const { mutate: incrementItem, isPending: isIncrementing } =
+    useIncrementCartItem();
+  const { mutate: decrementItem, isPending: isDecrementing } =
+    useDecrementCartItem();
+  const { mutate: applyCoupon, isPending: isApplyingCoupon } = useApplyCoupon();
+  const { mutate: removeCoupon, isPending: isRemovingCoupon } =
+    useRemoveCoupon();
+
   const [promoCode, setPromoCode] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState<
-    (typeof promoCodes)[0] | null
-  >(null);
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discount: number;
+    description: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const cartItems = cart.items;
-  const itemCount = cart.itemCount;
-  const subtotal = cart.totalPrice;
+  const cartItems = cartData?.items || [];
+  const summary = cartData?.summary;
 
-  const shipping = subtotal > 50 ? 0 : 9.99;
-  const tax = subtotal * 0.08;
-  const discount = appliedPromo
-    ? appliedPromo.discount === 0
-      ? 0
-      : subtotal * (appliedPromo.discount / 100)
-    : 0;
-  const total = subtotal + shipping + tax - discount;
+  const itemCount = summary?.itemCount || 0;
+  const subtotal = summary?.subtotal || 0;
+  const shipping = summary?.shipping || 0;
+  const tax = summary?.tax || 0;
+  const discount = summary?.discount || 0;
+  const total = summary?.total || 0;
 
   const handleQuantityChange = (
     itemId: string,
@@ -55,7 +98,7 @@ export default function CartPage() {
   ) => {
     if (newQuantity < 1) return;
 
-    const item = cartItems.find((item) => item.id === itemId);
+    const item = cartItems.find((item) => item._id === itemId);
     if (!item) return;
 
     if (newQuantity > item.product.stock) {
@@ -63,17 +106,30 @@ export default function CartPage() {
       return;
     }
 
-    cart.updateQuantity(productId, newQuantity, color, size);
-    toast.success("Quantity updated");
+    updateQuantity(
+      { itemId, quantity: newQuantity },
+      {
+        onSuccess: () => {
+          toast.success("Quantity updated");
+          refetch();
+        },
+        onError: () => {
+          toast.error("Failed to update quantity");
+        },
+      },
+    );
   };
 
-  const handleRemoveItem = (
-    productId: string,
-    color?: string,
-    size?: string,
-  ) => {
-    cart.removeItem(productId, color, size);
-    toast.success("Item removed from cart");
+  const handleRemoveItem = (itemId: string) => {
+    removeFromCart(itemId, {
+      onSuccess: () => {
+        toast.success("Item removed from cart");
+        refetch();
+      },
+      onError: () => {
+        toast.error("Failed to remove item");
+      },
+    });
   };
 
   const handleApplyPromo = () => {
@@ -82,28 +138,55 @@ export default function CartPage() {
       return;
     }
 
-    const promo = promoCodes.find(
-      (p) => p.code.toLowerCase() === promoCode.toLowerCase().trim(),
-    );
-
-    if (promo) {
-      setAppliedPromo(promo);
-      toast.success(`Promo code "${promo.code}" applied!`);
-    } else {
-      toast.error("Invalid promo code");
-    }
-
-    setPromoCode("");
+    applyCoupon(promoCode.trim(), {
+      onSuccess: (response) => {
+        const couponData = response.data?.coupon;
+        if (couponData) {
+          setAppliedPromo({
+            code: couponData.code,
+            discount: couponData.discountValue,
+            description: `${couponData.discountValue}% off`,
+          });
+        }
+        setPromoCode("");
+        refetch();
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Invalid promo code");
+      },
+    });
   };
 
   const handleRemovePromo = () => {
-    setAppliedPromo(null);
-    toast.success("Promo code removed");
+    removeCoupon(undefined, {
+      onSuccess: () => {
+        setAppliedPromo(null);
+        toast.success("Promo code removed");
+        refetch();
+      },
+      onError: () => {
+        toast.error("Failed to remove promo code");
+      },
+    });
   };
 
   const handleClearCart = () => {
-    cart.clearCart();
-    toast.success("Cart cleared");
+    if (cartItems.length === 0) {
+      toast.error("Cart is already empty");
+      return;
+    }
+
+    if (confirm("Are you sure you want to clear your entire cart?")) {
+      clearCart(undefined, {
+        onSuccess: () => {
+          toast.success("Cart cleared");
+          refetch();
+        },
+        onError: () => {
+          toast.error("Failed to clear cart");
+        },
+      });
+    }
   };
 
   const handleCheckout = async () => {
@@ -111,12 +194,26 @@ export default function CartPage() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       toast.success("Proceeding to checkout...");
+      router.push("/checkout");
     } catch (error) {
       toast.error("Checkout failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (authLoading || isCartLoading) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-[#C17B4D] mx-auto mb-4" />
+          <p className="text-[#6B6B6B] dark:text-gray-400">
+            Loading your cart...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -151,6 +248,9 @@ export default function CartPage() {
       </div>
     );
   }
+
+  const isMutating =
+    isRemoving || isClearing || isUpdating || isIncrementing || isDecrementing;
 
   return (
     <div className="py-8 md:py-12">
@@ -201,19 +301,30 @@ export default function CartPage() {
               <div className="divide-y divide-[#E8E0D8] dark:divide-gray-800">
                 {cartItems.map((item) => (
                   <div
-                    key={
-                      item.id ||
-                      `${item.product._id}-${item.color}-${item.size}`
-                    }
+                    key={item._id || `${item.product._id}-${Date.now()}`}
                     className="p-4 md:p-6"
                   >
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
                       {/* Product Image & Info */}
                       <div className="flex-1 flex gap-4">
                         <div className="h-24 w-24 shrink-0 bg-[#F4EFEA] dark:bg-gray-800 rounded-xl overflow-hidden">
-                          <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-[#D4C4B7]/20 to-[#C17B4D]/20 dark:from-gray-800 dark:to-gray-900">
-                            <span className="text-3xl">🛒</span>
-                          </div>
+                          {item.product.images?.[0] ? (
+                            <Image
+                              src={
+                                typeof item.product.images[0] === "string"
+                                  ? item.product.images[0]
+                                  : item.product.images[0].url
+                              }
+                              alt={item.product.name}
+                              width={96}
+                              height={96}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-[#D4C4B7]/20 to-[#C17B4D]/20 dark:from-gray-800 dark:to-gray-900">
+                              <span className="text-3xl">🛒</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex justify-between">
@@ -226,14 +337,9 @@ export default function CartPage() {
                               </p>
                             </div>
                             <button
-                              onClick={() =>
-                                handleRemoveItem(
-                                  item.product._id,
-                                  item.color,
-                                  item.size,
-                                )
-                              }
-                              className="md:hidden text-gray-400 hover:text-[#C17B7B] dark:hover:text-[#C17B7B] transition-colors"
+                              onClick={() => handleRemoveItem(item._id)}
+                              disabled={isMutating}
+                              className="md:hidden text-gray-400 hover:text-[#C17B7B] dark:hover:text-[#C17B7B] transition-colors disabled:opacity-50"
                             >
                               <Trash2 size={20} />
                             </button>
@@ -268,17 +374,17 @@ export default function CartPage() {
                       {/* Price (Mobile) */}
                       <div className="md:hidden flex items-center justify-between mt-4">
                         <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
-                          ${item.price.toFixed(2)}
+                          ${item.product.price.toFixed(2)}
                         </div>
                         <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ${(item.product.price * item.quantity).toFixed(2)}
                         </div>
                       </div>
 
                       {/* Price (Desktop) */}
                       <div className="hidden md:block md:w-32 text-center">
                         <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
-                          ${item.price.toFixed(2)}
+                          ${item.product.price.toFixed(2)}
                         </div>
                       </div>
 
@@ -286,16 +392,18 @@ export default function CartPage() {
                       <div className="md:w-40">
                         <div className="flex items-center gap-3">
                           <button
-                            onClick={() =>
-                              handleQuantityChange(
-                                item.id || "",
-                                item.product._id,
-                                item.color,
-                                item.size,
-                                item.quantity - 1,
-                              )
-                            }
-                            disabled={item.quantity <= 1}
+                            onClick={() => {
+                              if (item.quantity <= 1) return;
+                              decrementItem(item._id, {
+                                onSuccess: () => {
+                                  refetch();
+                                },
+                                onError: () => {
+                                  toast.error("Failed to update quantity");
+                                },
+                              });
+                            }}
+                            disabled={item.quantity <= 1 || isMutating}
                             className="h-10 w-10 rounded-lg border border-[#E8E0D8] dark:border-gray-700 flex items-center justify-center text-[#2C2C2C] dark:text-gray-300 hover:bg-[#F4EFEA] dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             <Minus size={16} />
@@ -308,16 +416,25 @@ export default function CartPage() {
                           </div>
 
                           <button
-                            onClick={() =>
-                              handleQuantityChange(
-                                item.id || "",
-                                item.product._id,
-                                item.color,
-                                item.size,
-                                item.quantity + 1,
-                              )
+                            onClick={() => {
+                              if (item.quantity >= item.product.stock) {
+                                toast.error(
+                                  `Only ${item.product.stock} items available in stock`,
+                                );
+                                return;
+                              }
+                              incrementItem(item._id, {
+                                onSuccess: () => {
+                                  refetch();
+                                },
+                                onError: () => {
+                                  toast.error("Failed to update quantity");
+                                },
+                              });
+                            }}
+                            disabled={
+                              item.quantity >= item.product.stock || isMutating
                             }
-                            disabled={item.quantity >= item.product.stock}
                             className="h-10 w-10 rounded-lg border border-[#E8E0D8] dark:border-gray-700 flex items-center justify-center text-[#2C2C2C] dark:text-gray-300 hover:bg-[#F4EFEA] dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             <Plus size={16} />
@@ -333,17 +450,12 @@ export default function CartPage() {
                       {/* Total & Remove (Desktop) */}
                       <div className="hidden md:flex md:w-32 items-center justify-between">
                         <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ${(item.product.price * item.quantity).toFixed(2)}
                         </div>
                         <button
-                          onClick={() =>
-                            handleRemoveItem(
-                              item.product._id,
-                              item.color,
-                              item.size,
-                            )
-                          }
-                          className="text-gray-400 hover:text-[#C17B7B] dark:hover:text-[#C17B7B] transition-colors ml-4"
+                          onClick={() => handleRemoveItem(item._id)}
+                          disabled={isMutating}
+                          className="text-gray-400 hover:text-[#C17B7B] dark:hover:text-[#C17B7B] transition-colors ml-4 disabled:opacity-50"
                         >
                           <Trash2 size={20} />
                         </button>
@@ -370,17 +482,20 @@ export default function CartPage() {
                     <Button
                       variant="outline"
                       className="gap-2 border-[#E8E0D8] hover:bg-[#F4EFEA]"
-                      onClick={() => {
-                        toast.success("Cart updated");
-                      }}
+                      onClick={() => refetch()}
+                      disabled={isMutating}
                     >
-                      <RefreshCw size={16} />
-                      Update Cart
+                      <RefreshCw
+                        size={16}
+                        className={isMutating ? "animate-spin" : ""}
+                      />
+                      Refresh
                     </Button>
                     <Button
                       variant="outline"
                       className="gap-2 text-[#C17B7B] hover:text-[#C17B7B] border-[#C17B7B]/30 hover:bg-[#C17B7B]/10"
                       onClick={handleClearCart}
+                      disabled={isClearing || isMutating}
                     >
                       <Trash2 size={16} />
                       Clear Cart
@@ -457,9 +572,14 @@ export default function CartPage() {
                     <Button
                       onClick={handleApplyPromo}
                       variant="outline"
-                      className="whitespace-nowrap border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                      disabled={isApplyingCoupon || isMutating}
+                      className="whitespace-nowrap border-[#E8E0D8] hover:bg-[#F4EFEA] disabled:opacity-50"
                     >
-                      Apply
+                      {isApplyingCoupon ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
                     </Button>
                   </div>
 
@@ -475,7 +595,8 @@ export default function CartPage() {
                       </div>
                       <button
                         onClick={handleRemovePromo}
-                        className="text-[#6B8E6B] hover:text-[#6B8E6B]/80 transition-colors"
+                        disabled={isRemovingCoupon || isMutating}
+                        className="text-[#6B8E6B] hover:text-[#6B8E6B]/80 transition-colors disabled:opacity-50"
                       >
                         <X size={20} />
                       </button>
@@ -565,8 +686,8 @@ export default function CartPage() {
                 {/* Checkout Button */}
                 <Button
                   onClick={handleCheckout}
-                  disabled={isLoading || cartItems.length === 0}
-                  className="w-full py-4 text-lg mb-4 bg-[#2C3E3E] hover:bg-[#4A6B6B] transition-all"
+                  disabled={isLoading || cartItems.length === 0 || isMutating}
+                  className="w-full py-4 text-lg mb-4 bg-[#2C3E3E] hover:bg-[#4A6B6B] transition-all disabled:opacity-50"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-2">

@@ -75,6 +75,7 @@ export default function WishlistPage() {
   const [sortBy, setSortBy] = useState("-addedAt");
   const [filterCategory, setFilterCategory] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const { data: wishlistData, isLoading, isError, refetch } = useWishlist();
   const { mutate: removeFromWishlist, isPending: isRemoving } =
@@ -211,14 +212,63 @@ export default function WishlistPage() {
   };
 
   const handleClearWishlist = () => {
-    if (confirm("Are you sure you want to clear your entire wishlist?")) {
-      clearWishlist(undefined, {
-        onSuccess: () => {
-          setSelectedItems([]);
-          refetch();
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3 max-w-sm bg-background rounded-lg p-4 border border-border">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="text-destructive" size={20} />
+            <span className="font-semibold text-foreground">
+              Clear Wishlist
+            </span>
+          </div>
+          <p className="text-sm text-foreground-muted">
+            Are you sure you want to remove all {items.length} items from your
+            wishlist? This action cannot be undone.
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="flex-1"
+              onClick={() => {
+                toast.dismiss(t.id);
+                clearWishlist(undefined, {
+                  onSuccess: () => {
+                    setSelectedItems([]);
+                    refetch();
+                    toast.success("Wishlist cleared successfully!");
+                  },
+                  onError: (error) => {
+                    toast.error(error?.message || "Failed to clear wishlist");
+                  },
+                });
+              }}
+            >
+              Clear All
+            </Button>
+          </div>
+        </div>
+      ),
+      {
+        duration: Infinity,
+        position: "top-center",
+        style: {
+          background: "var(--background)",
+          border: "1px solid var(--border)",
+          padding: "16px",
+          borderRadius: "12px",
+          maxWidth: "400px",
         },
-      });
-    }
+      },
+    );
   };
 
   if (isLoading) {
@@ -613,7 +663,6 @@ export default function WishlistPage() {
                                 {item.product.description}
                               </p>
 
-                              {/* Features section - using features instead of tags */}
                               {item.product.features &&
                                 item.product.features.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mb-4">
@@ -736,7 +785,7 @@ export default function WishlistPage() {
                 </div>
               </div>
 
-              <div className="bg-linear-to-r from-primary/10 to-accent/10 rounded-2xl p-6 border border-primary/20">
+              <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-6 border border-primary/20">
                 <h3 className="font-bold text-foreground mb-4">
                   Get Price Alerts
                 </h3>
@@ -778,7 +827,7 @@ export default function WishlistPage() {
                 </Button>
               </div>
 
-              <div className="bg-linear-to-r from-accent/10 to-secondary/10 rounded-2xl p-6 border border-accent/20">
+              <div className="bg-gradient-to-r from-accent/10 to-secondary/10 rounded-2xl p-6 border border-accent/20">
                 <h3 className="font-bold text-foreground mb-4">
                   Wishlist Tips
                 </h3>
@@ -827,7 +876,7 @@ export default function WishlistPage() {
         )}
 
         {items.length > 0 && (
-          <div className="mt-12 bg-linear-to-r from-primary to-primary-light text-white rounded-2xl p-8 md:p-12">
+          <div className="mt-12 bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl p-8 md:p-12">
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="max-w-lg">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4">
@@ -864,7 +913,7 @@ export default function WishlistPage() {
                 {items.slice(0, 5).map((item: WishlistItem, i: number) => (
                   <div
                     key={item.product._id}
-                    className="h-12 w-12 rounded-full border-2 border-primary-light bg-linear-to-br from-primary to-accent flex items-center justify-center"
+                    className="h-12 w-12 rounded-full border-2 border-primary-light bg-gradient-to-br from-primary to-accent flex items-center justify-center"
                   >
                     <span className="text-white font-bold text-xs">
                       {item.product.name.charAt(0)}

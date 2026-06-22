@@ -339,7 +339,7 @@ export const getSharedWishlist = asyncHandler(async (req, res, next) => {
         shareExpiresAt: wishlist.shareExpiresAt,
       },
       user: {
-        name: user?.name,
+        name: user?.name || "Anonymous",
         avatar: user?.avatar,
       },
       items: wishlist.items,

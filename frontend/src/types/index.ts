@@ -76,6 +76,9 @@ export interface Product {
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  colors?: string[];
+  sizes?: string[];
+  longDescription: string;
 }
 
 export interface Category {

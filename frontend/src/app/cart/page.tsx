@@ -15,6 +15,11 @@ import {
   X,
   ChevronRight,
   Loader2,
+  Tag,
+  Sparkles,
+  Gift,
+  Clock,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
@@ -58,8 +63,6 @@ export default function CartPage() {
   } = useCart({
     enabled: isAuthenticated,
   });
-
-  console.log({ cartData });
 
   const { mutate: removeFromCart, isPending: isRemoving } = useRemoveFromCart();
   const { mutate: clearCart, isPending: isClearing } = useClearCart();
@@ -206,10 +209,15 @@ export default function CartPage() {
 
   if (authLoading || isCartLoading) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center">
+      <div className="min-h-[70vh] flex items-center justify-center bg-linear-to-b from-background to-background-secondary">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#C17B4D] mx-auto mb-4" />
-          <p className="text-[#6B6B6B] dark:text-gray-400">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-20 w-20 rounded-full bg-accent/5 blur-2xl animate-pulse"></div>
+            </div>
+            <Loader2 className="h-12 w-12 animate-spin text-accent mx-auto mb-4 relative z-10" />
+          </div>
+          <p className="text-foreground-muted animate-pulse">
             Loading your cart...
           </p>
         </div>
@@ -219,28 +227,37 @@ export default function CartPage() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="h-24 w-24 bg-[#F4EFEA] dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShoppingBag className="text-[#6B6B6B]" size={48} />
+      <div className="min-h-[70vh] flex items-center justify-center px-4 bg-linear-to-b from-background to-background-secondary">
+        <div className="text-center max-w-md animate-fade-in">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-32 w-32 rounded-full bg-accent/5 blur-2xl"></div>
+            </div>
+            <div className="h-28 w-28 bg-linear-to-br from-background-secondary to-accent/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl relative z-10">
+              <ShoppingBag className="text-accent" size={52} />
+            </div>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#2C2C2C] dark:text-white mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold transparent mb-3 font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
             Your cart is empty
           </h1>
-          <p className="text-[#6B6B6B] dark:text-gray-400 mb-8">
+          <p className="text-foreground-muted mb-8 text-lg">
             Looks like you haven't added any items to your cart yet.
+            <br />
+            <span className="text-sm text-accent/70">
+              Start exploring our collection!
+            </span>
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/">
-              <Button className="gap-2 bg-[#2C3E3E] hover:bg-[#4A6B6B]">
-                <ArrowLeft size={16} />
+              <Button className="gap-2 bg-linear-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-primary-foreground px-8 py-6 text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
+                <ArrowLeft size={18} />
                 Continue Shopping
               </Button>
             </Link>
             <Link href="/categories">
               <Button
                 variant="outline"
-                className="border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                className="border-2 border-border hover:border-accent/50 hover:bg-background-secondary text-foreground px-8 py-6 text-base rounded-xl transition-all duration-300"
               >
                 Browse Categories
               </Button>
@@ -255,61 +272,73 @@ export default function CartPage() {
     isRemoving || isClearing || isUpdating || isIncrementing || isDecrementing;
 
   return (
-    <div className="py-8 md:py-12">
-      <div className="container mx-auto px-4 md:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-[#6B6B6B] dark:text-gray-400 mb-2">
+    <div className="py-8 md:py-12 bg-linear-to-b from-background to-background-secondary/50 min-h-screen">
+      <div className="container mx-auto px-4 md:px-8 max-w-7xl">
+        {/* Breadcrumb */}
+        <div className="mb-8 animate-slide-down">
+          <div className="flex items-center gap-2 text-sm text-foreground-muted">
             <Link
               href="/"
-              className="hover:text-[#C17B4D] dark:hover:text-[#D49A6A] transition-colors"
+              className="hover:text-accent transition-colors duration-200"
             >
               Home
             </Link>
-            <ChevronRight size={14} />
-            <span className="text-[#2C2C2C] dark:text-white">
-              Shopping Cart
-            </span>
+            <ChevronRight size={14} className="text-foreground-muted/50" />
+            <span className="text-foreground font-medium">Shopping Cart</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#2C2C2C] dark:text-white">
-            Shopping Cart
-          </h1>
-          <p className="text-[#6B6B6B] dark:text-gray-400 mt-2">
-            {itemCount} {itemCount === 1 ? "item" : "items"} in your cart
-          </p>
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+                Shopping Cart
+              </h1>
+              <p className="text-foreground-muted mt-2 text-lg flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                {itemCount} {itemCount === 1 ? "item" : "items"} in your cart
+              </p>
+            </div>
+            {itemCount > 0 && (
+              <div className="mt-4 sm:mt-0 flex items-center gap-2 text-sm bg-accent/5 px-4 py-2 rounded-full border border-accent/10">
+                <Sparkles size={16} className="text-accent" />
+                <span className="text-foreground-muted">Ready to checkout</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Cart Items */}
           <div className="lg:w-2/3">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg overflow-hidden border border-[#E8E0D8] dark:border-gray-800">
+            <div className="bg-card rounded-2xl shadow-lg border border-border/50 overflow-hidden backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
               {/* Table Header (Desktop) */}
-              <div className="hidden md:grid grid-cols-12 gap-4 p-6 border-b border-[#E8E0D8] dark:border-gray-800 bg-[#FDF8F5] dark:bg-gray-800/50">
-                <div className="col-span-5 font-medium text-[#2C2C2C] dark:text-gray-300">
-                  Product
+              <div className="hidden md:grid grid-cols-12 gap-4 p-6 bg-linear-to-r from-background-secondary/80 to-background-secondary/30 border-b border-border/50">
+                <div className="col-span-5 font-medium text-foreground-muted text-sm uppercase tracking-wider flex items-center gap-2">
+                  <span className="text-accent">✦</span> Product
                 </div>
-                <div className="col-span-2 font-medium text-[#2C2C2C] dark:text-gray-300">
+                <div className="col-span-2 font-medium text-foreground-muted text-sm uppercase tracking-wider">
                   Price
                 </div>
-                <div className="col-span-3 font-medium text-[#2C2C2C] dark:text-gray-300">
+                <div className="col-span-3 font-medium text-foreground-muted text-sm uppercase tracking-wider">
                   Quantity
                 </div>
-                <div className="col-span-2 font-medium text-[#2C2C2C] dark:text-gray-300 text-right">
+                <div className="col-span-2 font-medium text-foreground-muted text-sm uppercase tracking-wider text-right">
                   Total
                 </div>
               </div>
 
               {/* Cart Items List */}
-              <div className="divide-y divide-[#E8E0D8] dark:divide-gray-800">
-                {cartItems.map((item) => (
+              <div className="divide-y divide-border/50">
+                {cartItems.map((item, index) => (
                   <div
                     key={item._id || `${item.product._id}-${Date.now()}`}
-                    className="p-4 md:p-6"
+                    className="p-4 md:p-6 hover:bg-linear-to-r hover:from-accent/5 hover:to-transparent transition-all duration-300 group"
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                    }}
                   >
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
                       {/* Product Image & Info */}
                       <div className="flex-1 flex gap-4">
-                        <div className="h-24 w-24 shrink-0 bg-[#F4EFEA] dark:bg-gray-800 rounded-xl overflow-hidden">
+                        <div className="h-24 w-24 shrink-0 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-all duration-300">
                           {item.product.images?.[0] ? (
                             <Image
                               src={
@@ -320,79 +349,87 @@ export default function CartPage() {
                               alt={item.product.name}
                               width={96}
                               height={96}
-                              className="h-full w-full object-cover"
+                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-[#D4C4B7]/20 to-[#C17B4D]/20 dark:from-gray-800 dark:to-gray-900">
+                            <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-background-secondary to-accent/10">
                               <span className="text-3xl">🛒</span>
                             </div>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start">
                             <div>
-                              <h3 className="font-bold text-[#2C2C2C] dark:text-white">
+                              <h3 className="font-semibold text-foreground text-lg leading-tight group-hover:text-accent transition-colors duration-200">
                                 {item.product.name}
                               </h3>
-                              <p className="text-sm text-[#6B6B6B] dark:text-gray-400 mt-1 line-clamp-2">
+                              <p className="text-sm text-foreground-muted mt-1 line-clamp-2">
                                 {item.product.description}
                               </p>
                             </div>
                             <button
                               onClick={() => handleRemoveItem(item._id)}
                               disabled={isMutating}
-                              className="md:hidden text-gray-400 hover:text-[#C17B7B] dark:hover:text-[#C17B7B] transition-colors disabled:opacity-50"
+                              className="md:hidden text-foreground-muted hover:text-destructive transition-all duration-200 p-1 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
+                              aria-label="Remove item"
                             >
-                              <Trash2 size={20} />
+                              <Trash2 size={18} />
                             </button>
                           </div>
 
                           {/* Variants */}
-                          <div className="flex flex-wrap gap-3 mt-3">
+                          <div className="flex flex-wrap gap-2 mt-2">
                             {item.color && (
-                              <div className="text-sm">
-                                <span className="text-[#6B6B6B] dark:text-gray-400">
-                                  Color:{" "}
-                                </span>
-                                <span className="font-medium text-[#2C2C2C] dark:text-white">
-                                  {item.color}
-                                </span>
-                              </div>
+                              <span className="inline-flex items-center gap-1.5 text-xs bg-linear-to-r from-background-secondary to-background-tertiary/30 px-2.5 py-1 rounded-full text-foreground-muted border border-border/30">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shadow-sm"
+                                  style={{
+                                    backgroundColor: item.color.toLowerCase(),
+                                  }}
+                                />
+                                {item.color}
+                              </span>
                             )}
                             {item.size && (
-                              <div className="text-sm">
-                                <span className="text-[#6B6B6B] dark:text-gray-400">
-                                  Size:{" "}
-                                </span>
-                                <span className="font-medium text-[#2C2C2C] dark:text-white">
-                                  {item.size}
-                                </span>
-                              </div>
+                              <span className="inline-flex items-center gap-1.5 text-xs bg-linear-to-r from-background-secondary to-background-tertiary/30 px-2.5 py-1 rounded-full text-foreground-muted border border-border/30">
+                                <span className="font-medium">Size:</span>{" "}
+                                {item.size}
+                              </span>
                             )}
                           </div>
                         </div>
                       </div>
 
                       {/* Price (Mobile) */}
-                      <div className="md:hidden flex items-center justify-between mt-4">
-                        <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
-                          ${item.product.price.toFixed(2)}
+                      <div className="md:hidden flex items-center justify-between pt-3 border-t border-border/30">
+                        <div>
+                          <span className="text-sm text-foreground-muted">
+                            Price
+                          </span>
+                          <div className="text-lg font-bold text-foreground">
+                            ${item.product.price.toFixed(2)}
+                          </div>
                         </div>
-                        <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
-                          ${(item.product.price * item.quantity).toFixed(2)}
+                        <div className="text-right">
+                          <span className="text-sm text-foreground-muted">
+                            Total
+                          </span>
+                          <div className="text-lg font-bold text-accent">
+                            ${(item.product.price * item.quantity).toFixed(2)}
+                          </div>
                         </div>
                       </div>
 
                       {/* Price (Desktop) */}
                       <div className="hidden md:block md:w-32 text-center">
-                        <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
+                        <div className="text-lg font-bold text-foreground">
                           ${item.product.price.toFixed(2)}
                         </div>
                       </div>
 
                       {/* Quantity Controls */}
                       <div className="md:w-40">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 justify-center">
                           <button
                             onClick={() => {
                               if (item.quantity <= 1) return;
@@ -406,13 +443,17 @@ export default function CartPage() {
                               });
                             }}
                             disabled={item.quantity <= 1 || isMutating}
-                            className="h-10 w-10 rounded-lg border border-[#E8E0D8] dark:border-gray-700 flex items-center justify-center text-[#2C2C2C] dark:text-gray-300 hover:bg-[#F4EFEA] dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="h-10 w-10 rounded-lg border-2 border-border/50 bg-card flex items-center justify-center text-foreground hover:bg-accent/5 hover:border-accent/30 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                            aria-label="Decrease quantity"
                           >
-                            <Minus size={16} />
+                            <Minus
+                              size={16}
+                              className="text-foreground-muted group-hover:text-accent transition-colors"
+                            />
                           </button>
 
-                          <div className="flex-1 text-center">
-                            <span className="text-lg font-bold text-[#2C2C2C] dark:text-white">
+                          <div className="w-12 text-center">
+                            <span className="text-lg font-bold transparent bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
                               {item.quantity}
                             </span>
                           </div>
@@ -437,29 +478,34 @@ export default function CartPage() {
                             disabled={
                               item.quantity >= item.product.stock || isMutating
                             }
-                            className="h-10 w-10 rounded-lg border border-[#E8E0D8] dark:border-gray-700 flex items-center justify-center text-[#2C2C2C] dark:text-gray-300 hover:bg-[#F4EFEA] dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="h-10 w-10 rounded-lg border-2 border-border/50 bg-card flex items-center justify-center text-foreground hover:bg-accent/5 hover:border-accent/30 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                            aria-label="Increase quantity"
                           >
-                            <Plus size={16} />
+                            <Plus
+                              size={16}
+                              className="text-foreground-muted group-hover:text-accent transition-colors"
+                            />
                           </button>
                         </div>
                         {item.quantity >= item.product.stock && (
-                          <p className="text-sm text-[#C17B7B] mt-2 text-center">
+                          <p className="text-xs text-destructive mt-1.5 text-center font-medium animate-pulse">
                             Max stock reached
                           </p>
                         )}
                       </div>
 
                       {/* Total & Remove (Desktop) */}
-                      <div className="hidden md:flex md:w-32 items-center justify-between">
-                        <div className="text-lg font-bold text-[#2C2C2C] dark:text-white">
+                      <div className="hidden md:flex md:w-32 items-center justify-end gap-3">
+                        <div className="text-lg font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent">
                           ${(item.product.price * item.quantity).toFixed(2)}
                         </div>
                         <button
                           onClick={() => handleRemoveItem(item._id)}
                           disabled={isMutating}
-                          className="text-gray-400 hover:text-[#C17B7B] dark:hover:text-[#C17B7B] transition-colors ml-4 disabled:opacity-50"
+                          className="text-foreground-muted hover:text-destructive transition-all duration-200 p-1.5 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
+                          aria-label="Remove item"
                         >
-                          <Trash2 size={20} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
@@ -468,12 +514,12 @@ export default function CartPage() {
               </div>
 
               {/* Cart Actions */}
-              <div className="p-6 border-t border-[#E8E0D8] dark:border-gray-800 bg-[#FDF8F5] dark:bg-gray-800/50">
+              <div className="p-6 bg-linear-to-r from-background-secondary/50 to-background-secondary/20 border-t border-border/50">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                   <Link href="/">
                     <Button
                       variant="outline"
-                      className="gap-2 border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                      className="gap-2 border-2 border-border/50 hover:border-accent/30 hover:bg-accent/5 text-foreground px-6 rounded-xl transition-all duration-200 hover:shadow-md hover:scale-[1.02]"
                     >
                       <ArrowLeft size={16} />
                       Continue Shopping
@@ -483,7 +529,7 @@ export default function CartPage() {
                   <div className="flex gap-3">
                     <Button
                       variant="outline"
-                      className="gap-2 border-[#E8E0D8] hover:bg-[#F4EFEA]"
+                      className="gap-2 border-2 border-border/50 hover:border-accent/30 hover:bg-accent/5 text-foreground rounded-xl transition-all duration-200 hover:shadow-md"
                       onClick={() => refetch()}
                       disabled={isMutating}
                     >
@@ -495,7 +541,7 @@ export default function CartPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="gap-2 text-[#C17B7B] hover:text-[#C17B7B] border-[#C17B7B]/30 hover:bg-[#C17B7B]/10"
+                      className="gap-2 text-destructive hover:text-destructive border-2 border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5 rounded-xl transition-all duration-200 hover:shadow-md"
                       onClick={handleClearCart}
                       disabled={isClearing || isMutating}
                     >
@@ -509,43 +555,46 @@ export default function CartPage() {
 
             {/* Trust Badges */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 flex items-center gap-4 border border-[#E8E0D8]">
-                <div className="h-12 w-12 rounded-lg bg-[#2C3E3E]/10 flex items-center justify-center">
-                  <Shield className="text-[#2C3E3E]" size={24} />
+              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/30 hover:scale-[1.02] group">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <Shield className="text-primary" size={22} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#2C2C2C] dark:text-white">
+                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
                     Secure Payment
+                    <Sparkles size={12} className="text-accent" />
                   </h4>
-                  <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                  <p className="text-xs text-foreground-muted">
                     Your data is protected
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 flex items-center gap-4 border border-[#E8E0D8]">
-                <div className="h-12 w-12 rounded-lg bg-[#6B8E6B]/10 flex items-center justify-center">
-                  <Truck className="text-[#6B8E6B]" size={24} />
+              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-success/30 hover:scale-[1.02] group">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-success/10 to-success/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <Truck className="text-success" size={22} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#2C2C2C] dark:text-white">
+                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
                     Free Shipping
+                    <Gift size={12} className="text-success" />
                   </h4>
-                  <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                  <p className="text-xs text-foreground-muted">
                     On orders over $50
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 flex items-center gap-4 border border-[#E8E0D8]">
-                <div className="h-12 w-12 rounded-lg bg-[#C17B4D]/10 flex items-center justify-center">
-                  <span className="text-[#C17B4D] text-2xl">↩️</span>
+              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/30 hover:scale-[1.02] group">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-accent/10 to-accent/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <Clock className="text-accent" size={22} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#2C2C2C] dark:text-white">
+                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
                     Easy Returns
+                    <Star size={12} className="text-accent" />
                   </h4>
-                  <p className="text-sm text-[#6B6B6B] dark:text-gray-400">
+                  <p className="text-xs text-foreground-muted">
                     30-day return policy
                   </p>
                 </div>
@@ -556,26 +605,42 @@ export default function CartPage() {
           {/* Order Summary */}
           <div className="lg:w-1/3">
             <div className="sticky top-24">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-[#E8E0D8]">
-                <h2 className="text-xl font-bold text-[#2C2C2C] dark:text-white mb-6">
-                  Order Summary
-                </h2>
+              <div className="bg-card rounded-2xl shadow-xl border-2 border-border/30 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-2xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+                    Order Summary
+                  </h2>
+                  <div className="flex items-center gap-1 text-xs bg-accent/5 px-3 py-1 rounded-full border border-accent/10">
+                    <Sparkles size={12} className="text-accent" />
+                    <span className="text-foreground-muted">
+                      {itemCount} items
+                    </span>
+                  </div>
+                </div>
 
                 {/* Promo Code */}
                 <div className="mb-6">
                   <div className="flex gap-2 mb-4">
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      placeholder="Promo code"
-                      className="flex-1 px-4 py-3 rounded-xl border border-[#E8E0D8] bg-white dark:bg-gray-800 text-[#2C2C2C] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#C17B4D]"
-                    />
+                    <div className="relative flex-1">
+                      <Tag
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted"
+                        size={16}
+                      />
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) =>
+                          setPromoCode(e.target.value.toUpperCase())
+                        }
+                        placeholder="Promo code"
+                        className="w-full pl-9 pr-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                      />
+                    </div>
                     <Button
                       onClick={handleApplyPromo}
                       variant="outline"
                       disabled={isApplyingCoupon || isMutating}
-                      className="whitespace-nowrap border-[#E8E0D8] hover:bg-[#F4EFEA] disabled:opacity-50"
+                      className="border-2 border-border/50 hover:border-accent/30 hover:bg-accent/5 text-foreground rounded-xl px-6 transition-all duration-200 hover:shadow-md disabled:opacity-50"
                     >
                       {isApplyingCoupon ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -586,40 +651,41 @@ export default function CartPage() {
                   </div>
 
                   {appliedPromo && (
-                    <div className="flex items-center justify-between p-3 bg-[#6B8E6B]/10 rounded-xl">
+                    <div className="flex items-center justify-between p-3 bg-linear-to-r from-success/10 to-success/5 rounded-xl border-2 border-success/20 animate-fade-in">
                       <div>
-                        <div className="font-medium text-[#6B8E6B]">
-                          {appliedPromo.code} applied
+                        <div className="font-medium text-success flex items-center gap-1">
+                          ✨ {appliedPromo.code} applied
                         </div>
-                        <div className="text-sm text-[#6B8E6B]">
+                        <div className="text-sm text-success/80">
                           {appliedPromo.description}
                         </div>
                       </div>
                       <button
                         onClick={handleRemovePromo}
                         disabled={isRemovingCoupon || isMutating}
-                        className="text-[#6B8E6B] hover:text-[#6B8E6B]/80 transition-colors disabled:opacity-50"
+                        className="text-success hover:text-success/80 transition-colors p-1 rounded-lg hover:bg-success/10 disabled:opacity-50"
                       >
-                        <X size={20} />
+                        <X size={18} />
                       </button>
                     </div>
                   )}
 
                   {/* Available Promo Codes */}
                   <div className="mt-4">
-                    <p className="text-sm font-medium text-[#2C2C2C] dark:text-gray-300 mb-2">
-                      Available promo codes:
+                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <Gift size={12} />
+                      Available promo codes
                     </p>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {promoCodes.map((promo) => (
                         <div
                           key={promo.code}
-                          className="flex items-center justify-between text-sm"
+                          className="flex items-center justify-between text-xs bg-linear-to-r from-background-secondary/50 to-background-secondary/20 px-3 py-2 rounded-lg border border-border/30"
                         >
-                          <code className="bg-[#F4EFEA] dark:bg-gray-800 px-2 py-1 rounded text-[#2C2C2C] dark:text-gray-300">
+                          <code className="font-mono font-semibold text-foreground text-xs">
                             {promo.code}
                           </code>
-                          <span className="text-[#6B6B6B] dark:text-gray-400">
+                          <span className="text-foreground-muted">
                             {promo.description}
                           </span>
                         </div>
@@ -629,59 +695,55 @@ export default function CartPage() {
                 </div>
 
                 {/* Price Breakdown */}
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between">
-                    <span className="text-[#6B6B6B] dark:text-gray-400">
-                      Subtotal
-                    </span>
-                    <span className="font-medium text-[#2C2C2C] dark:text-white">
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between py-1 group">
+                    <span className="text-foreground-muted">Subtotal</span>
+                    <span className="font-medium text-foreground">
                       ${subtotal.toFixed(2)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span className="text-[#6B6B6B] dark:text-gray-400">
-                      Shipping
-                    </span>
+                  <div className="flex justify-between py-1 group">
+                    <span className="text-foreground-muted">Shipping</span>
                     <span
-                      className={`font-medium ${shipping === 0 ? "text-[#6B8E6B]" : "text-[#2C2C2C] dark:text-white"}`}
+                      className={`font-medium ${
+                        shipping === 0 ? "text-success" : "text-foreground"
+                      }`}
                     >
-                      {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
+                      {shipping === 0 ? "FREE 🎉" : `$${shipping.toFixed(2)}`}
                     </span>
                   </div>
 
                   {discount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-[#6B6B6B] dark:text-gray-400">
-                        Discount
-                      </span>
-                      <span className="font-medium text-[#6B8E6B]">
+                    <div className="flex justify-between py-1 group">
+                      <span className="text-foreground-muted">Discount</span>
+                      <span className="font-medium text-success">
                         -${discount.toFixed(2)}
                       </span>
                     </div>
                   )}
 
-                  <div className="flex justify-between">
-                    <span className="text-[#6B6B6B] dark:text-gray-400">
-                      Tax
-                    </span>
-                    <span className="font-medium text-[#2C2C2C] dark:text-white">
+                  <div className="flex justify-between py-1 group">
+                    <span className="text-foreground-muted">Tax</span>
+                    <span className="font-medium text-foreground">
                       ${tax.toFixed(2)}
                     </span>
                   </div>
 
-                  <div className="pt-4 border-t border-[#E8E0D8] dark:border-gray-800">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span className="text-[#2C2C2C] dark:text-white">
+                  <div className="pt-4 border-t-2 border-border/50">
+                    <div className="flex justify-between items-end">
+                      <span className="text-lg font-bold text-foreground">
                         Total
                       </span>
-                      <span className="text-[#2C2C2C] dark:text-white">
-                        ${total.toFixed(2)}
-                      </span>
+                      <div className="text-right">
+                        <span className="text-2xl font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent">
+                          ${total.toFixed(2)}
+                        </span>
+                        <p className="text-xs text-foreground-muted mt-0.5">
+                          Including ${tax.toFixed(2)} in taxes
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-[#6B6B6B] dark:text-gray-400 mt-1">
-                      Including ${tax.toFixed(2)} in taxes
-                    </p>
                   </div>
                 </div>
 
@@ -689,69 +751,74 @@ export default function CartPage() {
                 <Button
                   onClick={handleCheckout}
                   disabled={isLoading || cartItems.length === 0 || isMutating}
-                  className="w-full py-4 text-lg mb-4 bg-[#2C3E3E] hover:bg-[#4A6B6B] transition-all disabled:opacity-50"
+                  className="w-full py-4 text-base font-semibold bg-linear-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-primary-foreground rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Processing...
-                    </div>
-                  ) : (
-                    "Proceed to Checkout"
-                  )}
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {isLoading ? (
+                      <>
+                        <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles
+                          size={18}
+                          className="group-hover:rotate-12 transition-transform"
+                        />
+                        Proceed to Checkout
+                      </>
+                    )}
+                  </span>
+                  <div className="absolute inset-0 bg-linear-to-r from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </Button>
 
                 {/* Payment Methods */}
-                <div className="text-center">
-                  <p className="text-sm text-[#6B6B6B] dark:text-gray-400 mb-3">
-                    We accept:
+                <div className="mt-6 text-center">
+                  <p className="text-xs text-foreground-muted uppercase tracking-wider mb-3 flex items-center justify-center gap-2">
+                    <span className="w-8 h-px bg-border"></span>
+                    We accept
+                    <span className="w-8 h-px bg-border"></span>
                   </p>
-                  <div className="flex justify-center gap-4">
-                    <div className="h-8 w-12 bg-[#F4EFEA] dark:bg-gray-800 rounded flex items-center justify-center">
-                      <span className="font-bold text-[#2C2C2C] dark:text-gray-300">
+                  <div className="flex justify-center gap-3">
+                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
+                      <span className="font-bold text-foreground text-xs">
                         VISA
                       </span>
                     </div>
-                    <div className="h-8 w-12 bg-[#F4EFEA] dark:bg-gray-800 rounded flex items-center justify-center">
-                      <span className="font-bold text-[#2C2C2C] dark:text-gray-300">
+                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
+                      <span className="font-bold text-foreground text-xs">
                         MC
                       </span>
                     </div>
-                    <div className="h-8 w-12 bg-[#F4EFEA] dark:bg-gray-800 rounded flex items-center justify-center">
-                      <span className="font-bold text-[#2C2C2C] dark:text-gray-300">
+                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
+                      <span className="font-bold text-foreground text-xs">
                         PP
                       </span>
                     </div>
-                    <div className="h-8 w-12 bg-[#F4EFEA] dark:bg-gray-800 rounded flex items-center justify-center">
-                      <span className="text-2xl">🍎</span>
+                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
+                      <span className="text-xl">🍎</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Cart Summary */}
-                <div className="mt-8 pt-6 border-t border-[#E8E0D8] dark:border-gray-800">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#6B6B6B] dark:text-gray-400">
-                        Items in cart
-                      </span>
-                      <span className="font-medium text-[#2C2C2C] dark:text-white">
+                <div className="mt-6 pt-4 border-t-2 border-border/50">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex justify-between py-1">
+                      <span className="text-foreground-muted">Items</span>
+                      <span className="font-medium text-foreground">
                         {itemCount}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#6B6B6B] dark:text-gray-400">
-                        Estimated delivery
-                      </span>
-                      <span className="font-medium text-[#2C2C2C] dark:text-white">
-                        3-5 business days
+                    <div className="flex justify-between py-1">
+                      <span className="text-foreground-muted">Delivery</span>
+                      <span className="font-medium text-foreground text-xs">
+                        3-5 days
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#6B6B6B] dark:text-gray-400">
-                        Return policy
-                      </span>
-                      <span className="font-medium text-[#2C2C2C] dark:text-white">
+                    <div className="flex justify-between py-1 col-span-2">
+                      <span className="text-foreground-muted">Returns</span>
+                      <span className="font-medium text-foreground text-xs">
                         30 days
                       </span>
                     </div>
@@ -760,14 +827,17 @@ export default function CartPage() {
               </div>
 
               {/* Security Notice */}
-              <div className="mt-6 p-4 bg-[#2C3E3E]/10 rounded-xl border border-[#2C3E3E]/20">
+              <div className="mt-6 p-4 bg-linear-to-r from-primary/5 to-accent/5 rounded-xl border-2 border-primary/10 backdrop-blur-sm transition-all duration-300 hover:shadow-md">
                 <div className="flex items-start gap-3">
-                  <Shield className="text-[#2C3E3E] mt-1 shrink-0" size={20} />
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Shield className="text-primary" size={16} />
+                  </div>
                   <div>
-                    <p className="text-sm text-[#2C3E3E] font-medium">
-                      Secure checkout
+                    <p className="text-sm text-primary font-medium flex items-center gap-1">
+                      🔒 Secure checkout
+                      <Sparkles size={12} className="text-accent" />
                     </p>
-                    <p className="text-xs text-[#2C3E3E]/80 mt-1">
+                    <p className="text-xs text-foreground-muted mt-0.5 leading-relaxed">
                       Your payment information is encrypted and secure. We never
                       store your credit card details.
                     </p>
@@ -779,11 +849,15 @@ export default function CartPage() {
         </div>
 
         {/* Frequently Bought Together */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-white mb-6">
-            Frequently Bought Together
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mt-16">
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-2xl font-bold font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+              Frequently Bought Together
+            </h2>
+            <div className="flex-1 h-px bg-linear-to-r from-border to-transparent"></div>
+            <Sparkles size={18} className="text-accent" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { name: "Phone Stand", price: 24.99, image: "📱" },
               { name: "Screen Protector", price: 12.99, image: "🛡️" },
@@ -791,20 +865,26 @@ export default function CartPage() {
             ].map((item, index) => (
               <div
                 key={index}
-                className="bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-4 border border-[#E8E0D8] hover:shadow-md transition-shadow"
+                className="bg-card rounded-xl p-4 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/40 hover:scale-[1.02] group"
+                style={{
+                  animationDelay: `${index * 150}ms`,
+                }}
               >
-                <div className="h-16 w-16 bg-[#F4EFEA] dark:bg-gray-800 rounded-lg flex items-center justify-center text-2xl">
+                <div className="h-16 w-16 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-xl flex items-center justify-center text-3xl shadow-md group-hover:scale-110 transition-transform duration-300">
                   {item.image}
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-[#2C2C2C] dark:text-white">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-foreground text-sm truncate group-hover:text-accent transition-colors">
                     {item.name}
                   </h4>
-                  <p className="text-lg font-bold text-[#C17B4D]">
+                  <p className="text-lg font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent">
                     ${item.price.toFixed(2)}
                   </p>
                 </div>
-                <Button size="sm" className="bg-[#2C3E3E] hover:bg-[#4A6B6B]">
+                <Button
+                  size="sm"
+                  className="bg-linear-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-primary-foreground rounded-lg px-4 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                >
                   Add
                 </Button>
               </div>

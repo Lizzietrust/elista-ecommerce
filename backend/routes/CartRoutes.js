@@ -14,11 +14,14 @@ import {
   getCartCount,
 } from "../controllers/CartController.js";
 import { protect } from "../middleware/auth.js";
-import { validateRequest, validateCartItem, validateCartQuantity } from "../middleware/validators.js";
+import {
+  validateRequest,
+  validateCartItem,
+  validateCartQuantity,
+} from "../middleware/validators.js";
 
 const router = express.Router();
 
-// All cart routes require authentication
 router.use(protect);
 
 router.get("/", getCart);

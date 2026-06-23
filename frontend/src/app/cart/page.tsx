@@ -59,6 +59,8 @@ export default function CartPage() {
     enabled: isAuthenticated,
   });
 
+  console.log({ cartData });
+
   const { mutate: removeFromCart, isPending: isRemoving } = useRemoveFromCart();
   const { mutate: clearCart, isPending: isClearing } = useClearCart();
   const { mutate: updateQuantity, isPending: isUpdating } =

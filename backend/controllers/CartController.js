@@ -10,15 +10,11 @@ import {
   calculateTax,
 } from "../utils/cartCalculations.js";
 
-// @desc    Get user's cart
-// @route   GET /api/cart
-// @access  Private
 export const getCart = asyncHandler(async (req, res, next) => {
-  // Since we're storing cart in User model, get user with populated cart
   const user = await User.findById(req.user.id)
     .populate({
       path: "cart.items.product",
-      select: "name price images slug stock isActive",
+      select: "name price images slug stock isActive description",
       populate: {
         path: "category",
         select: "name slug",
@@ -30,17 +26,53 @@ export const getCart = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("User not found", 404));
   }
 
-  // Filter out inactive or deleted products
+  console.log("Raw user cart:", user.cart);
+
   const validCartItems = user.cart.items.filter(
-    (item) => item.product && item.product.isActive
+    (item) => item.product !== null && item.product !== undefined,
   );
 
-  // Calculate totals
+  console.log("Valid cart items:", validCartItems);
+
+  if (validCartItems.length === 0 && user.cart.items.length > 0) {
+    console.log("Cart has items but products not populated properly");
+
+    const Product = mongoose.model("Product");
+    const itemsWithProducts = await Promise.all(
+      user.cart.items.map(async (item) => {
+        if (
+          item.product &&
+          typeof item.product !== "string" &&
+          item.product._id
+        ) {
+          return item;
+        }
+
+        const productId =
+          typeof item.product === "string" ? item.product : item.product?._id;
+        if (productId) {
+          const product = await Product.findById(productId).select(
+            "name price images slug stock isActive description",
+          );
+          if (product) {
+            return { ...item.toObject(), product };
+          }
+        }
+        return null;
+      }),
+    );
+
+    const manualItems = itemsWithProducts.filter((item) => item !== null);
+    if (manualItems.length > 0) {
+      validCartItems.push(...manualItems);
+    }
+  }
+
   const subtotal = validCartItems.reduce((total, item) => {
-    return total + item.product.price * item.quantity;
+    const price = item.product?.price || item.priceAtAdd || 0;
+    return total + price * item.quantity;
   }, 0);
 
-  // Apply coupon if exists
   let discount = 0;
   let total = subtotal;
 
@@ -52,11 +84,9 @@ export const getCart = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Add shipping cost
   const shippingCost = calculateShipping(validCartItems);
   total += shippingCost;
 
-  // Add tax
   const tax = calculateTax(total);
   total += tax;
 
@@ -72,129 +102,132 @@ export const getCart = asyncHandler(async (req, res, next) => {
         total,
         itemCount: validCartItems.reduce((sum, item) => sum + item.quantity, 0),
         coupon: user.cart.coupon || null,
+        productCount: validCartItems.length,
       },
     },
   });
 });
 
-// @desc    Add item to cart
-// @route   POST /api/cart/add
-// @access  Private
 export const addToCart = asyncHandler(async (req, res, next) => {
-  const { productId, quantity = 1 } = req.body;
+  const { productId, quantity = 1, color, size } = req.body;
 
-  // Validate product exists and is active
   const product = await Product.findById(productId);
-  if (!product || !product.isActive) {
-    return next(new ErrorResponse("Product not found or inactive", 404));
+  if (!product) {
+    return next(new ErrorResponse("Product not found", 404));
   }
 
-  // Check stock availability
+  if (!product.isActive) {
+    return next(new ErrorResponse("Product is not available", 400));
+  }
+
   if (product.stock < quantity) {
     return next(
       new ErrorResponse(
         `Insufficient stock. Only ${product.stock} items available`,
-        400
-      )
+        400,
+      ),
     );
   }
 
   const user = await User.findById(req.user.id);
 
-  // Check if product is already in cart
-  const existingItemIndex = user.cart.items.findIndex(
-    (item) => item.product.toString() === productId
-  );
+  const existingItemIndex = user.cart.items.findIndex((item) => {
+    const match = item.product.toString() === productId;
+    if (color) {
+      return match && item.color === color;
+    }
+    if (size) {
+      return match && item.size === size;
+    }
+    return match;
+  });
 
   if (existingItemIndex >= 0) {
-    // Update quantity if product already in cart
     const newQuantity = user.cart.items[existingItemIndex].quantity + quantity;
 
-    // Check stock for updated quantity
     if (product.stock < newQuantity) {
       return next(
         new ErrorResponse(
           `Insufficient stock for updated quantity. Only ${product.stock} items available`,
-          400
-        )
+          400,
+        ),
       );
     }
 
     user.cart.items[existingItemIndex].quantity = newQuantity;
     user.cart.items[existingItemIndex].addedAt = Date.now();
+    user.cart.items[existingItemIndex].priceAtAdd = product.price;
   } else {
-    // Add new item to cart
-    user.cart.items.push({
+    const newItem = {
       product: productId,
       quantity,
       addedAt: Date.now(),
-    });
+      priceAtAdd: product.price,
+    };
+
+    if (color) newItem.color = color;
+    if (size) newItem.size = size;
+
+    user.cart.items.push(newItem);
   }
 
   user.cart.updatedAt = Date.now();
   await user.save();
 
-  // Get updated cart with populated products
   await user.populate({
     path: "cart.items.product",
-    select: "name price images slug",
+    select: "name price images slug stock isActive description",
   });
+
+  const validItems = user.cart.items.filter((item) => item.product !== null);
 
   res.status(200).json({
     success: true,
     message: "Item added to cart successfully",
     data: {
-      items: user.cart.items,
-      itemCount: user.cart.items.reduce((sum, item) => sum + item.quantity, 0),
+      items: validItems,
+      itemCount: validItems.reduce((sum, item) => sum + item.quantity, 0),
     },
   });
 });
 
-// @desc    Update cart item
-// @route   PUT /api/cart/:itemId
-// @access  Private
 export const updateCartItem = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
   const { quantity, productId } = req.body;
 
   const user = await User.findById(req.user.id);
 
-  // Find item in cart
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId
+    (item) => item._id.toString() === itemId,
   );
 
   if (itemIndex === -1) {
     return next(new ErrorResponse("Item not found in cart", 404));
   }
 
-  // If productId is provided, check if it's different from current product
   if (
     productId &&
     productId !== user.cart.items[itemIndex].product.toString()
   ) {
-    // Validate new product
     const newProduct = await Product.findById(productId);
     if (!newProduct || !newProduct.isActive) {
       return next(new ErrorResponse("New product not found or inactive", 404));
     }
 
-    // Check stock for new product
     if (newProduct.stock < quantity) {
       return next(
         new ErrorResponse(
           `Insufficient stock for new product. Only ${newProduct.stock} items available`,
-          400
-        )
+          400,
+        ),
       );
     }
 
     user.cart.items[itemIndex].product = productId;
   } else {
-    // Validate current product stock if quantity is being updated
     if (quantity !== undefined) {
       const currentProduct = await Product.findById(
-        user.cart.items[itemIndex].product
+        user.cart.items[itemIndex].product,
       );
 
       if (!currentProduct || !currentProduct.isActive) {
@@ -205,17 +238,15 @@ export const updateCartItem = asyncHandler(async (req, res, next) => {
         return next(
           new ErrorResponse(
             `Insufficient stock. Only ${currentProduct.stock} items available`,
-            400
-          )
+            400,
+          ),
         );
       }
     }
   }
 
-  // Update quantity if provided
   if (quantity !== undefined) {
     if (quantity <= 0) {
-      // Remove item if quantity is 0 or negative
       user.cart.items.splice(itemIndex, 1);
     } else {
       user.cart.items[itemIndex].quantity = quantity;
@@ -225,7 +256,6 @@ export const updateCartItem = asyncHandler(async (req, res, next) => {
   user.cart.updatedAt = Date.now();
   await user.save();
 
-  // Get updated cart with populated products
   await user.populate({
     path: "cart.items.product",
     select: "name price images slug",
@@ -241,27 +271,23 @@ export const updateCartItem = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update cart item quantity
-// @route   PATCH /api/cart/:itemId/quantity
-// @access  Private
 export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
-  const { quantity, operation } = req.body; // operation: 'increment', 'decrement', 'set'
+  const { quantity, operation } = req.body;
 
   if (!quantity && operation !== "increment" && operation !== "decrement") {
     return next(
       new ErrorResponse(
         "Please provide quantity or specify operation (increment/decrement)",
-        400
-      )
+        400,
+      ),
     );
   }
 
   const user = await User.findById(req.user.id);
 
-  // Find item in cart
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId
+    (item) => item._id.toString() === itemId,
   );
 
   if (itemIndex === -1) {
@@ -271,7 +297,6 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
   const cartItem = user.cart.items[itemIndex];
   let newQuantity = cartItem.quantity;
 
-  // Calculate new quantity based on operation
   if (operation === "increment") {
     newQuantity += 1;
   } else if (operation === "decrement") {
@@ -280,7 +305,6 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
     newQuantity = quantity;
   }
 
-  // Validate product stock
   const product = await Product.findById(cartItem.product);
   if (!product || !product.isActive) {
     return next(new ErrorResponse("Product not found or inactive", 404));
@@ -290,12 +314,11 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(
         `Insufficient stock. Only ${product.stock} items available`,
-        400
-      )
+        400,
+      ),
     );
   }
 
-  // Update or remove item
   if (newQuantity <= 0) {
     user.cart.items.splice(itemIndex, 1);
   } else {
@@ -317,24 +340,19 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Remove item from cart
-// @route   DELETE /api/cart/:itemId
-// @access  Private
 export const removeFromCart = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
 
   const user = await User.findById(req.user.id);
 
-  // Find item in cart
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId
+    (item) => item._id.toString() === itemId,
   );
 
   if (itemIndex === -1) {
     return next(new ErrorResponse("Item not found in cart", 404));
   }
 
-  // Remove item from cart
   user.cart.items.splice(itemIndex, 1);
   user.cart.updatedAt = Date.now();
   await user.save();
@@ -349,9 +367,6 @@ export const removeFromCart = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Clear cart
-// @route   DELETE /api/cart
-// @access  Private
 export const clearCart = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
@@ -370,9 +385,6 @@ export const clearCart = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Apply coupon to cart
-// @route   POST /api/cart/coupon/apply
-// @access  Private
 export const applyCoupon = asyncHandler(async (req, res, next) => {
   const { couponCode } = req.body;
 
@@ -380,7 +392,6 @@ export const applyCoupon = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Please provide coupon code", 400));
   }
 
-  // Get user cart with populated products
   const user = await User.findById(req.user.id).populate({
     path: "cart.items.product",
     select: "name price category",
@@ -390,7 +401,6 @@ export const applyCoupon = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Cart is empty", 400));
   }
 
-  // Find coupon
   const coupon = await Coupon.findOne({
     code: couponCode.toUpperCase(),
     isActive: true,
@@ -400,7 +410,6 @@ export const applyCoupon = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Invalid or expired coupon", 400));
   }
 
-  // Check coupon validity
   const now = new Date();
   if (coupon.validFrom && now < coupon.validFrom) {
     return next(new ErrorResponse("Coupon is not yet valid", 400));
@@ -410,12 +419,10 @@ export const applyCoupon = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Coupon has expired", 400));
   }
 
-  // Check usage limits
   if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
     return next(new ErrorResponse("Coupon usage limit reached", 400));
   }
 
-  // Check per user usage limit
   if (coupon.perUserLimit) {
     const userUsageCount = await Order.countDocuments({
       user: req.user.id,
@@ -426,13 +433,12 @@ export const applyCoupon = asyncHandler(async (req, res, next) => {
       return next(
         new ErrorResponse(
           "You have reached your usage limit for this coupon",
-          400
-        )
+          400,
+        ),
       );
     }
   }
 
-  // Calculate subtotal to check minimum purchase
   const subtotal = user.cart.items.reduce((total, item) => {
     return total + item.product.price * item.quantity;
   }, 0);
@@ -441,46 +447,42 @@ export const applyCoupon = asyncHandler(async (req, res, next) => {
     return next(
       new ErrorResponse(
         `Minimum purchase amount of $${coupon.minPurchaseAmount} required for this coupon`,
-        400
-      )
+        400,
+      ),
     );
   }
 
-  // Check if coupon applies to specific categories
   if (coupon.categories && coupon.categories.length > 0) {
     const hasValidCategory = user.cart.items.some((item) =>
-      coupon.categories.includes(item.product.category?.toString())
+      coupon.categories.includes(item.product.category?.toString()),
     );
 
     if (!hasValidCategory) {
       return next(
-        new ErrorResponse("Coupon does not apply to items in your cart", 400)
+        new ErrorResponse("Coupon does not apply to items in your cart", 400),
       );
     }
   }
 
-  // Check if coupon applies to specific products
   if (coupon.products && coupon.products.length > 0) {
     const cartProductIds = user.cart.items.map((item) =>
-      item.product._id.toString()
+      item.product._id.toString(),
     );
     const hasValidProduct = cartProductIds.some((productId) =>
-      coupon.products.includes(productId)
+      coupon.products.includes(productId),
     );
 
     if (!hasValidProduct) {
       return next(
-        new ErrorResponse("Coupon does not apply to items in your cart", 400)
+        new ErrorResponse("Coupon does not apply to items in your cart", 400),
       );
     }
   }
 
-  // Apply coupon to cart
   user.cart.coupon = coupon._id;
   user.cart.updatedAt = Date.now();
   await user.save();
 
-  // Calculate discount for response
   const discount = calculateDiscount(subtotal, coupon);
 
   res.status(200).json({
@@ -497,9 +499,6 @@ export const applyCoupon = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Remove coupon from cart
-// @route   DELETE /api/cart/coupon/remove
-// @access  Private
 export const removeCoupon = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
@@ -518,26 +517,20 @@ export const removeCoupon = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get cart summary
-// @route   GET /api/cart/summary
-// @access  Private
 export const getCartSummary = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id).populate({
     path: "cart.items.product",
     select: "name price images stock",
   });
 
-  // Filter out inactive products
   const validCartItems = user.cart.items.filter(
-    (item) => item.product && item.product.isActive
+    (item) => item.product && item.product.isActive,
   );
 
-  // Calculate subtotal
   const subtotal = validCartItems.reduce((total, item) => {
     return total + item.product.price * item.quantity;
   }, 0);
 
-  // Calculate discount if coupon exists
   let discount = 0;
   if (user.cart.coupon) {
     const coupon = await Coupon.findById(user.cart.coupon);
@@ -546,14 +539,11 @@ export const getCartSummary = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Calculate shipping
   const shippingCost = calculateShipping(validCartItems);
 
-  // Calculate tax
   const taxableAmount = subtotal - discount + shippingCost;
   const tax = calculateTax(taxableAmount);
 
-  // Calculate total
   const total = subtotal - discount + shippingCost + tax;
 
   res.status(200).json({
@@ -582,17 +572,13 @@ export const getCartSummary = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Move cart item to wishlist
-// @route   POST /api/cart/:itemId/move-to-wishlist
-// @access  Private
 export const moveToWishlist = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
 
   const user = await User.findById(req.user.id);
 
-  // Find item in cart
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId
+    (item) => item._id.toString() === itemId,
   );
 
   if (itemIndex === -1) {
@@ -602,9 +588,7 @@ export const moveToWishlist = asyncHandler(async (req, res, next) => {
   const cartItem = user.cart.items[itemIndex];
   const productId = cartItem.product;
 
-  // Check if product is already in wishlist
   if (user.wishlist.includes(productId)) {
-    // Remove from cart only
     user.cart.items.splice(itemIndex, 1);
     user.cart.updatedAt = Date.now();
     await user.save();
@@ -619,10 +603,8 @@ export const moveToWishlist = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Add to wishlist
   user.wishlist.push(productId);
 
-  // Remove from cart
   user.cart.items.splice(itemIndex, 1);
   user.cart.updatedAt = Date.now();
   await user.save();
@@ -638,11 +620,8 @@ export const moveToWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Merge cart (useful for guest to logged-in user conversion)
-// @route   POST /api/cart/merge
-// @access  Private
 export const mergeCart = asyncHandler(async (req, res, next) => {
-  const { guestCart } = req.body; // Array of { productId, quantity }
+  const { guestCart } = req.body;
 
   if (!guestCart || !Array.isArray(guestCart)) {
     return next(new ErrorResponse("Please provide guest cart items", 400));
@@ -653,19 +632,16 @@ export const mergeCart = asyncHandler(async (req, res, next) => {
   for (const guestItem of guestCart) {
     const { productId, quantity = 1 } = guestItem;
 
-    // Validate product
     const product = await Product.findById(productId);
     if (!product || !product.isActive) {
-      continue; // Skip invalid products
+      continue;
     }
 
-    // Check if product already in user's cart
     const existingItemIndex = user.cart.items.findIndex(
-      (item) => item.product.toString() === productId
+      (item) => item.product.toString() === productId,
     );
 
     if (existingItemIndex >= 0) {
-      // Update quantity, checking stock
       const newQuantity =
         user.cart.items[existingItemIndex].quantity + quantity;
       if (product.stock >= newQuantity) {
@@ -674,7 +650,6 @@ export const mergeCart = asyncHandler(async (req, res, next) => {
         user.cart.items[existingItemIndex].quantity = product.stock;
       }
     } else {
-      // Add new item, checking stock
       const addQuantity = Math.min(quantity, product.stock);
       if (addQuantity > 0) {
         user.cart.items.push({
@@ -689,10 +664,9 @@ export const mergeCart = asyncHandler(async (req, res, next) => {
   user.cart.updatedAt = Date.now();
   await user.save();
 
-  // Get updated cart count
   const itemCount = user.cart.items.reduce(
     (sum, item) => sum + item.quantity,
-    0
+    0,
   );
 
   res.status(200).json({
@@ -705,15 +679,12 @@ export const mergeCart = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get cart item count
-// @route   GET /api/cart/count
-// @access  Private
 export const getCartCount = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
   const itemCount = user.cart.items.reduce(
     (sum, item) => sum + item.quantity,
-    0
+    0,
   );
   const productCount = user.cart.items.length;
 

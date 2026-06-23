@@ -87,11 +87,35 @@ const userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
+
     cart: {
-      items: {
-        type: Array,
-        default: [],
-      },
+      items: [
+        {
+          product: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Product",
+            required: true,
+          },
+          quantity: {
+            type: Number,
+            required: true,
+            min: 1,
+            default: 1,
+          },
+          addedAt: {
+            type: Number,
+            default: Date.now,
+          },
+          priceAtAdd: {
+            type: Number,
+            min: 0,
+          },
+          color: String,
+          size: String,
+          variantId: String,
+          note: String,
+        },
+      ],
       updatedAt: {
         type: Date,
         default: Date.now,
@@ -100,7 +124,6 @@ const userSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "Coupon",
       },
-      couponCode: String,
       discountAmount: {
         type: Number,
         default: 0,
@@ -124,12 +147,10 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: "USD",
       },
-      notes: String,
       requiresShipping: {
         type: Boolean,
         default: true,
       },
-      lastValidatedAt: Date,
     },
     preferences: {
       newsletter: {

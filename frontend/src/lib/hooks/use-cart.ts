@@ -1,5 +1,3 @@
-"use client";
-
 import {
   useQuery,
   useMutation,
@@ -33,9 +31,12 @@ export const useCart = (
     queryFn: async () => {
       try {
         const response = await cartApi.getCart();
-        return response.data || null;
+
+        if (response && response.data) {
+          return response.data;
+        }
+        return null;
       } catch (error) {
-        console.error("Error fetching cart:", error);
         return null;
       }
     },
@@ -58,7 +59,6 @@ export const useCartCount = (
         const response = await cartApi.getCartCount();
         return response.data || { itemCount: 0, productCount: 0 };
       } catch (error) {
-        console.error("Error fetching cart count:", error);
         return { itemCount: 0, productCount: 0 };
       }
     },

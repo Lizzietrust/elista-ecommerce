@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Product from "../models/Product.js";
 import User from "../models/User.js";
 import Coupon from "../models/Coupon.js";
@@ -9,6 +10,8 @@ import {
   calculateShipping,
   calculateTax,
 } from "../utils/cartCalculations.js";
+
+const generateCartItemId = () => new mongoose.Types.ObjectId().toString();
 
 export const getCart = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id)
@@ -26,49 +29,33 @@ export const getCart = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("User not found", 404));
   }
 
-  console.log("Raw user cart:", user.cart);
-
   const validCartItems = user.cart.items.filter(
     (item) => item.product !== null && item.product !== undefined,
   );
 
-  console.log("Valid cart items:", validCartItems);
+  const formattedItems = validCartItems.map((item) => {
+    const itemObj = item.toObject ? item.toObject() : item;
 
-  if (validCartItems.length === 0 && user.cart.items.length > 0) {
-    console.log("Cart has items but products not populated properly");
-
-    const Product = mongoose.model("Product");
-    const itemsWithProducts = await Promise.all(
-      user.cart.items.map(async (item) => {
-        if (
-          item.product &&
-          typeof item.product !== "string" &&
-          item.product._id
-        ) {
-          return item;
-        }
-
-        const productId =
-          typeof item.product === "string" ? item.product : item.product?._id;
-        if (productId) {
-          const product = await Product.findById(productId).select(
-            "name price images slug stock isActive description",
-          );
-          if (product) {
-            return { ...item.toObject(), product };
-          }
-        }
-        return null;
-      }),
-    );
-
-    const manualItems = itemsWithProducts.filter((item) => item !== null);
-    if (manualItems.length > 0) {
-      validCartItems.push(...manualItems);
+    if (!itemObj._id) {
+      itemObj._id = generateCartItemId();
     }
+
+    return {
+      ...itemObj,
+      id: itemObj._id.toString(),
+      _id: itemObj._id.toString(),
+    };
+  });
+
+  if (formattedItems.some((item, index) => !validCartItems[index]._id)) {
+    user.cart.items = formattedItems.map((item) => ({
+      ...item,
+      _id: new mongoose.Types.ObjectId(item._id),
+    }));
+    await user.save();
   }
 
-  const subtotal = validCartItems.reduce((total, item) => {
+  const subtotal = formattedItems.reduce((total, item) => {
     const price = item.product?.price || item.priceAtAdd || 0;
     return total + price * item.quantity;
   }, 0);
@@ -84,7 +71,7 @@ export const getCart = asyncHandler(async (req, res, next) => {
     }
   }
 
-  const shippingCost = calculateShipping(validCartItems);
+  const shippingCost = calculateShipping(formattedItems);
   total += shippingCost;
 
   const tax = calculateTax(total);
@@ -93,16 +80,16 @@ export const getCart = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: {
-      items: validCartItems,
+      items: formattedItems,
       summary: {
         subtotal,
         discount,
         shipping: shippingCost,
         tax,
         total,
-        itemCount: validCartItems.reduce((sum, item) => sum + item.quantity, 0),
+        itemCount: formattedItems.reduce((sum, item) => sum + item.quantity, 0),
         coupon: user.cart.coupon || null,
-        productCount: validCartItems.length,
+        productCount: formattedItems.length,
       },
     },
   });
@@ -142,6 +129,7 @@ export const addToCart = asyncHandler(async (req, res, next) => {
     return match;
   });
 
+  let itemId;
   if (existingItemIndex >= 0) {
     const newQuantity = user.cart.items[existingItemIndex].quantity + quantity;
 
@@ -157,8 +145,14 @@ export const addToCart = asyncHandler(async (req, res, next) => {
     user.cart.items[existingItemIndex].quantity = newQuantity;
     user.cart.items[existingItemIndex].addedAt = Date.now();
     user.cart.items[existingItemIndex].priceAtAdd = product.price;
+
+    if (!user.cart.items[existingItemIndex]._id) {
+      user.cart.items[existingItemIndex]._id = new mongoose.Types.ObjectId();
+    }
+    itemId = user.cart.items[existingItemIndex]._id;
   } else {
     const newItem = {
+      _id: new mongoose.Types.ObjectId(),
       product: productId,
       quantity,
       addedAt: Date.now(),
@@ -169,6 +163,7 @@ export const addToCart = asyncHandler(async (req, res, next) => {
     if (size) newItem.size = size;
 
     user.cart.items.push(newItem);
+    itemId = newItem._id;
   }
 
   user.cart.updatedAt = Date.now();
@@ -187,6 +182,7 @@ export const addToCart = asyncHandler(async (req, res, next) => {
     data: {
       items: validItems,
       itemCount: validItems.reduce((sum, item) => sum + item.quantity, 0),
+      addedItemId: itemId,
     },
   });
 });
@@ -198,7 +194,7 @@ export const updateCartItem = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId,
+    (item) => item._id?.toString() === itemId,
   );
 
   if (itemIndex === -1) {
@@ -275,7 +271,11 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
   const { quantity, operation } = req.body;
 
-  if (!quantity && operation !== "increment" && operation !== "decrement") {
+  if (
+    quantity === undefined &&
+    operation !== "increment" &&
+    operation !== "decrement"
+  ) {
     return next(
       new ErrorResponse(
         "Please provide quantity or specify operation (increment/decrement)",
@@ -285,15 +285,54 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new ErrorResponse("User not found", 404));
+  }
 
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId,
+    (item) => item._id?.toString() === itemId.toString(),
   );
 
   if (itemIndex === -1) {
+    const productItemIndex = user.cart.items.findIndex(
+      (item) => item.product?.toString() === itemId.toString(),
+    );
+
+    if (productItemIndex !== -1) {
+      if (!user.cart.items[productItemIndex]._id) {
+        user.cart.items[productItemIndex]._id = new mongoose.Types.ObjectId();
+        await user.save();
+      }
+
+      return updateItemQuantity(
+        user,
+        productItemIndex,
+        quantity,
+        operation,
+        res,
+        next,
+      );
+    }
+
     return next(new ErrorResponse("Item not found in cart", 404));
   }
 
+  if (!user.cart.items[itemIndex]._id) {
+    user.cart.items[itemIndex]._id = new mongoose.Types.ObjectId();
+    await user.save();
+  }
+
+  return updateItemQuantity(user, itemIndex, quantity, operation, res, next);
+});
+
+async function updateItemQuantity(
+  user,
+  itemIndex,
+  quantity,
+  operation,
+  res,
+  next,
+) {
   const cartItem = user.cart.items[itemIndex];
   let newQuantity = cartItem.quantity;
 
@@ -301,13 +340,32 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
     newQuantity += 1;
   } else if (operation === "decrement") {
     newQuantity -= 1;
-  } else {
+  } else if (quantity !== undefined) {
     newQuantity = quantity;
   }
 
+  if (newQuantity <= 0) {
+    user.cart.items.splice(itemIndex, 1);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Item removed from cart",
+      data: {
+        itemId: cartItem._id,
+        quantity: 0,
+        removed: true,
+      },
+    });
+  }
+
   const product = await Product.findById(cartItem.product);
-  if (!product || !product.isActive) {
-    return next(new ErrorResponse("Product not found or inactive", 404));
+  if (!product) {
+    return next(new ErrorResponse("Product not found", 404));
+  }
+
+  if (!product.isActive) {
+    return next(new ErrorResponse("Product is not available", 400));
   }
 
   if (product.stock < newQuantity) {
@@ -319,34 +377,33 @@ export const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
     );
   }
 
-  if (newQuantity <= 0) {
-    user.cart.items.splice(itemIndex, 1);
-  } else {
-    cartItem.quantity = newQuantity;
-    cartItem.addedAt = Date.now();
-  }
-
+  cartItem.quantity = newQuantity;
+  cartItem.addedAt = Date.now();
   user.cart.updatedAt = Date.now();
+
   await user.save();
 
   res.status(200).json({
     success: true,
     message: "Cart item quantity updated successfully",
     data: {
-      itemId,
-      quantity: newQuantity > 0 ? newQuantity : 0,
-      removed: newQuantity <= 0,
+      itemId: cartItem._id,
+      quantity: newQuantity,
+      removed: false,
     },
   });
-});
+}
 
 export const removeFromCart = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
 
   const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new ErrorResponse("User not found", 404));
+  }
 
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId,
+    (item) => item._id?.toString() === itemId.toString(),
   );
 
   if (itemIndex === -1) {
@@ -357,12 +414,17 @@ export const removeFromCart = asyncHandler(async (req, res, next) => {
   user.cart.updatedAt = Date.now();
   await user.save();
 
+  const itemCount = user.cart.items.reduce(
+    (sum, item) => sum + item.quantity,
+    0,
+  );
+
   res.status(200).json({
     success: true,
     message: "Item removed from cart successfully",
     data: {
       itemId,
-      itemCount: user.cart.items.reduce((sum, item) => sum + item.quantity, 0),
+      itemCount,
     },
   });
 });
@@ -578,7 +640,7 @@ export const moveToWishlist = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
   const itemIndex = user.cart.items.findIndex(
-    (item) => item._id.toString() === itemId,
+    (item) => item._id?.toString() === itemId,
   );
 
   if (itemIndex === -1) {
@@ -653,9 +715,11 @@ export const mergeCart = asyncHandler(async (req, res, next) => {
       const addQuantity = Math.min(quantity, product.stock);
       if (addQuantity > 0) {
         user.cart.items.push({
+          _id: new mongoose.Types.ObjectId(),
           product: productId,
           quantity: addQuantity,
           addedAt: Date.now(),
+          priceAtAdd: product.price,
         });
       }
     }

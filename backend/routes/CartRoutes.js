@@ -29,7 +29,6 @@ router.get("/summary", getCartSummary);
 router.get("/count", getCartCount);
 router.post("/add", validateCartItem, addToCart);
 router.put("/:itemId", updateCartItem);
-router.patch("/:itemId/quantity", updateCartItemQuantity);
 router.patch("/:itemId/quantity", validateCartQuantity, updateCartItemQuantity);
 router.delete("/:itemId", removeFromCart);
 router.delete("/", clearCart);

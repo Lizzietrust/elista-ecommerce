@@ -91,6 +91,11 @@ const userSchema = new mongoose.Schema(
     cart: {
       items: [
         {
+          _id: {
+            type: mongoose.Schema.Types.ObjectId,
+            default: () => new mongoose.Types.ObjectId(),
+            auto: true,
+          },
           product: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Product",

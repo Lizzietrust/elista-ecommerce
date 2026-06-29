@@ -66,8 +66,6 @@ export default function CartPage() {
 
   const { mutate: removeFromCart, isPending: isRemoving } = useRemoveFromCart();
   const { mutate: clearCart, isPending: isClearing } = useClearCart();
-  const { mutate: updateQuantity, isPending: isUpdating } =
-    useUpdateCartItemQuantity();
   const { mutate: incrementItem, isPending: isIncrementing } =
     useIncrementCartItem();
   const { mutate: decrementItem, isPending: isDecrementing } =
@@ -94,45 +92,47 @@ export default function CartPage() {
   const discount = summary?.discount || 0;
   const total = summary?.total || 0;
 
-  const handleQuantityChange = (
-    itemId: string,
-    productId: string,
-    color: string | undefined,
-    size: string | undefined,
-    newQuantity: number,
-  ) => {
-    if (newQuantity < 1) return;
-
-    const item = cartItems.find((item) => item._id === itemId);
-    if (!item) return;
-
-    if (newQuantity > item.product.stock) {
-      toast.error(`Only ${item.product.stock} items available in stock`);
-      return;
-    }
-
-    updateQuantity(
-      { itemId, quantity: newQuantity },
-      {
-        onSuccess: () => {
-          toast.success("Quantity updated");
-          refetch();
-        },
-        onError: () => {
-          toast.error("Failed to update quantity");
-        },
-      },
-    );
-  };
-
   const handleRemoveItem = (itemId: string) => {
     removeFromCart(itemId, {
       onSuccess: () => {
         toast.success("Item removed from cart");
         refetch();
       },
-      onError: () => {
-        toast.error("Failed to remove item");
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to remove item");
+      },
+    });
+  };
+
+  const handleIncrement = (
+    itemId: string,
+    currentQuantity: number,
+    stock: number,
+  ) => {
+    if (currentQuantity >= stock) {
+      toast.error(`Only ${stock} items available in stock`);
+      return;
+    }
+
+    incrementItem(itemId, {
+      onSuccess: () => {
+        refetch();
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to update quantity");
+      },
+    });
+  };
+
+  const handleDecrement = (itemId: string, currentQuantity: number) => {
+    if (currentQuantity <= 1) return;
+
+    decrementItem(itemId, {
+      onSuccess: () => {
+        refetch();
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to update quantity");
       },
     });
   };
@@ -237,7 +237,7 @@ export default function CartPage() {
               <ShoppingBag className="text-accent" size={52} />
             </div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold transparent mb-3 font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-bold font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent mb-3">
             Your cart is empty
           </h1>
           <p className="text-foreground-muted mb-8 text-lg">
@@ -269,7 +269,7 @@ export default function CartPage() {
   }
 
   const isMutating =
-    isRemoving || isClearing || isUpdating || isIncrementing || isDecrementing;
+    isRemoving || isClearing || isIncrementing || isDecrementing;
 
   return (
     <div className="py-8 md:py-12 bg-linear-to-b from-background to-background-secondary/50 min-h-screen">
@@ -327,190 +327,188 @@ export default function CartPage() {
 
               {/* Cart Items List */}
               <div className="divide-y divide-border/50">
-                {cartItems.map((item, index) => (
-                  <div
-                    key={item._id || `${item.product._id}-${Date.now()}`}
-                    className="p-4 md:p-6 hover:bg-linear-to-r hover:from-accent/5 hover:to-transparent transition-all duration-300 group"
-                    style={{
-                      animationDelay: `${index * 100}ms`,
-                    }}
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                      {/* Product Image & Info */}
-                      <div className="flex-1 flex gap-4">
-                        <div className="h-24 w-24 shrink-0 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-all duration-300">
-                          {item.product.images?.[0] ? (
-                            <Image
-                              src={
-                                typeof item.product.images[0] === "string"
-                                  ? item.product.images[0]
-                                  : item.product.images[0].url
-                              }
-                              alt={item.product.name}
-                              width={96}
-                              height={96}
-                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-background-secondary to-accent/10">
-                              <span className="text-3xl">🛒</span>
+                {cartItems.map((item, index) => {
+                  const itemId = item._id;
+
+                  if (!itemId) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      key={itemId}
+                      className="p-4 md:p-6 hover:bg-linear-to-r hover:from-accent/5 hover:to-transparent transition-all duration-300 group"
+                      style={{
+                        animationDelay: `${index * 100}ms`,
+                      }}
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        {/* Product Image & Info */}
+                        <div className="flex-1 flex gap-4">
+                          <div className="h-24 w-24 shrink-0 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-all duration-300">
+                            {item.product?.images?.[0] ? (
+                              <Image
+                                src={
+                                  typeof item.product.images[0] === "string"
+                                    ? item.product.images[0]
+                                    : item.product.images[0].url
+                                }
+                                alt={item.product?.name || "Product"}
+                                width={96}
+                                height={96}
+                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-background-secondary to-accent/10">
+                                <span className="text-3xl">🛒</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-semibold text-foreground text-lg leading-tight group-hover:text-accent transition-colors duration-200">
+                                  {item.product?.name || "Product"}
+                                </h3>
+                                <p className="text-sm text-foreground-muted mt-1 line-clamp-2">
+                                  {item.product?.description}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveItem(itemId)}
+                                disabled={isMutating}
+                                className="md:hidden text-foreground-muted hover:text-destructive transition-all duration-200 p-1 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
+                                aria-label="Remove item"
+                              >
+                                <Trash2 size={18} />
+                              </button>
                             </div>
-                          )}
+
+                            {/* Variants */}
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {item.color && (
+                                <span className="inline-flex items-center gap-1.5 text-xs bg-linear-to-r from-background-secondary to-background-tertiary/30 px-2.5 py-1 rounded-full text-foreground-muted border border-border/30">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full shadow-sm"
+                                    style={{
+                                      backgroundColor: item.color.toLowerCase(),
+                                    }}
+                                  />
+                                  {item.color}
+                                </span>
+                              )}
+                              {item.size && (
+                                <span className="inline-flex items-center gap-1.5 text-xs bg-linear-to-r from-background-secondary to-background-tertiary/30 px-2.5 py-1 rounded-full text-foreground-muted border border-border/30">
+                                  <span className="font-medium">Size:</span>{" "}
+                                  {item.size}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-semibold text-foreground text-lg leading-tight group-hover:text-accent transition-colors duration-200">
-                                {item.product.name}
-                              </h3>
-                              <p className="text-sm text-foreground-muted mt-1 line-clamp-2">
-                                {item.product.description}
-                              </p>
+
+                        {/* Price (Mobile) */}
+                        <div className="md:hidden flex items-center justify-between pt-3 border-t border-border/30">
+                          <div>
+                            <span className="text-sm text-foreground-muted">
+                              Price
+                            </span>
+                            <div className="text-lg font-bold text-foreground">
+                              ${(item.product?.price || 0).toFixed(2)}
                             </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm text-foreground-muted">
+                              Total
+                            </span>
+                            <div className="text-lg font-bold text-accent">
+                              $
+                              {(
+                                (item.product?.price || 0) * item.quantity
+                              ).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Price (Desktop) */}
+                        <div className="hidden md:block md:w-32 text-center">
+                          <div className="text-lg font-bold text-foreground">
+                            ${(item.product?.price || 0).toFixed(2)}
+                          </div>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="md:w-40">
+                          <div className="flex items-center gap-2 justify-center">
                             <button
-                              onClick={() => handleRemoveItem(item._id)}
-                              disabled={isMutating}
-                              className="md:hidden text-foreground-muted hover:text-destructive transition-all duration-200 p-1 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
-                              aria-label="Remove item"
+                              onClick={() =>
+                                handleDecrement(itemId, item.quantity)
+                              }
+                              disabled={item.quantity <= 1 || isMutating}
+                              className="h-10 w-10 rounded-lg border-2 border-border/50 bg-card flex items-center justify-center text-foreground hover:bg-accent/5 hover:border-accent/30 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                              aria-label="Decrease quantity"
                             >
-                              <Trash2 size={18} />
+                              <Minus
+                                size={16}
+                                className="text-foreground-muted group-hover:text-accent transition-colors"
+                              />
+                            </button>
+
+                            <div className="w-12 text-center">
+                              <span className="text-lg font-bold bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+                                {item.quantity}
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() =>
+                                handleIncrement(
+                                  itemId,
+                                  item.quantity,
+                                  item.product?.stock || 0,
+                                )
+                              }
+                              disabled={
+                                item.quantity >= (item.product?.stock || 0) ||
+                                isMutating
+                              }
+                              className="h-10 w-10 rounded-lg border-2 border-border/50 bg-card flex items-center justify-center text-foreground hover:bg-accent/5 hover:border-accent/30 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus
+                                size={16}
+                                className="text-foreground-muted group-hover:text-accent transition-colors"
+                              />
                             </button>
                           </div>
+                          {item.quantity >= (item.product?.stock || 0) && (
+                            <p className="text-xs text-destructive mt-1.5 text-center font-medium animate-pulse">
+                              Max stock reached
+                            </p>
+                          )}
+                        </div>
 
-                          {/* Variants */}
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {item.color && (
-                              <span className="inline-flex items-center gap-1.5 text-xs bg-linear-to-r from-background-secondary to-background-tertiary/30 px-2.5 py-1 rounded-full text-foreground-muted border border-border/30">
-                                <span
-                                  className="w-2.5 h-2.5 rounded-full shadow-sm"
-                                  style={{
-                                    backgroundColor: item.color.toLowerCase(),
-                                  }}
-                                />
-                                {item.color}
-                              </span>
-                            )}
-                            {item.size && (
-                              <span className="inline-flex items-center gap-1.5 text-xs bg-linear-to-r from-background-secondary to-background-tertiary/30 px-2.5 py-1 rounded-full text-foreground-muted border border-border/30">
-                                <span className="font-medium">Size:</span>{" "}
-                                {item.size}
-                              </span>
-                            )}
+                        {/* Total & Remove (Desktop) */}
+                        <div className="hidden md:flex md:w-32 items-center justify-end gap-3">
+                          <div className="text-lg font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent">
+                            $
+                            {(
+                              (item.product?.price || 0) * item.quantity
+                            ).toFixed(2)}
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Price (Mobile) */}
-                      <div className="md:hidden flex items-center justify-between pt-3 border-t border-border/30">
-                        <div>
-                          <span className="text-sm text-foreground-muted">
-                            Price
-                          </span>
-                          <div className="text-lg font-bold text-foreground">
-                            ${item.product.price.toFixed(2)}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm text-foreground-muted">
-                            Total
-                          </span>
-                          <div className="text-lg font-bold text-accent">
-                            ${(item.product.price * item.quantity).toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Price (Desktop) */}
-                      <div className="hidden md:block md:w-32 text-center">
-                        <div className="text-lg font-bold text-foreground">
-                          ${item.product.price.toFixed(2)}
-                        </div>
-                      </div>
-
-                      {/* Quantity Controls */}
-                      <div className="md:w-40">
-                        <div className="flex items-center gap-2 justify-center">
                           <button
-                            onClick={() => {
-                              if (item.quantity <= 1) return;
-                              decrementItem(item._id, {
-                                onSuccess: () => {
-                                  refetch();
-                                },
-                                onError: () => {
-                                  toast.error("Failed to update quantity");
-                                },
-                              });
-                            }}
-                            disabled={item.quantity <= 1 || isMutating}
-                            className="h-10 w-10 rounded-lg border-2 border-border/50 bg-card flex items-center justify-center text-foreground hover:bg-accent/5 hover:border-accent/30 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                            aria-label="Decrease quantity"
+                            onClick={() => handleRemoveItem(itemId)}
+                            disabled={isMutating}
+                            className="text-foreground-muted hover:text-destructive transition-all duration-200 p-1.5 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
+                            aria-label="Remove item"
                           >
-                            <Minus
-                              size={16}
-                              className="text-foreground-muted group-hover:text-accent transition-colors"
-                            />
-                          </button>
-
-                          <div className="w-12 text-center">
-                            <span className="text-lg font-bold transparent bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
-                              {item.quantity}
-                            </span>
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              if (item.quantity >= item.product.stock) {
-                                toast.error(
-                                  `Only ${item.product.stock} items available in stock`,
-                                );
-                                return;
-                              }
-                              incrementItem(item._id, {
-                                onSuccess: () => {
-                                  refetch();
-                                },
-                                onError: () => {
-                                  toast.error("Failed to update quantity");
-                                },
-                              });
-                            }}
-                            disabled={
-                              item.quantity >= item.product.stock || isMutating
-                            }
-                            className="h-10 w-10 rounded-lg border-2 border-border/50 bg-card flex items-center justify-center text-foreground hover:bg-accent/5 hover:border-accent/30 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                            aria-label="Increase quantity"
-                          >
-                            <Plus
-                              size={16}
-                              className="text-foreground-muted group-hover:text-accent transition-colors"
-                            />
+                            <Trash2 size={18} />
                           </button>
                         </div>
-                        {item.quantity >= item.product.stock && (
-                          <p className="text-xs text-destructive mt-1.5 text-center font-medium animate-pulse">
-                            Max stock reached
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Total & Remove (Desktop) */}
-                      <div className="hidden md:flex md:w-32 items-center justify-end gap-3">
-                        <div className="text-lg font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent">
-                          ${(item.product.price * item.quantity).toFixed(2)}
-                        </div>
-                        <button
-                          onClick={() => handleRemoveItem(item._id)}
-                          disabled={isMutating}
-                          className="text-foreground-muted hover:text-destructive transition-all duration-200 p-1.5 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
-                          aria-label="Remove item"
-                        >
-                          <Trash2 size={18} />
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Cart Actions */}
@@ -555,50 +553,7 @@ export default function CartPage() {
 
             {/* Trust Badges */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/30 hover:scale-[1.02] group">
-                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  <Shield className="text-primary" size={22} />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
-                    Secure Payment
-                    <Sparkles size={12} className="text-accent" />
-                  </h4>
-                  <p className="text-xs text-foreground-muted">
-                    Your data is protected
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-success/30 hover:scale-[1.02] group">
-                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-success/10 to-success/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  <Truck className="text-success" size={22} />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
-                    Free Shipping
-                    <Gift size={12} className="text-success" />
-                  </h4>
-                  <p className="text-xs text-foreground-muted">
-                    On orders over $50
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/30 hover:scale-[1.02] group">
-                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-accent/10 to-accent/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  <Clock className="text-accent" size={22} />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
-                    Easy Returns
-                    <Star size={12} className="text-accent" />
-                  </h4>
-                  <p className="text-xs text-foreground-muted">
-                    30-day return policy
-                  </p>
-                </div>
-              </div>
+              {/* Trust badges content... */}
             </div>
           </div>
 

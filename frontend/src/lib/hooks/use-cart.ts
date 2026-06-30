@@ -294,3 +294,20 @@ export const useMergeCart = () => {
     },
   });
 };
+
+export const useAvailableCoupons = () => {
+  return useQuery({
+    queryKey: ["available-coupons"],
+    queryFn: async () => {
+      try {
+        const response = await cartApi.getAvailableCoupons();
+        return response.data || [];
+      } catch (error) {
+        console.error("Error fetching available coupons:", error);
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+  });
+};

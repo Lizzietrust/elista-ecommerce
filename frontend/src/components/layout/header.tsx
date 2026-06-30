@@ -369,7 +369,7 @@ export default function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="bg-card border-border w-56"
+                  className="bg-background border-border w-56"
                 >
                   {user && (
                     <div className="px-4 py-3 border-b border-border">

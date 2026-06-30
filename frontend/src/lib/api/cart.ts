@@ -1,4 +1,3 @@
-
 import { typedApiClient, BaseApiResponse } from "./client";
 import { Product } from "./products";
 
@@ -44,6 +43,16 @@ export interface CouponResponse {
     discountValue: number;
     discount: number;
   };
+}
+
+export interface AvailableCoupon {
+  _id: string;
+  code: string;
+  discountType: "percentage" | "fixed" | "free_shipping";
+  discountValue: number;
+  maxDiscountAmount?: number;
+  minPurchaseAmount?: number;
+  description?: string;
 }
 
 export const cartApi = {
@@ -174,6 +183,15 @@ export const cartApi = {
     const response = await typedApiClient.post<
       BaseApiResponse<{ itemsMerged: number; newItemCount: number }>
     >("/cart/merge", { guestCart });
+    return response;
+  },
+
+  getAvailableCoupons: async (): Promise<
+    BaseApiResponse<AvailableCoupon[]>
+  > => {
+    const response = await typedApiClient.get<
+      BaseApiResponse<AvailableCoupon[]>
+    >("/cart/coupons/available");
     return response;
   },
 };

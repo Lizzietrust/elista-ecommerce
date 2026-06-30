@@ -760,3 +760,23 @@ export const getCartCount = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
+export const getAvailableCoupons = asyncHandler(async (req, res, next) => {
+  const now = new Date();
+
+  const coupons = await Coupon.find({
+    isActive: true,
+    validFrom: { $lte: now },
+    validUntil: { $gt: now },
+  })
+    .select(
+      "code discountType discountValue maxDiscountAmount minPurchaseAmount description",
+    )
+    .sort({ validUntil: 1 })
+    .limit(10);
+
+  res.status(200).json({
+    success: true,
+    data: coupons,
+  });
+});

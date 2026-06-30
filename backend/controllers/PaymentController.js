@@ -8,16 +8,12 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Check if Stripe secret key exists
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error("STRIPE_SECRET_KEY is not set in environment variables");
-  // You could throw an error here or handle it gracefully
-  // For now, we'll create a dummy stripe instance that will fail gracefully
 }
 
 console.log("STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY);
 
-// Initialize Stripe with error handling
 let stripe;
 try {
   stripe = new Stripe(
@@ -28,7 +24,6 @@ try {
   stripe = null;
 }
 
-// Helper function to check if Stripe is available
 const isStripeAvailable = () => {
   if (!stripe) {
     console.error(
@@ -45,9 +40,6 @@ const isStripeAvailable = () => {
   return true;
 };
 
-// @desc    Create Stripe payment intent
-// @route   POST /api/payments/create-intent
-// @access  Private
 export const createPaymentIntent = asyncHandler(async (req, res, next) => {
   const { orderId, savePaymentMethod = false } = req.body;
 
@@ -55,29 +47,24 @@ export const createPaymentIntent = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Order ID is required", 400));
   }
 
-  // Find order
   const order = await Order.findById(orderId).populate("user", "email name");
 
   if (!order) {
     return next(new ErrorResponse("Order not found", 404));
   }
 
-  // Verify order belongs to user
   if (order.user._id.toString() !== req.user.id) {
     return next(new ErrorResponse("Not authorized to pay for this order", 403));
   }
 
-  // Check if order is already paid
   if (order.isPaid) {
     return next(new ErrorResponse("Order is already paid", 400));
   }
 
-  // Check if order can be paid
   if (order.orderStatus === "cancelled") {
     return next(new ErrorResponse("Cannot pay a cancelled order", 400));
   }
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return next(
       new ErrorResponse(
@@ -88,7 +75,6 @@ export const createPaymentIntent = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Create or retrieve Stripe customer
     let customer;
 
     if (req.user.stripeCustomerId) {
@@ -102,15 +88,13 @@ export const createPaymentIntent = asyncHandler(async (req, res, next) => {
         },
       });
 
-      // Save Stripe customer ID to user
       await User.findByIdAndUpdate(req.user.id, {
         stripeCustomerId: customer.id,
       });
     }
 
-    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(order.totalPrice * 100), // Convert to cents
+      amount: Math.round(order.totalPrice * 100),
       currency: "usd",
       customer: customer.id,
       metadata: {
@@ -121,7 +105,6 @@ export const createPaymentIntent = asyncHandler(async (req, res, next) => {
       setup_future_usage: savePaymentMethod ? "off_session" : undefined,
     });
 
-    // Create payment record
     const payment = await Payment.create({
       user: req.user.id,
       order: order._id,
@@ -152,9 +135,6 @@ export const createPaymentIntent = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Create Stripe checkout session
-// @route   POST /api/payments/checkout-session
-// @access  Private
 export const createStripeCheckoutSession = asyncHandler(
   async (req, res, next) => {
     const { orderId, successUrl, cancelUrl } = req.body;
@@ -182,7 +162,6 @@ export const createStripeCheckoutSession = asyncHandler(
       return next(new ErrorResponse("Order is already paid", 400));
     }
 
-    // Check if Stripe is available
     if (!isStripeAvailable()) {
       return next(
         new ErrorResponse(
@@ -193,7 +172,6 @@ export const createStripeCheckoutSession = asyncHandler(
     }
 
     try {
-      // Create or retrieve Stripe customer
       let customerId = req.user.stripeCustomerId;
 
       if (!customerId) {
@@ -209,7 +187,6 @@ export const createStripeCheckoutSession = asyncHandler(
         });
       }
 
-      // Create checkout session
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ["card"],
@@ -238,7 +215,6 @@ export const createStripeCheckoutSession = asyncHandler(
         billing_address_collection: "required",
       });
 
-      // Create payment record
       await Payment.create({
         user: req.user.id,
         order: order._id,
@@ -269,11 +245,7 @@ export const createStripeCheckoutSession = asyncHandler(
   },
 );
 
-// @desc    Get user's payment methods
-// @route   GET /api/payments/methods
-// @access  Private
 export const getPaymentMethods = asyncHandler(async (req, res, next) => {
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return res.status(200).json({
       success: true,
@@ -312,9 +284,6 @@ export const getPaymentMethods = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Add payment method
-// @route   POST /api/payments/methods
-// @access  Private
 export const addPaymentMethod = asyncHandler(async (req, res, next) => {
   const { paymentMethodId, type = "card" } = req.body;
 
@@ -322,7 +291,6 @@ export const addPaymentMethod = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Payment method ID is required", 400));
   }
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return next(
       new ErrorResponse(
@@ -334,9 +302,7 @@ export const addPaymentMethod = asyncHandler(async (req, res, next) => {
 
   try {
     if (type === "card") {
-      // Attach payment method to Stripe customer
       if (!req.user.stripeCustomerId) {
-        // Create customer first
         const customer = await stripe.customers.create({
           email: req.user.email,
           name: req.user.name,
@@ -367,13 +333,9 @@ export const addPaymentMethod = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Remove payment method
-// @route   DELETE /api/payments/methods/:methodId
-// @access  Private
 export const removePaymentMethod = asyncHandler(async (req, res, next) => {
   const { methodId } = req.params;
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return next(
       new ErrorResponse(
@@ -401,13 +363,9 @@ export const removePaymentMethod = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Set default payment method
-// @route   PUT /api/payments/methods/:methodId/default
-// @access  Private
 export const setDefaultPaymentMethod = asyncHandler(async (req, res, next) => {
   const { methodId } = req.params;
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return next(
       new ErrorResponse(
@@ -424,7 +382,6 @@ export const setDefaultPaymentMethod = asyncHandler(async (req, res, next) => {
       },
     });
 
-    // Also update in your database if you store default payment method
     await User.findByIdAndUpdate(req.user.id, {
       defaultPaymentMethod: methodId,
     });
@@ -444,9 +401,6 @@ export const setDefaultPaymentMethod = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Get payment history
-// @route   GET /api/payments/history
-// @access  Private
 export const getPaymentHistory = asyncHandler(async (req, res, next) => {
   const { page = 1, limit = 10, status } = req.query;
 
@@ -485,9 +439,6 @@ export const getPaymentHistory = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get payment details
-// @route   GET /api/payments/:paymentId
-// @access  Private
 export const getPaymentDetails = asyncHandler(async (req, res, next) => {
   const payment = await Payment.findById(req.params.paymentId)
     .populate({
@@ -504,7 +455,6 @@ export const getPaymentDetails = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Payment not found", 404));
   }
 
-  // Check authorization
   if (
     payment.user._id.toString() !== req.user.id &&
     req.user.role !== "admin"
@@ -518,9 +468,6 @@ export const getPaymentDetails = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Refund payment (admin only)
-// @route   POST /api/payments/:paymentId/refund
-// @access  Private/Admin
 export const refundPayment = asyncHandler(async (req, res, next) => {
   const { paymentId } = req.params;
   const { amount, reason } = req.body;
@@ -541,7 +488,6 @@ export const refundPayment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Payment is already refunded", 400));
   }
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return next(
       new ErrorResponse(
@@ -566,7 +512,6 @@ export const refundPayment = asyncHandler(async (req, res, next) => {
       );
     }
 
-    // Update payment record
     payment.refunded = true;
     payment.refundId = refund.id;
     payment.refundedAt = new Date();
@@ -574,17 +519,13 @@ export const refundPayment = asyncHandler(async (req, res, next) => {
     payment.refundReason = reason;
     await payment.save();
 
-    // Update order status
     const order = payment.order;
     order.paymentStatus = "refunded";
     order.orderStatus = "refunded";
     await order.save();
 
-    // Send refund confirmation email (if you have email service)
     const user = await User.findById(payment.user);
     if (user) {
-      // Uncomment when you have email service
-      // await sendRefundEmail(user, payment, order, refund);
     }
 
     res.status(200).json({
@@ -603,14 +544,10 @@ export const refundPayment = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Handle Stripe webhook
-// @route   POST /api/payments/webhook
-// @access  Public
 export const handleStripeWebhook = asyncHandler(async (req, res, next) => {
   const sig = req.headers["stripe-signature"];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     console.error("Stripe webhook received but Stripe not configured");
     return res.status(400).send("Stripe not configured");
@@ -625,7 +562,6 @@ export const handleStripeWebhook = asyncHandler(async (req, res, next) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the event
   switch (event.type) {
     case "payment_intent.succeeded":
       const paymentIntent = event.data.object;
@@ -654,7 +590,6 @@ export const handleStripeWebhook = asyncHandler(async (req, res, next) => {
   res.json({ received: true });
 });
 
-// Helper functions for webhook handling
 const handleSuccessfulPayment = async (paymentIntent) => {
   try {
     const payment = await Payment.findOneAndUpdate(
@@ -727,9 +662,6 @@ const handleChargeRefunded = async (charge) => {
   }
 };
 
-// @desc    Create payment intent for cart items
-// @route   POST /api/payments/create-cart-payment
-// @access  Private
 export const createCartPayment = asyncHandler(async (req, res, next) => {
   const { items, shippingAddress, savePaymentMethod = false } = req.body;
 
@@ -741,12 +673,10 @@ export const createCartPayment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Shipping address is required", 400));
   }
 
-  // Calculate total amount
   const totalAmount = items.reduce((total, item) => {
     return total + item.price * item.quantity;
   }, 0);
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return next(
       new ErrorResponse(
@@ -757,7 +687,6 @@ export const createCartPayment = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Create or retrieve Stripe customer
     let customer;
 
     if (req.user.stripeCustomerId) {
@@ -771,15 +700,13 @@ export const createCartPayment = asyncHandler(async (req, res, next) => {
         },
       });
 
-      // Save Stripe customer ID to user
       await User.findByIdAndUpdate(req.user.id, {
         stripeCustomerId: customer.id,
       });
     }
 
-    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100), // Convert to cents
+      amount: Math.round(totalAmount * 100),
       currency: "usd",
       customer: customer.id,
       metadata: {
@@ -806,9 +733,6 @@ export const createCartPayment = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Confirm payment
-// @route   POST /api/payments/confirm
-// @access  Private
 export const confirmPayment = asyncHandler(async (req, res, next) => {
   const { paymentIntentId, orderId } = req.body;
 
@@ -816,7 +740,6 @@ export const confirmPayment = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Payment intent ID is required", 400));
   }
 
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return next(
       new ErrorResponse(
@@ -827,11 +750,9 @@ export const confirmPayment = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status === "succeeded") {
-      // If orderId is provided, update order
       if (orderId) {
         const order = await Order.findById(orderId);
         if (order) {
@@ -872,11 +793,7 @@ export const confirmPayment = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Test Stripe connection
-// @route   GET /api/payments/test
-// @access  Public
 export const testStripeConnection = asyncHandler(async (req, res, next) => {
-  // Check if Stripe is available
   if (!isStripeAvailable()) {
     return res.status(503).json({
       success: false,
@@ -886,7 +803,6 @@ export const testStripeConnection = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Simple test to check Stripe API key
     const balance = await stripe.balance.retrieve();
 
     res.status(200).json({
@@ -908,3 +824,35 @@ export const testStripeConnection = asyncHandler(async (req, res, next) => {
     });
   }
 });
+
+export const getAvailablePaymentMethods = asyncHandler(
+  async (req, res, next) => {
+    const paymentMethods = [
+      {
+        id: "stripe",
+        name: "Credit / Debit Card",
+        type: "card",
+        icon: "💳",
+        description: "Pay securely with your credit or debit card",
+        isActive: true,
+        isAvailable: true,
+        brands: ["Visa", "Mastercard", "Amex", "Discover"],
+      },
+      {
+        id: "paypal",
+        name: "PayPal",
+        type: "paypal",
+        icon: "🅿️",
+        description: "Pay with your PayPal account",
+        isActive: false,
+        isAvailable: false,
+        comingSoon: true,
+      },
+    ];
+
+    res.status(200).json({
+      success: true,
+      data: paymentMethods,
+    });
+  },
+);

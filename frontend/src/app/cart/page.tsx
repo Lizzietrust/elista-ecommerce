@@ -20,6 +20,7 @@ import {
   Gift,
   Clock,
   Star,
+  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
@@ -27,20 +28,15 @@ import {
   useCart,
   useRemoveFromCart,
   useClearCart,
-  useUpdateCartItemQuantity,
   useIncrementCartItem,
   useDecrementCartItem,
   useApplyCoupon,
   useRemoveCoupon,
+  useMoveToWishlist,
+  useAvailableCoupons,
 } from "@/lib/hooks/use-cart";
 import { useAuth } from "@/providers/auth-provider";
 import { useRouter } from "next/navigation";
-
-const promoCodes = [
-  { code: "WELCOME10", discount: 10, description: "10% off first order" },
-  { code: "SAVE20", discount: 20, description: "20% off orders over $100" },
-  { code: "FREESHIP", discount: 0, description: "Free shipping on all orders" },
-];
 
 export default function CartPage() {
   const router = useRouter();
@@ -64,6 +60,9 @@ export default function CartPage() {
     enabled: isAuthenticated,
   });
 
+  const { data: availableCoupons, isLoading: isCouponsLoading } =
+    useAvailableCoupons();
+
   const { mutate: removeFromCart, isPending: isRemoving } = useRemoveFromCart();
   const { mutate: clearCart, isPending: isClearing } = useClearCart();
   const { mutate: incrementItem, isPending: isIncrementing } =
@@ -73,6 +72,8 @@ export default function CartPage() {
   const { mutate: applyCoupon, isPending: isApplyingCoupon } = useApplyCoupon();
   const { mutate: removeCoupon, isPending: isRemovingCoupon } =
     useRemoveCoupon();
+  const { mutate: moveToWishlist, isPending: isMovingToWishlist } =
+    useMoveToWishlist();
 
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<{
@@ -100,6 +101,24 @@ export default function CartPage() {
       },
       onError: (error: any) => {
         toast.error(error?.message || "Failed to remove item");
+      },
+    });
+  };
+
+  const handleMoveToWishlist = (itemId: string) => {
+    moveToWishlist(itemId, {
+      onSuccess: () => {
+        toast.success("Item moved to wishlist", {
+          duration: 2000,
+          position: "bottom-center",
+        });
+        refetch();
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to move to wishlist", {
+          duration: 3000,
+          position: "bottom-center",
+        });
       },
     });
   };
@@ -207,6 +226,25 @@ export default function CartPage() {
     }
   };
 
+  const getDisplayPrice = (item: any) => {
+    return item.product?.price || item.priceAtAdd || 0;
+  };
+
+  const getDiscountDescription = (coupon: any) => {
+    switch (coupon.discountType) {
+      case "percentage":
+        return `${coupon.discountValue}% off${
+          coupon.maxDiscountAmount ? ` (max $${coupon.maxDiscountAmount})` : ""
+        }`;
+      case "fixed":
+        return `$${coupon.discountValue} off`;
+      case "free_shipping":
+        return "Free shipping";
+      default:
+        return "Discount";
+    }
+  };
+
   if (authLoading || isCartLoading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center bg-linear-to-b from-background to-background-secondary">
@@ -269,7 +307,11 @@ export default function CartPage() {
   }
 
   const isMutating =
-    isRemoving || isClearing || isIncrementing || isDecrementing;
+    isRemoving ||
+    isClearing ||
+    isIncrementing ||
+    isDecrementing ||
+    isMovingToWishlist;
 
   return (
     <div className="py-8 md:py-12 bg-linear-to-b from-background to-background-secondary/50 min-h-screen">
@@ -334,6 +376,9 @@ export default function CartPage() {
                     return null;
                   }
 
+                  const price = getDisplayPrice(item);
+                  const itemTotal = price * item.quantity;
+
                   return (
                     <div
                       key={itemId}
@@ -374,14 +419,26 @@ export default function CartPage() {
                                   {item.product?.description}
                                 </p>
                               </div>
-                              <button
-                                onClick={() => handleRemoveItem(itemId)}
-                                disabled={isMutating}
-                                className="md:hidden text-foreground-muted hover:text-destructive transition-all duration-200 p-1 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
-                                aria-label="Remove item"
-                              >
-                                <Trash2 size={18} />
-                              </button>
+                              {/* Mobile action buttons */}
+                              <div className="md:hidden flex items-center gap-1">
+                                <button
+                                  onClick={() => handleMoveToWishlist(itemId)}
+                                  disabled={isMutating}
+                                  className="text-foreground-muted hover:text-primary transition-all duration-200 p-1 rounded-lg hover:bg-primary/10 hover:scale-110 disabled:opacity-50"
+                                  aria-label="Move to wishlist"
+                                  title="Save for later"
+                                >
+                                  <Heart size={18} />
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveItem(itemId)}
+                                  disabled={isMutating}
+                                  className="text-foreground-muted hover:text-destructive transition-all duration-200 p-1 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
+                                  aria-label="Remove item"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
                             </div>
 
                             {/* Variants */}
@@ -414,7 +471,7 @@ export default function CartPage() {
                               Price
                             </span>
                             <div className="text-lg font-bold text-foreground">
-                              ${(item.product?.price || 0).toFixed(2)}
+                              ${price.toFixed(2)}
                             </div>
                           </div>
                           <div className="text-right">
@@ -422,10 +479,7 @@ export default function CartPage() {
                               Total
                             </span>
                             <div className="text-lg font-bold text-accent">
-                              $
-                              {(
-                                (item.product?.price || 0) * item.quantity
-                              ).toFixed(2)}
+                              ${itemTotal.toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -433,7 +487,7 @@ export default function CartPage() {
                         {/* Price (Desktop) */}
                         <div className="hidden md:block md:w-32 text-center">
                           <div className="text-lg font-bold text-foreground">
-                            ${(item.product?.price || 0).toFixed(2)}
+                            ${price.toFixed(2)}
                           </div>
                         </div>
 
@@ -488,22 +542,30 @@ export default function CartPage() {
                           )}
                         </div>
 
-                        {/* Total & Remove (Desktop) */}
+                        {/* Total & Actions (Desktop) */}
                         <div className="hidden md:flex md:w-32 items-center justify-end gap-3">
-                          <div className="text-lg font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent">
-                            $
-                            {(
-                              (item.product?.price || 0) * item.quantity
-                            ).toFixed(2)}
+                          <div className="text-lg font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent min-w-17.5 text-right">
+                            ${itemTotal.toFixed(2)}
                           </div>
-                          <button
-                            onClick={() => handleRemoveItem(itemId)}
-                            disabled={isMutating}
-                            className="text-foreground-muted hover:text-destructive transition-all duration-200 p-1.5 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
-                            aria-label="Remove item"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <div className="flex flex-col gap-1">
+                            <button
+                              onClick={() => handleMoveToWishlist(itemId)}
+                              disabled={isMutating}
+                              className="text-foreground-muted hover:text-primary transition-all duration-200 p-1 rounded-lg hover:bg-primary/10 hover:scale-110 disabled:opacity-50"
+                              aria-label="Move to wishlist"
+                              title="Save for later"
+                            >
+                              <Heart size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleRemoveItem(itemId)}
+                              disabled={isMutating}
+                              className="text-foreground-muted hover:text-destructive transition-all duration-200 p-1 rounded-lg hover:bg-destructive/10 hover:scale-110 disabled:opacity-50"
+                              aria-label="Remove item"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -553,7 +615,50 @@ export default function CartPage() {
 
             {/* Trust Badges */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Trust badges content... */}
+              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/30 hover:scale-[1.02] group">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <Shield className="text-primary" size={22} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
+                    Secure Payment
+                    <Sparkles size={12} className="text-accent" />
+                  </h4>
+                  <p className="text-xs text-foreground-muted">
+                    Your data is protected
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-success/30 hover:scale-[1.02] group">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-success/10 to-success/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <Truck className="text-success" size={22} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
+                    Free Shipping
+                    <Gift size={12} className="text-success" />
+                  </h4>
+                  <p className="text-xs text-foreground-muted">
+                    On orders over $50
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-card rounded-xl p-5 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/30 hover:scale-[1.02] group">
+                <div className="h-12 w-12 rounded-xl bg-linear-to-br from-accent/10 to-accent/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <Clock className="text-accent" size={22} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground text-sm flex items-center gap-1">
+                    Easy Returns
+                    <Star size={12} className="text-accent" />
+                  </h4>
+                  <p className="text-xs text-foreground-muted">
+                    30-day return policy
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -587,7 +692,7 @@ export default function CartPage() {
                         onChange={(e) =>
                           setPromoCode(e.target.value.toUpperCase())
                         }
-                        placeholder="Promo code"
+                        placeholder="Enter promo code"
                         className="w-full pl-9 pr-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
                       />
                     </div>
@@ -625,27 +730,57 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  {/* Available Promo Codes */}
+                  {/* Available Promo Codes - Fetched from Backend */}
                   <div className="mt-4">
                     <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2 flex items-center gap-1">
                       <Gift size={12} />
                       Available promo codes
+                      {isCouponsLoading && (
+                        <Loader2 size={12} className="animate-spin ml-1" />
+                      )}
                     </p>
-                    <div className="space-y-1.5">
-                      {promoCodes.map((promo) => (
-                        <div
-                          key={promo.code}
-                          className="flex items-center justify-between text-xs bg-linear-to-r from-background-secondary/50 to-background-secondary/20 px-3 py-2 rounded-lg border border-border/30"
-                        >
-                          <code className="font-mono font-semibold text-foreground text-xs">
-                            {promo.code}
-                          </code>
-                          <span className="text-foreground-muted">
-                            {promo.description}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    {availableCoupons && availableCoupons.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {availableCoupons.map((coupon) => (
+                          <button
+                            key={coupon._id}
+                            onClick={() => {
+                              setPromoCode(coupon.code);
+
+                              setTimeout(() => {
+                                if (promoCode === coupon.code) {
+                                  handleApplyPromo();
+                                }
+                              }, 100);
+                            }}
+                            className="w-full flex items-center justify-between text-xs bg-linear-to-r from-background-secondary/50 to-background-secondary/20 px-3 py-2 rounded-lg border border-border/30 hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 group"
+                            disabled={isApplyingCoupon || isMutating}
+                          >
+                            <code className="font-mono font-semibold text-foreground text-xs group-hover:text-accent transition-colors">
+                              {coupon.code}
+                            </code>
+                            <span className="text-foreground-muted group-hover:text-foreground transition-colors px-2">
+                              {getDiscountDescription(coupon)}
+                            </span>
+                            {coupon.minPurchaseAmount &&
+                              coupon.minPurchaseAmount > 0 && (
+                                <span className="text-[10px] text-foreground-muted/60">
+                                  Min. ${coupon.minPurchaseAmount}
+                                </span>
+                              )}
+                            <span className="text-xs text-accent/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Click to apply
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      !isCouponsLoading && (
+                        <p className="text-xs text-foreground-muted/60 text-center py-2">
+                          No active promo codes available at the moment
+                        </p>
+                      )
+                    )}
                   </div>
                 </div>
 

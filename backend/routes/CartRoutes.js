@@ -12,6 +12,7 @@ import {
   updateCartItemQuantity,
   mergeCart,
   getCartCount,
+  getAvailableCoupons,
 } from "../controllers/CartController.js";
 import { protect } from "../middleware/auth.js";
 import {
@@ -36,5 +37,6 @@ router.post("/coupon/apply", applyCoupon);
 router.delete("/coupon/remove", removeCoupon);
 router.post("/:itemId/move-to-wishlist", moveToWishlist);
 router.post("/merge", mergeCart);
+router.get("/coupons/available", getAvailableCoupons);
 
 export default router;

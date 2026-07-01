@@ -55,6 +55,84 @@ export interface AvailableCoupon {
   description?: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  type: string;
+  icon: string;
+  description: string;
+  isActive: boolean;
+  isAvailable: boolean;
+  comingSoon?: boolean;
+  brands?: string[];
+}
+
+export interface CheckoutRequest {
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    phone: string;
+    fullName: string;
+  };
+  paymentMethod: PaymentMethod | string;
+  notes?: string;
+}
+
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  items: Array<{
+    product: {
+      _id: string;
+      name: string;
+      price: number;
+      images?: string[];
+    };
+    name: string;
+    quantity: number;
+    price: number;
+    image?: string;
+    color?: string;
+    size?: string;
+  }>;
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    phone: string;
+    fullName: string;
+  };
+  paymentMethod: string;
+  paymentStatus: string;
+  orderStatus: string;
+  itemsPrice: number;
+  taxPrice: number;
+  shippingPrice: number;
+  discountAmount: number;
+  totalPrice: number;
+  coupon?: string | null;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CheckoutResponse {
+  order: Order;
+  paymentIntent?: {
+    clientSecret: string;
+    paymentIntentId: string;
+  };
+}
+
 export const cartApi = {
   getCart: async (): Promise<BaseApiResponse<CartResponse>> => {
     const response =
@@ -192,6 +270,24 @@ export const cartApi = {
     const response = await typedApiClient.get<
       BaseApiResponse<AvailableCoupon[]>
     >("/cart/coupons/available");
+    return response;
+  },
+
+  getAvailablePaymentMethods: async (): Promise<
+    BaseApiResponse<PaymentMethod[]>
+  > => {
+    const response = await typedApiClient.get<BaseApiResponse<PaymentMethod[]>>(
+      "/payments/methods/available",
+    );
+    return response;
+  },
+
+  checkout: async (
+    data: CheckoutRequest,
+  ): Promise<BaseApiResponse<CheckoutResponse>> => {
+    const response = await typedApiClient.post<
+      BaseApiResponse<CheckoutResponse>
+    >("/cart/checkout", data);
     return response;
   },
 };

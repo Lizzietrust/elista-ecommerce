@@ -13,6 +13,7 @@ import {
   mergeCart,
   getCartCount,
   getAvailableCoupons,
+  checkout,
 } from "../controllers/CartController.js";
 import { protect } from "../middleware/auth.js";
 import {
@@ -38,5 +39,6 @@ router.delete("/coupon/remove", removeCoupon);
 router.post("/:itemId/move-to-wishlist", moveToWishlist);
 router.post("/merge", mergeCart);
 router.get("/coupons/available", getAvailableCoupons);
+router.post("/checkout", protect, checkout);
 
 export default router;

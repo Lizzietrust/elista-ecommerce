@@ -1,4 +1,3 @@
-// models/Product.js
 import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
@@ -28,7 +27,7 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
     longDescription: {
-      type: String, // ✅ ADDED: For detailed product descriptions
+      type: String,
       trim: true,
     },
     sku: {
@@ -44,11 +43,11 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
     comparePrice: {
-      type: Number, // This is the discount/original price
+      type: Number,
       min: [0, "Compare price cannot be negative"],
     },
     discountPrice: {
-      type: Number, // ✅ ADDED: Alias for comparePrice for frontend compatibility
+      type: Number,
       min: [0, "Discount price cannot be negative"],
     },
     costPrice: {
@@ -74,7 +73,7 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
     categoryName: {
-      type: String, 
+      type: String,
       index: true,
     },
     subCategory: {
@@ -128,7 +127,7 @@ const productSchema = new mongoose.Schema(
     sizes: [String],
     tags: [String],
     specifications: {
-      type: mongoose.Schema.Types.Mixed, // ✅ CHANGED: Allow both array and object format
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
     features: [String],
@@ -143,7 +142,7 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
     featuredOrder: {
-      type: Number, // ✅ ADDED: For ordering featured products
+      type: Number,
       default: 0,
     },
     seller: {
@@ -163,7 +162,7 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
     ratingsCount: {
-      type: Number, // ✅ ADDED: Alias for totalReviews
+      type: Number,
       default: 0,
     },
     salesCount: {
@@ -175,7 +174,7 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
     views: {
-      type: Number, // ✅ ADDED: Alias for viewCount
+      type: Number,
       default: 0,
     },
     warranty: {
@@ -228,15 +227,15 @@ const productSchema = new mongoose.Schema(
       description: String,
       keywords: [String],
     },
-    metaTitle: String, // ✅ ADDED: Alternative meta format
-    metaDescription: String, // ✅ ADDED: Alternative meta format
-    metaKeywords: [String], // ✅ ADDED: Alternative meta format
+    metaTitle: String,
+    metaDescription: String,
+    metaKeywords: [String],
     relatedProducts: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Product",
       },
-    ], // ✅ ADDED: For related products
+    ],
     variants: [
       {
         sku: {
@@ -286,8 +285,7 @@ const productSchema = new mongoose.Schema(
   },
 );
 
-// Generate slug before saving
-productSchema.pre("save", function (next) {
+productSchema.pre("save", function () {
   if (!this.slug && this.name) {
     this.slug = this.name
       .toLowerCase()
@@ -297,14 +295,12 @@ productSchema.pre("save", function (next) {
       .trim();
   }
 
-  // Generate SKU if not provided
   if (!this.sku && this.name) {
     const namePrefix = this.name.substring(0, 3).toUpperCase();
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     this.sku = `${namePrefix}-${randomNum}`;
   }
 
-  // ✅ ADDED: Sync discountPrice with comparePrice
   if (this.comparePrice !== undefined && this.discountPrice === undefined) {
     this.discountPrice = this.comparePrice;
   } else if (
@@ -314,7 +310,6 @@ productSchema.pre("save", function (next) {
     this.comparePrice = this.discountPrice;
   }
 
-  // ✅ ADDED: Sync ratingsCount with totalReviews
   if (this.totalReviews !== undefined && this.ratingsCount === undefined) {
     this.ratingsCount = this.totalReviews;
   } else if (
@@ -324,14 +319,12 @@ productSchema.pre("save", function (next) {
     this.totalReviews = this.ratingsCount;
   }
 
-  // ✅ ADDED: Sync viewCount with views
   if (this.viewCount !== undefined && this.views === undefined) {
     this.views = this.viewCount;
   } else if (this.views !== undefined && this.viewCount === undefined) {
     this.viewCount = this.views;
   }
 
-  // Generate SKU for variants if not provided
   if (this.variants && this.variants.length > 0) {
     this.variants.forEach((variant, index) => {
       if (!variant.sku && this.sku) {
@@ -339,12 +332,9 @@ productSchema.pre("save", function (next) {
       }
     });
   }
-
-  next();
 });
 
-// ✅ ADDED: Populate category name before saving
-productSchema.pre("save", async function (next) {
+productSchema.pre("save", async function () {
   if (this.isModified("category") && this.category) {
     try {
       const Category = mongoose.model("Category");
@@ -356,16 +346,12 @@ productSchema.pre("save", async function (next) {
       console.error("Error populating category name:", error);
     }
   }
-  next();
 });
 
-// Middleware to update category product count when product is saved
-productSchema.pre("save", async function (next) {
-  // Only run if category is being modified
+productSchema.pre("save", async function () {
   if (this.isModified("category")) {
     const Category = mongoose.model("Category");
 
-    // Decrement old category count if product already exists
     if (this.isModified("category") && !this.isNew) {
       try {
         const oldProduct = await this.constructor
@@ -381,7 +367,6 @@ productSchema.pre("save", async function (next) {
       }
     }
 
-    // Increment new category count
     if (this.category) {
       try {
         await Category.findByIdAndUpdate(this.category, {
@@ -392,18 +377,14 @@ productSchema.pre("save", async function (next) {
       }
     }
   }
-
-  next();
 });
 
-// Middleware to handle category count when product is deleted
 productSchema.pre(
   "deleteOne",
   { document: true, query: false },
-  async function (next) {
+  async function () {
     const Category = mongoose.model("Category");
 
-    // Decrement category count
     if (this.category) {
       try {
         await Category.findByIdAndUpdate(this.category, {
@@ -413,19 +394,13 @@ productSchema.pre(
         console.error("Error decrementing category count:", error);
       }
     }
-
-    next();
   },
 );
 
-// ========== RATING METHODS ==========
-
-// Update average rating from external Review model
 productSchema.methods.updateAverageRatingFromReviews = async function () {
   try {
     const Review = mongoose.model("Review");
 
-    // Get all reviews for this product
     const reviews = await Review.find({
       product: this._id,
       status: "active",
@@ -436,7 +411,6 @@ productSchema.methods.updateAverageRatingFromReviews = async function () {
       this.totalReviews = 0;
       this.ratingsCount = 0;
     } else {
-      // Calculate average rating
       const totalRating = reviews.reduce(
         (sum, review) => sum + review.rating,
         0,
@@ -454,7 +428,6 @@ productSchema.methods.updateAverageRatingFromReviews = async function () {
   }
 };
 
-// Check if user has reviewed this product
 productSchema.methods.hasUserReviewed = async function (userId) {
   try {
     const Review = mongoose.model("Review");
@@ -469,7 +442,6 @@ productSchema.methods.hasUserReviewed = async function (userId) {
   }
 };
 
-// Get user's review for this product
 productSchema.methods.getUserReview = async function (userId) {
   try {
     const Review = mongoose.model("Review");
@@ -483,7 +455,6 @@ productSchema.methods.getUserReview = async function (userId) {
   }
 };
 
-// Get product rating summary
 productSchema.methods.getRatingSummary = async function () {
   try {
     const Review = mongoose.model("Review");
@@ -521,13 +492,11 @@ productSchema.methods.getRatingSummary = async function () {
       };
     }
 
-    // Calculate rating distribution
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     summary[0].ratingCounts.forEach((rating) => {
       distribution[rating] = (distribution[rating] || 0) + 1;
     });
 
-    // Calculate percentages
     Object.keys(distribution).forEach((key) => {
       distribution[key] = {
         count: distribution[key],
@@ -558,7 +527,6 @@ productSchema.methods.getRatingSummary = async function () {
   }
 };
 
-// Get recent reviews for this product
 productSchema.methods.getRecentReviews = async function (limit = 5) {
   try {
     const Review = mongoose.model("Review");
@@ -575,7 +543,6 @@ productSchema.methods.getRecentReviews = async function (limit = 5) {
   }
 };
 
-// Get helpful reviews for this product
 productSchema.methods.getHelpfulReviews = async function (limit = 5) {
   try {
     const Review = mongoose.model("Review");
@@ -592,19 +559,14 @@ productSchema.methods.getHelpfulReviews = async function (limit = 5) {
   }
 };
 
-// ========== VIRTUAL FIELDS ==========
-
-// Check if product is in low stock
 productSchema.virtual("isLowStock").get(function () {
   return this.stock <= this.lowStockThreshold && this.stock > 0;
 });
 
-// Check if product is out of stock
 productSchema.virtual("isOutOfStock").get(function () {
   return this.stock <= 0;
 });
 
-// Get total stock including variants
 productSchema.virtual("totalStock").get(function () {
   let total = this.stock;
 
@@ -618,7 +580,6 @@ productSchema.virtual("totalStock").get(function () {
   return total;
 });
 
-// Get discount percentage from comparePrice
 productSchema.virtual("discountPercentage").get(function () {
   if (this.comparePrice && this.comparePrice > this.price) {
     return Math.round(
@@ -628,12 +589,10 @@ productSchema.virtual("discountPercentage").get(function () {
   return 0;
 });
 
-// ✅ ADDED: Alias for discountPercentage
 productSchema.virtual("discountPercent").get(function () {
   return this.discountPercentage;
 });
 
-// Get default image
 productSchema.virtual("defaultImage").get(function () {
   const defaultImg = this.images.find((img) => img.isDefault);
   return defaultImg
@@ -643,7 +602,6 @@ productSchema.virtual("defaultImage").get(function () {
       : null;
 });
 
-// Get thumbnail image
 productSchema.virtual("thumbnailImage").get(function () {
   const defaultImg = this.images.find((img) => img.isDefault);
   return defaultImg
@@ -653,7 +611,6 @@ productSchema.virtual("thumbnailImage").get(function () {
       : null;
 });
 
-// ✅ ADDED: Get formatted images array for frontend
 productSchema.virtual("formattedImages").get(function () {
   return this.images.map((img) => ({
     url: img.url,
@@ -663,29 +620,23 @@ productSchema.virtual("formattedImages").get(function () {
   }));
 });
 
-// ========== INSTANCE METHODS ==========
-
-// Increment view count
 productSchema.methods.incrementViewCount = function () {
   this.viewCount += 1;
   this.views += 1;
   return this.save();
 };
 
-// Increment sales count
 productSchema.methods.incrementSalesCount = function (quantity = 1) {
   this.salesCount += quantity;
   this.stock = Math.max(0, this.stock - quantity);
   return this.save();
 };
 
-// Update stock
 productSchema.methods.updateStock = function (quantity) {
   this.stock = Math.max(0, quantity);
   return this.save();
 };
 
-// Method to add variant
 productSchema.methods.addVariant = function (variantData) {
   if (!variantData.sku) {
     const variantCount = this.variants.length;
@@ -695,7 +646,6 @@ productSchema.methods.addVariant = function (variantData) {
   return this.save();
 };
 
-// Method to update variant
 productSchema.methods.updateVariant = function (variantId, updateData) {
   const variant = this.variants.id(variantId);
   if (variant) {
@@ -704,13 +654,11 @@ productSchema.methods.updateVariant = function (variantId, updateData) {
   return this.save();
 };
 
-// Method to delete variant
 productSchema.methods.deleteVariant = function (variantId) {
   this.variants = this.variants.filter((v) => v._id.toString() !== variantId);
   return this.save();
 };
 
-// Method to toggle variant active status
 productSchema.methods.toggleVariantActive = function (variantId) {
   const variant = this.variants.id(variantId);
   if (variant) {
@@ -719,9 +667,6 @@ productSchema.methods.toggleVariantActive = function (variantId) {
   return this.save();
 };
 
-// ========== STATIC METHODS ==========
-
-// Static method to find products by category
 productSchema.statics.findByCategory = function (categoryId, options = {}) {
   const {
     limit = 10,
@@ -739,7 +684,6 @@ productSchema.statics.findByCategory = function (categoryId, options = {}) {
     .limit(limit);
 };
 
-// Static method to find featured products
 productSchema.statics.findFeatured = function (limit = 10) {
   return this.find({
     featured: true,
@@ -750,7 +694,6 @@ productSchema.statics.findFeatured = function (limit = 10) {
     .limit(limit);
 };
 
-// Static method to find best sellers
 productSchema.statics.findBestSellers = function (limit = 10) {
   return this.find({
     isActive: true,
@@ -760,7 +703,6 @@ productSchema.statics.findBestSellers = function (limit = 10) {
     .limit(limit);
 };
 
-// Static method to find new arrivals
 productSchema.statics.findNewArrivals = function (limit = 10, days = 30) {
   const date = new Date();
   date.setDate(date.getDate() - days);
@@ -773,7 +715,6 @@ productSchema.statics.findNewArrivals = function (limit = 10, days = 30) {
     .limit(limit);
 };
 
-// Static method to find top rated products
 productSchema.statics.findTopRated = function (limit = 10, minReviews = 5) {
   return this.find({
     isActive: true,
@@ -784,7 +725,6 @@ productSchema.statics.findTopRated = function (limit = 10, minReviews = 5) {
     .limit(limit);
 };
 
-// Static method to search products
 productSchema.statics.searchProducts = function (searchTerm, options = {}) {
   const { limit = 20, skip = 0 } = options;
 
@@ -801,7 +741,6 @@ productSchema.statics.searchProducts = function (searchTerm, options = {}) {
     .limit(limit);
 };
 
-// Static method to update product rating when review is added/changed/deleted
 productSchema.statics.updateProductRating = async function (productId) {
   try {
     const Review = mongoose.model("Review");
@@ -842,7 +781,6 @@ productSchema.statics.updateProductRating = async function (productId) {
   }
 };
 
-// Static method to get products with reviews
 productSchema.statics.getProductsWithReviews = async function (
   query = {},
   options = {},
@@ -862,7 +800,6 @@ productSchema.statics.getProductsWithReviews = async function (
   if (populateReviews) {
     const Review = mongoose.model("Review");
 
-    // Get reviews for each product
     const productsWithReviews = await Promise.all(
       products.map(async (product) => {
         const reviews = await Review.find({
@@ -889,10 +826,8 @@ productSchema.statics.getProductsWithReviews = async function (
   return products;
 };
 
-// Add pagination plugin
 productSchema.plugin(mongoosePaginate);
 
-// Indexes for better query performance
 productSchema.index({
   name: "text",
   description: "text",
@@ -909,10 +844,9 @@ productSchema.index({ seller: 1, isActive: 1 });
 productSchema.index({ subCategory: 1, isActive: 1 });
 productSchema.index({ "variants.sku": 1 });
 productSchema.index({ "variants.isActive": 1 });
-productSchema.index({ featured: 1, featuredOrder: 1 }); // ✅ ADDED: For featured products sorting
-productSchema.index({ discountPrice: 1 }); // ✅ ADDED: For discount filtering
+productSchema.index({ featured: 1, featuredOrder: 1 });
+productSchema.index({ discountPrice: 1 });
 
-// Compound index for rating filtering
 productSchema.index({ averageRating: -1, totalReviews: -1 });
 
 const Product = mongoose.model("Product", productSchema);

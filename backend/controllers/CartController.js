@@ -11,6 +11,22 @@ import {
   calculateTax,
 } from "../utils/cartCalculations.js";
 
+const generateOrderNumber = async () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+  const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
+
+  const orderCount = await Order.countDocuments({
+    createdAt: { $gte: startOfDay, $lte: endOfDay },
+  });
+
+  return `ORD-${year}${month}${day}-${String(orderCount + 1).padStart(4, "0")}`;
+};
+
 const generateCartItemId = () => new mongoose.Types.ObjectId().toString();
 
 export const getCart = asyncHandler(async (req, res, next) => {
@@ -778,5 +794,122 @@ export const getAvailableCoupons = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: coupons,
+  });
+});
+
+export const checkout = asyncHandler(async (req, res, next) => {
+  const { shippingAddress, paymentMethod, notes } = req.body;
+
+  if (!shippingAddress) {
+    return next(new ErrorResponse("Shipping address is required", 400));
+  }
+
+  if (!paymentMethod) {
+    return next(new ErrorResponse("Payment method is required", 400));
+  }
+
+  const user = await User.findById(req.user.id).populate({
+    path: "cart.items.product",
+    select: "name price images slug stock isActive description",
+  });
+
+  if (!user) {
+    return next(new ErrorResponse("User not found", 404));
+  }
+
+  const validItems = user.cart.items.filter(
+    (item) => item.product !== null && item.product !== undefined,
+  );
+
+  if (validItems.length === 0) {
+    return next(new ErrorResponse("Cart is empty", 400));
+  }
+
+  const itemsPrice = validItems.reduce(
+    (total, item) => total + item.product.price * item.quantity,
+    0,
+  );
+
+  let discount = 0;
+  let coupon = null;
+
+  if (user.cart.coupon) {
+    coupon = await Coupon.findById(user.cart.coupon);
+    if (coupon && coupon.isActive) {
+      discount = calculateDiscount(itemsPrice, coupon);
+    }
+  }
+
+  const shippingCost = calculateShipping(validItems);
+  const taxAmount = calculateTax(itemsPrice - discount + shippingCost);
+  const totalPrice = itemsPrice - discount + shippingCost + taxAmount;
+
+  for (const item of validItems) {
+    const product = await Product.findById(item.product._id);
+    if (!product) {
+      return next(
+        new ErrorResponse(`Product ${item.product.name} not found`, 404),
+      );
+    }
+    if (product.stock < item.quantity) {
+      return next(
+        new ErrorResponse(
+          `Insufficient stock for ${product.name}. Available: ${product.stock}`,
+          400,
+        ),
+      );
+    }
+    product.stock -= item.quantity;
+    await product.save();
+  }
+
+  const orderItems = validItems.map((item) => ({
+    product: item.product._id,
+    name: item.product.name,
+    quantity: item.quantity,
+    price: item.product.price,
+    image: item.product.images?.[0]?.url || null,
+    color: item.color,
+    size: item.size,
+  }));
+
+  const orderNumber = await generateOrderNumber();
+
+  const order = await Order.create({
+    user: req.user.id,
+    orderNumber,
+    shippingAddress,
+    paymentMethod: paymentMethod.id || paymentMethod,
+    items: orderItems,
+    itemsPrice,
+    taxPrice: taxAmount,
+    shippingPrice: shippingCost,
+    discountAmount: discount,
+    totalPrice,
+    coupon: coupon?._id,
+    notes,
+  });
+
+  user.cart.items = [];
+  user.cart.coupon = null;
+  user.cart.discountAmount = 0;
+  await user.save();
+
+  if (coupon) {
+    coupon.usedCount += 1;
+    await coupon.save();
+  }
+
+  const populatedOrder = await Order.findById(order._id)
+    .populate("user", "name email")
+    .populate("items.product", "name price images");
+
+  res.status(201).json({
+    success: true,
+    message: "Order created successfully",
+    data: {
+      order: populatedOrder,
+      paymentIntent: null,
+    },
   });
 });

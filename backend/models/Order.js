@@ -166,7 +166,7 @@ const orderSchema = new mongoose.Schema(
     orderNumber: {
       type: String,
       unique: true,
-      required: true,
+      // required: true,
     },
     shippingAddress: {
       type: shippingAddressSchema,
@@ -320,40 +320,34 @@ const orderSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
-// Generate order number before saving
-orderSchema.pre("save", async function (next) {
-  if (this.isNew) {
+orderSchema.pre("save", async function () {
+  if (this.isNew && !this.orderNumber) {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
 
-    // Get count of orders for today
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+    const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+    const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
 
     const orderCount = await this.constructor.countDocuments({
-      createdAt: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
     });
 
-    // Format: ORD-YYYYMMDD-XXXX
     this.orderNumber = `ORD-${year}${month}${day}-${String(
-      orderCount + 1
+      orderCount + 1,
     ).padStart(4, "0")}`;
   }
 
-  // Update isPaid and isDelivered flags
-  if (this.paymentStatus === "paid" || this.paymentStatus === "partially_refunded") {
+  if (
+    this.paymentStatus === "paid" ||
+    this.paymentStatus === "partially_refunded"
+  ) {
     this.isPaid = true;
-    if (!this.paidAt) {
-      this.paidAt = new Date();
-    }
+    if (!this.paidAt) this.paidAt = new Date();
   }
 
   if (this.orderStatus === "delivered") {
@@ -361,7 +355,6 @@ orderSchema.pre("save", async function (next) {
     this.deliveredAt = new Date();
   }
 
-  // Set billing address to shipping address if not provided
   if (!this.billingAddress && this.shippingAddress) {
     this.billingAddress = {
       street: this.shippingAddress.street,
@@ -374,12 +367,9 @@ orderSchema.pre("save", async function (next) {
       email: this.shippingAddress.email,
     };
   }
-
-  next();
 });
 
-// Add status to history when status changes
-orderSchema.pre("save", function (next) {
+orderSchema.pre("save", function () {
   if (this.isModified("orderStatus") && !this.isNew) {
     this.statusHistory.push({
       status: this.orderStatus,
@@ -387,7 +377,6 @@ orderSchema.pre("save", function (next) {
     });
   }
 
-  // Add payment status to history when it changes
   if (this.isModified("paymentStatus") && !this.isNew) {
     this.statusHistory.push({
       status: `payment_${this.paymentStatus}`,
@@ -395,20 +384,16 @@ orderSchema.pre("save", function (next) {
       timestamp: new Date(),
     });
   }
-
-  next();
 });
 
-// Virtual for formatted total price
 orderSchema.virtual("formattedTotalPrice").get(function () {
-  const formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: this.currency || 'USD',
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: this.currency || "USD",
   });
   return formatter.format(this.totalPrice);
 });
 
-// Virtual for formatted order date
 orderSchema.virtual("formattedOrderDate").get(function () {
   return this.createdAt.toLocaleDateString("en-US", {
     year: "numeric",
@@ -419,7 +404,6 @@ orderSchema.virtual("formattedOrderDate").get(function () {
   });
 });
 
-// Virtual for formatted estimated delivery
 orderSchema.virtual("formattedEstimatedDelivery").get(function () {
   if (!this.estimatedDelivery) return "Not set";
   return this.estimatedDelivery.toLocaleDateString("en-US", {
@@ -429,32 +413,29 @@ orderSchema.virtual("formattedEstimatedDelivery").get(function () {
   });
 });
 
-// Virtual for order total items
 orderSchema.virtual("totalItems").get(function () {
   return this.items.reduce((total, item) => total + item.quantity, 0);
 });
 
-// Virtual for canCancel
 orderSchema.virtual("canCancel").get(function () {
   const cancellableStatuses = ["pending", "processing"];
   return cancellableStatuses.includes(this.orderStatus) && !this.isPaid;
 });
 
-// Virtual for canReturn
 orderSchema.virtual("canReturn").get(function () {
   const returnableStatuses = ["delivered"];
-  const daysSinceDelivery = this.deliveredAt 
+  const daysSinceDelivery = this.deliveredAt
     ? (new Date() - this.deliveredAt) / (1000 * 60 * 60 * 24)
     : Infinity;
-  return returnableStatuses.includes(this.orderStatus) && daysSinceDelivery <= 30; // 30-day return policy
+  return (
+    returnableStatuses.includes(this.orderStatus) && daysSinceDelivery <= 30
+  );
 });
 
-// Virtual for order age in days
 orderSchema.virtual("ageInDays").get(function () {
   return Math.floor((new Date() - this.createdAt) / (1000 * 60 * 60 * 24));
 });
 
-// Static method to get monthly sales
 orderSchema.statics.getMonthlySales = async function (year) {
   const startDate = new Date(year, 0, 1);
   const endDate = new Date(year + 1, 0, 1);
@@ -478,7 +459,6 @@ orderSchema.statics.getMonthlySales = async function (year) {
   ]);
 };
 
-// Static method to get order statistics
 orderSchema.statics.getOrderStats = async function () {
   const [
     totalOrders,
@@ -518,21 +498,18 @@ orderSchema.statics.getOrderStats = async function () {
   };
 };
 
-// Static method to find order by payment intent
 orderSchema.statics.findByPaymentIntentId = function (paymentIntentId) {
   return this.findOne({ paymentIntentId })
     .populate("user", "name email")
     .populate("items.product", "name images");
 };
 
-// Static method to find order by checkout session
 orderSchema.statics.findByCheckoutSessionId = function (checkoutSessionId) {
   return this.findOne({ checkoutSessionId })
     .populate("user", "name email")
     .populate("items.product", "name images");
 };
 
-// Static method to get user orders
 orderSchema.statics.getUserOrders = function (userId, limit = 10, page = 1) {
   const skip = (page - 1) * limit;
   return this.find({ user: userId })
@@ -543,15 +520,12 @@ orderSchema.statics.getUserOrders = function (userId, limit = 10, page = 1) {
     .lean();
 };
 
-// Instance method to calculate totals
 orderSchema.methods.calculateTotals = function () {
-  // Calculate items price
   this.itemsPrice = this.items.reduce(
     (total, item) => total + item.price * item.quantity,
-    0
+    0,
   );
 
-  // Apply discount
   let discountedPrice = this.itemsPrice;
   if (this.discountPercentage > 0) {
     this.discountAmount = (this.itemsPrice * this.discountPercentage) / 100;
@@ -560,19 +534,20 @@ orderSchema.methods.calculateTotals = function () {
     discountedPrice = this.itemsPrice - this.discountAmount;
   }
 
-  // Calculate tax
   this.taxPrice = discountedPrice * (this.taxRate / 100);
 
-  // Calculate total
   this.totalPrice = discountedPrice + this.taxPrice + this.shippingPrice;
 
   return this;
 };
 
-// Instance method to update status
-orderSchema.methods.updateStatus = function (newStatus, updatedBy = null, notes = "") {
+orderSchema.methods.updateStatus = function (
+  newStatus,
+  updatedBy = null,
+  notes = "",
+) {
   this.orderStatus = newStatus;
-  
+
   if (updatedBy) {
     this.statusHistory.push({
       status: newStatus,
@@ -590,12 +565,11 @@ orderSchema.methods.updateStatus = function (newStatus, updatedBy = null, notes 
   return this.save();
 };
 
-// Instance method to mark as paid
 orderSchema.methods.markAsPaid = function (paymentResult) {
   this.paymentStatus = "paid";
   this.isPaid = true;
   this.paidAt = new Date();
-  
+
   if (paymentResult) {
     this.paymentResult = paymentResult;
   }
@@ -603,7 +577,6 @@ orderSchema.methods.markAsPaid = function (paymentResult) {
   return this.save();
 };
 
-// Indexes for better query performance
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ orderNumber: 1 }, { unique: true });
 orderSchema.index({ orderStatus: 1 });

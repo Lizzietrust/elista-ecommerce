@@ -21,6 +21,9 @@ import {
   Clock,
   Star,
   Heart,
+  CreditCard,
+  Wallet,
+  Building,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
@@ -34,6 +37,8 @@ import {
   useRemoveCoupon,
   useMoveToWishlist,
   useAvailableCoupons,
+  useAvailablePaymentMethods,
+  useCheckout,
 } from "@/lib/hooks/use-cart";
 import { useAuth } from "@/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -63,6 +68,9 @@ export default function CartPage() {
   const { data: availableCoupons, isLoading: isCouponsLoading } =
     useAvailableCoupons();
 
+  const { data: paymentMethods, isLoading: isPaymentMethodsLoading } =
+    useAvailablePaymentMethods();
+
   const { mutate: removeFromCart, isPending: isRemoving } = useRemoveFromCart();
   const { mutate: clearCart, isPending: isClearing } = useClearCart();
   const { mutate: incrementItem, isPending: isIncrementing } =
@@ -74,6 +82,7 @@ export default function CartPage() {
     useRemoveCoupon();
   const { mutate: moveToWishlist, isPending: isMovingToWishlist } =
     useMoveToWishlist();
+  const { mutate: checkout, isPending: isCheckingOut } = useCheckout();
 
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<{
@@ -81,7 +90,20 @@ export default function CartPage() {
     discount: number;
     description: string;
   } | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    string | null
+  >(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState({
+    fullName: "",
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "United States",
+    phone: "",
+  });
 
   const cartItems = cartData?.items || [];
   const summary = cartData?.summary;
@@ -214,16 +236,74 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success("Proceeding to checkout...");
-      router.push("/checkout");
-    } catch (error) {
-      toast.error("Checkout failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (
+      !shippingAddress.fullName ||
+      !shippingAddress.street ||
+      !shippingAddress.city ||
+      !shippingAddress.state ||
+      !shippingAddress.zipCode ||
+      !shippingAddress.phone
+    ) {
+      toast.error("Please fill in all shipping address fields");
+      return;
     }
+
+    if (!selectedPaymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+
+    const paymentMethod = paymentMethods?.find(
+      (p) => p.id === selectedPaymentMethod,
+    );
+    if (!paymentMethod || !paymentMethod.isAvailable) {
+      toast.error("Selected payment method is not available");
+      return;
+    }
+
+    setIsLoading(true);
+
+    checkout(
+      {
+        shippingAddress,
+        paymentMethod: paymentMethod,
+      },
+      {
+        onSuccess: (response) => {
+          setIsLoading(false);
+          setShowCheckoutModal(false);
+
+          const orderData = response.data?.order;
+          const paymentIntent = response.data?.paymentIntent;
+
+          toast.success("Order placed successfully!", {
+            duration: 3000,
+            position: "bottom-center",
+          });
+
+          if (paymentIntent?.clientSecret) {
+            router.push(
+              `/payment/${orderData?._id}?clientSecret=${paymentIntent.clientSecret}`,
+            );
+          } else {
+            router.push(`/order-confirmation/${orderData?._id}`);
+          }
+        },
+        onError: (error: any) => {
+          setIsLoading(false);
+          toast.error(error?.message || "Checkout failed. Please try again.");
+        },
+      },
+    );
+  };
+
+  const openCheckoutModal = () => {
+    setShowCheckoutModal(true);
+  };
+
+  const closeCheckoutModal = () => {
+    setShowCheckoutModal(false);
+    setIsLoading(false);
   };
 
   const getDisplayPrice = (item: any) => {
@@ -244,6 +324,13 @@ export default function CartPage() {
         return "Discount";
     }
   };
+
+  const isMutating =
+    isRemoving ||
+    isClearing ||
+    isIncrementing ||
+    isDecrementing ||
+    isMovingToWishlist;
 
   if (authLoading || isCartLoading) {
     return (
@@ -305,13 +392,6 @@ export default function CartPage() {
       </div>
     );
   }
-
-  const isMutating =
-    isRemoving ||
-    isClearing ||
-    isIncrementing ||
-    isDecrementing ||
-    isMovingToWishlist;
 
   return (
     <div className="py-8 md:py-12 bg-linear-to-b from-background to-background-secondary/50 min-h-screen">
@@ -419,7 +499,6 @@ export default function CartPage() {
                                   {item.product?.description}
                                 </p>
                               </div>
-                              {/* Mobile action buttons */}
                               <div className="md:hidden flex items-center gap-1">
                                 <button
                                   onClick={() => handleMoveToWishlist(itemId)}
@@ -441,7 +520,6 @@ export default function CartPage() {
                               </div>
                             </div>
 
-                            {/* Variants */}
                             <div className="flex flex-wrap gap-2 mt-2">
                               {item.color && (
                                 <span className="inline-flex items-center gap-1.5 text-xs bg-linear-to-r from-background-secondary to-background-tertiary/30 px-2.5 py-1 rounded-full text-foreground-muted border border-border/30">
@@ -730,7 +808,7 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  {/* Available Promo Codes - Fetched from Backend */}
+                  {/* Available Promo Codes */}
                   <div className="mt-4">
                     <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2 flex items-center gap-1">
                       <Gift size={12} />
@@ -746,7 +824,6 @@ export default function CartPage() {
                             key={coupon._id}
                             onClick={() => {
                               setPromoCode(coupon.code);
-
                               setTimeout(() => {
                                 if (promoCode === coupon.code) {
                                   handleApplyPromo();
@@ -839,57 +916,56 @@ export default function CartPage() {
 
                 {/* Checkout Button */}
                 <Button
-                  onClick={handleCheckout}
+                  onClick={openCheckoutModal}
                   disabled={isLoading || cartItems.length === 0 || isMutating}
                   className="w-full py-4 text-base font-semibold bg-linear-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-primary-foreground rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isLoading ? (
-                      <>
-                        <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles
-                          size={18}
-                          className="group-hover:rotate-12 transition-transform"
-                        />
-                        Proceed to Checkout
-                      </>
-                    )}
+                    <Sparkles
+                      size={18}
+                      className="group-hover:rotate-12 transition-transform"
+                    />
+                    Proceed to Checkout
                   </span>
                   <div className="absolute inset-0 bg-linear-to-r from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </Button>
 
-                {/* Payment Methods */}
-                <div className="mt-6 text-center">
-                  <p className="text-xs text-foreground-muted uppercase tracking-wider mb-3 flex items-center justify-center gap-2">
-                    <span className="w-8 h-px bg-border"></span>
-                    We accept
-                    <span className="w-8 h-px bg-border"></span>
-                  </p>
-                  <div className="flex justify-center gap-3">
-                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
-                      <span className="font-bold text-foreground text-xs">
-                        VISA
-                      </span>
+                {/* Payment Methods Preview */}
+                {paymentMethods && paymentMethods.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs text-foreground-muted uppercase tracking-wider mb-2 flex items-center justify-center gap-2">
+                      <span className="w-8 h-px bg-border"></span>
+                      We accept
+                      <span className="w-8 h-px bg-border"></span>
+                    </p>
+                    <div className="flex justify-center gap-3">
+                      {paymentMethods.map((method) => (
+                        <div
+                          key={method.id}
+                          className={`h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border transition-all duration-200 ${
+                            method.isAvailable
+                              ? "border-border/30 hover:border-accent/30 hover:shadow-md hover:scale-105"
+                              : "border-border/20 opacity-50 cursor-not-allowed"
+                          }`}
+                          title={
+                            method.isAvailable
+                              ? method.name
+                              : `${method.name} - Coming Soon`
+                          }
+                        >
+                          <span className="text-xs font-bold text-foreground">
+                            {method.icon}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
-                      <span className="font-bold text-foreground text-xs">
-                        MC
-                      </span>
-                    </div>
-                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
-                      <span className="font-bold text-foreground text-xs">
-                        PP
-                      </span>
-                    </div>
-                    <div className="h-9 w-14 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-lg flex items-center justify-center shadow-sm border border-border/30 hover:border-accent/30 transition-all duration-200 hover:shadow-md hover:scale-105">
-                      <span className="text-xl">🍎</span>
-                    </div>
+                    {paymentMethods.some((m) => m.comingSoon) && (
+                      <p className="text-[10px] text-foreground-muted/60 text-center mt-2">
+                        More payment options coming soon!
+                      </p>
+                    )}
                   </div>
-                </div>
+                )}
 
                 {/* Cart Summary */}
                 <div className="mt-6 pt-4 border-t-2 border-border/50">
@@ -937,51 +1013,285 @@ export default function CartPage() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Frequently Bought Together */}
-        <div className="mt-16">
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-2xl font-bold font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
-              Frequently Bought Together
-            </h2>
-            <div className="flex-1 h-px bg-linear-to-r from-border to-transparent"></div>
-            <Sparkles size={18} className="text-accent" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { name: "Phone Stand", price: 24.99, image: "📱" },
-              { name: "Screen Protector", price: 12.99, image: "🛡️" },
-              { name: "USB-C Cable", price: 15.99, image: "🔌" },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="bg-card rounded-xl p-4 flex items-center gap-4 border-2 border-border/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-accent/40 hover:scale-[1.02] group"
-                style={{
-                  animationDelay: `${index * 150}ms`,
-                }}
+      {/* Checkout Modal */}
+      {showCheckoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-card rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-border/50 animate-slide-up">
+            <div className="sticky top-0 bg-card border-b border-border/50 p-6 flex items-center justify-between z-10">
+              <h2 className="text-2xl font-bold font-serif bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+                Checkout
+              </h2>
+              <button
+                onClick={closeCheckoutModal}
+                className="p-2 rounded-lg hover:bg-background-secondary transition-colors"
+                disabled={isLoading}
               >
-                <div className="h-16 w-16 bg-linear-to-br from-background-secondary to-background-tertiary/30 rounded-xl flex items-center justify-center text-3xl shadow-md group-hover:scale-110 transition-transform duration-300">
-                  {item.image}
+                <X size={20} className="text-foreground-muted" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Order Summary */}
+              <div className="bg-background-secondary/50 rounded-xl p-4 border border-border/30">
+                <h3 className="font-semibold text-foreground mb-2">
+                  Order Summary
+                </h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-foreground-muted">Subtotal</span>
+                    <span className="text-foreground">
+                      ${subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-foreground-muted">Shipping</span>
+                    <span className="text-foreground">
+                      ${shipping.toFixed(2)}
+                    </span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-success">
+                      <span>Discount</span>
+                      <span>-${discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold pt-2 border-t border-border/30">
+                    <span>Total</span>
+                    <span className="text-accent">${total.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground text-sm truncate group-hover:text-accent transition-colors">
-                    {item.name}
-                  </h4>
-                  <p className="text-lg font-bold bg-linear-to-r from-accent to-accent-light bg-clip-text text-transparent">
-                    ${item.price.toFixed(2)}
-                  </p>
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Truck size={18} className="text-accent" />
+                  Shipping Address
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={shippingAddress.fullName}
+                    onChange={(e) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        fullName: e.target.value,
+                      }))
+                    }
+                    className="px-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                    required
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={shippingAddress.phone}
+                    onChange={(e) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    className="px-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Street Address"
+                    value={shippingAddress.street}
+                    onChange={(e) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        street: e.target.value,
+                      }))
+                    }
+                    className="md:col-span-2 px-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="City"
+                    value={shippingAddress.city}
+                    onChange={(e) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        city: e.target.value,
+                      }))
+                    }
+                    className="px-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="State"
+                    value={shippingAddress.state}
+                    onChange={(e) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        state: e.target.value,
+                      }))
+                    }
+                    className="px-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Zip Code"
+                    value={shippingAddress.zipCode}
+                    onChange={(e) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        zipCode: e.target.value,
+                      }))
+                    }
+                    className="px-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Country"
+                    value={shippingAddress.country}
+                    onChange={(e) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        country: e.target.value,
+                      }))
+                    }
+                    className="md:col-span-2 px-4 py-3 rounded-xl border-2 border-border/50 bg-input text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all duration-200"
+                    required
+                  />
                 </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div>
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <CreditCard size={18} className="text-accent" />
+                  Payment Method
+                </h3>
+                {isPaymentMethodsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {paymentMethods?.map((method) => (
+                      <label
+                        key={method.id}
+                        className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                          selectedPaymentMethod === method.id
+                            ? "border-accent bg-accent/5"
+                            : method.isAvailable
+                              ? "border-border/50 hover:border-accent/30 hover:bg-background-secondary/50"
+                              : "border-border/30 opacity-60 cursor-not-allowed"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value={method.id}
+                            checked={selectedPaymentMethod === method.id}
+                            onChange={() =>
+                              method.isAvailable &&
+                              setSelectedPaymentMethod(method.id)
+                            }
+                            disabled={!method.isAvailable}
+                            className="h-4 w-4 text-accent focus:ring-accent border-border"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{method.icon}</span>
+                              <span className="font-medium text-foreground">
+                                {method.name}
+                              </span>
+                              {method.comingSoon && (
+                                <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                                  Coming Soon
+                                </span>
+                              )}
+                              {method.isAvailable && (
+                                <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">
+                                  Available
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-foreground-muted">
+                              {method.description}
+                            </p>
+                            {method.brands && method.isAvailable && (
+                              <div className="flex gap-2 mt-1">
+                                {method.brands.map((brand) => (
+                                  <span
+                                    key={brand}
+                                    className="text-xs text-foreground-muted/60"
+                                  >
+                                    {brand}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {method.isAvailable &&
+                          selectedPaymentMethod === method.id && (
+                            <div className="text-accent">
+                              <svg
+                                className="w-5 h-5"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                      </label>
+                    ))}
+                    {!paymentMethods ||
+                      (paymentMethods.length === 0 && (
+                        <p className="text-center text-foreground-muted py-4">
+                          No payment methods available
+                        </p>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-4 border-t border-border/50">
                 <Button
-                  size="sm"
-                  className="bg-linear-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-primary-foreground rounded-lg px-4 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  variant="outline"
+                  onClick={closeCheckoutModal}
+                  disabled={isLoading}
+                  className="flex-1 border-2 border-border/50 hover:border-accent/30 hover:bg-accent/5 text-foreground rounded-xl transition-all duration-200"
                 >
-                  Add
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCheckout}
+                  disabled={isLoading || !selectedPaymentMethod}
+                  className="flex-1 bg-linear-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-primary-foreground rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    `Place Order • $${total.toFixed(2)}`
+                  )}
                 </Button>
               </div>
-            ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,9 @@ import {
   CartResponse,
   CartItem,
   CartCountResponse,
+  CheckoutRequest,
+  PaymentMethod,
+  AvailableCoupon,
 } from "@/lib/api/cart";
 import { toast } from "react-hot-toast";
 
@@ -296,7 +299,7 @@ export const useMergeCart = () => {
 };
 
 export const useAvailableCoupons = () => {
-  return useQuery({
+  return useQuery<AvailableCoupon[], Error>({
     queryKey: ["available-coupons"],
     queryFn: async () => {
       try {
@@ -309,5 +312,46 @@ export const useAvailableCoupons = () => {
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
+  });
+};
+
+export const useAvailablePaymentMethods = () => {
+  return useQuery<PaymentMethod[], Error>({
+    queryKey: ["payment-methods"],
+    queryFn: async () => {
+      try {
+        const response = await cartApi.getAvailablePaymentMethods();
+        return response.data || [];
+      } catch (error) {
+        console.error("Error fetching payment methods:", error);
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+  });
+};
+
+export const useCheckout = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CheckoutRequest) => cartApi.checkout(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.detail() });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count() });
+      queryClient.invalidateQueries({ queryKey: cartKeys.summary() });
+
+      toast.success("Order placed successfully!", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Checkout failed. Please try again.", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+    },
   });
 };

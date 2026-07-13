@@ -2,11 +2,25 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star, ShoppingCart, Heart, Loader2, Check } from "lucide-react";
+import {
+  Star,
+  ShoppingCart,
+  Heart,
+  Loader2,
+  Check,
+  Minus,
+  Plus,
+} from "lucide-react";
 import { Product, Category, ProductImage } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { useAddToCart } from "@/lib/hooks/use-cart";
+import {
+  useAddToCart,
+  useCart,
+  useRemoveFromCart,
+  useIncrementCartItem,
+  useDecrementCartItem,
+} from "@/lib/hooks/use-cart";
 import {
   useCheckInWishlist,
   useToggleWishlist,
@@ -15,7 +29,7 @@ import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useProductReviews } from "@/lib/hooks/use-reviews";
 import type { WishlistItem } from "@/lib/api/wishlist";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -40,13 +54,43 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const router = useRouter();
   const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [cartItemId, setCartItemId] = useState<string | null>(null);
+  const [cartQuantity, setCartQuantity] = useState<number>(0);
 
   const { mutate: addToCart, isPending: isAddingToCart } = useAddToCart();
+  const { mutate: removeFromCart, isPending: isRemovingFromCart } =
+    useRemoveFromCart();
+  const { mutate: incrementItem, isPending: isIncrementing } =
+    useIncrementCartItem();
+  const { mutate: decrementItem, isPending: isDecrementing } =
+    useDecrementCartItem();
+
+  // Get cart data to check if product is in cart
+  const { data: cartData, isLoading: isLoadingCart } = useCart();
 
   const isAuthenticated =
     typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
 
   const productId = (product._id ?? product.id) as string;
+
+  // Check if product is in cart and get its quantity
+  useEffect(() => {
+    if (cartData?.items) {
+      const cartItem = cartData.items.find(
+        (item) =>
+          item.product._id === productId || item.product.id === productId,
+      );
+      if (cartItem) {
+        setCartItemId(cartItem._id);
+        setCartQuantity(cartItem.quantity);
+        setIsAddedToCart(true);
+      } else {
+        setCartItemId(null);
+        setCartQuantity(0);
+        setIsAddedToCart(false);
+      }
+    }
+  }, [cartData, productId]);
 
   const { data: wishlistData, isLoading: isCheckingWishlist } =
     useCheckInWishlist(productId, {
@@ -95,15 +139,80 @@ export function ProductCard({ product }: ProductCardProps) {
     addToCart(
       { productId, quantity: 1 },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
           setIsAddedToCart(true);
-          setTimeout(() => setIsAddedToCart(false), 2000);
+          if (response?.data?.items) {
+            const addedItem = response.data.items.find(
+              (item) =>
+                item.product._id === productId || item.product.id === productId,
+            );
+            if (addedItem) {
+              setCartItemId(addedItem._id);
+              setCartQuantity(addedItem.quantity);
+            }
+          }
         },
         onError: (error) => {
           console.error("Add to cart error:", error);
         },
       },
     );
+  };
+
+  const handleIncrement = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!cartItemId) return;
+
+    incrementItem(cartItemId, {
+      onSuccess: (response) => {
+        if (response?.data) {
+          setCartQuantity(response.data.quantity);
+        }
+      },
+      onError: (error) => {
+        console.error("Increment error:", error);
+      },
+    });
+  };
+
+  const handleDecrement = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!cartItemId) return;
+
+    if (cartQuantity === 1) {
+      // Remove item from cart
+      removeFromCart(cartItemId, {
+        onSuccess: () => {
+          setIsAddedToCart(false);
+          setCartItemId(null);
+          setCartQuantity(0);
+        },
+        onError: (error) => {
+          console.error("Remove from cart error:", error);
+        },
+      });
+    } else {
+      decrementItem(cartItemId, {
+        onSuccess: (response) => {
+          if (response?.data) {
+            if (response.data.removed) {
+              setIsAddedToCart(false);
+              setCartItemId(null);
+              setCartQuantity(0);
+            } else {
+              setCartQuantity(response.data.quantity);
+            }
+          }
+        },
+        onError: (error) => {
+          console.error("Decrement error:", error);
+        },
+      });
+    }
   };
 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
@@ -165,6 +274,12 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const isLoading = isCheckingWishlist || isTogglingWishlist;
+  const isCartLoading =
+    isLoadingCart ||
+    isAddingToCart ||
+    isRemovingFromCart ||
+    isIncrementing ||
+    isDecrementing;
 
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-border">
@@ -239,25 +354,59 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
 
           {isAuthenticated && (
-            <Button
-              size="icon"
-              className={`absolute bottom-2 right-2 transition-all duration-200 z-10 ${
-                isAddedToCart
-                  ? "bg-success hover:bg-success-light"
-                  : "bg-primary hover:bg-primary-light opacity-0 group-hover:opacity-100 group-hover:scale-105"
-              }`}
-              onClick={handleAddToCart}
-              disabled={product.stock === 0 || isAddingToCart}
-              aria-label={isAddedToCart ? "Added to cart" : "Add to cart"}
-            >
-              {isAddingToCart ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isAddedToCart ? (
-                <Check className="h-4 w-4" />
+            <div className="absolute bottom-2 right-2 z-10">
+              {isAddedToCart && cartQuantity > 0 ? (
+                <div className="flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-lg p-1 shadow-md">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 hover:bg-muted rounded-md"
+                    onClick={handleDecrement}
+                    disabled={isCartLoading}
+                    aria-label="Decrease quantity"
+                  >
+                    {isDecrementing ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Minus className="h-3 w-3" />
+                    )}
+                  </Button>
+
+                  <span className="min-w-[20px] text-center text-sm font-semibold">
+                    {cartQuantity}
+                  </span>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 hover:bg-muted rounded-md"
+                    onClick={handleIncrement}
+                    disabled={isCartLoading || cartQuantity >= product.stock}
+                    aria-label="Increase quantity"
+                  >
+                    {isIncrementing ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Plus className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
               ) : (
-                <ShoppingCart className="h-4 w-4" />
+                <Button
+                  size="icon"
+                  className="bg-primary hover:bg-primary-light opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-200"
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0 || isAddingToCart}
+                  aria-label="Add to cart"
+                >
+                  {isAddingToCart ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="h-4 w-4" />
+                  )}
+                </Button>
               )}
-            </Button>
+            </div>
           )}
         </div>
       </Link>

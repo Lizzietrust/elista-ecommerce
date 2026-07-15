@@ -1,4 +1,3 @@
-// components/products/product-filters.tsx
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,6 +12,9 @@ interface ProductFiltersProps {
   selectedCategory?: string;
   selectedMinPrice?: string;
   selectedMaxPrice?: string;
+  selectedBrand?: string;
+  onCategoryChange?: (category: string) => void;
+  onBrandChange?: (brand: string) => void;
 }
 
 export default function ProductFilters({
@@ -21,6 +23,9 @@ export default function ProductFilters({
   selectedCategory,
   selectedMinPrice,
   selectedMaxPrice,
+  selectedBrand,
+  onCategoryChange,
+  onBrandChange,
 }: ProductFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +39,7 @@ export default function ProductFilters({
       params.delete(key);
     }
 
-    params.delete("page"); // Reset to page 1 when filters change
+    params.delete("page");
     router.push(`/products?${params.toString()}`);
   };
 
@@ -42,15 +47,43 @@ export default function ProductFilters({
     router.push("/products");
   };
 
-  // Parse price values for slider
   const minPriceValue = parseInt(selectedMinPrice || "0");
   const maxPriceValue = parseInt(selectedMaxPrice || "1000");
 
-  // Ensure values are within reasonable bounds
   const sliderValue = [
     isNaN(minPriceValue) ? 0 : Math.max(0, minPriceValue),
     isNaN(maxPriceValue) ? 1000 : Math.min(1000, maxPriceValue),
   ];
+
+  const handleCategoryClick = (category: string) => {
+    if (onCategoryChange) {
+      onCategoryChange(category);
+    } else {
+      const params = new URLSearchParams(searchParams.toString());
+      if (category && category.trim() !== "") {
+        params.set("category", category);
+      } else {
+        params.delete("category");
+      }
+      params.delete("page");
+      router.push(`/products?${params.toString()}`);
+    }
+  };
+
+  const handleBrandClick = (brand: string) => {
+    if (onBrandChange) {
+      onBrandChange(brand);
+    } else {
+      const params = new URLSearchParams(searchParams.toString());
+      if (brand && brand.trim() !== "") {
+        params.set("brand", brand);
+      } else {
+        params.delete("brand");
+      }
+      params.delete("page");
+      router.push(`/products?${params.toString()}`);
+    }
+  };
 
   return (
     <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
@@ -59,7 +92,10 @@ export default function ProductFilters({
           <Filter className="h-5 w-5 text-accent" />
           Filters
         </h3>
-        {(selectedCategory || selectedMinPrice || selectedMaxPrice) && (
+        {(selectedCategory ||
+          selectedMinPrice ||
+          selectedMaxPrice ||
+          selectedBrand) && (
           <Button
             variant="ghost"
             size="sm"
@@ -107,7 +143,7 @@ export default function ProductFilters({
                 handleFilterChange("minPrice", value[0]);
                 handleFilterChange("maxPrice", value[1]);
               }}
-              className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary [&_[role=slider]]:hover:bg-primary-light [&_[role=slider]]:focus:ring-ring"
+              className="**:[[role=slider]]:bg-primary **:[[role=slider]]:border-primary **:[[role=slider]]:hover:bg-primary-light **:[[role=slider]]:focus:ring-ring"
             />
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">
@@ -122,7 +158,7 @@ export default function ProductFilters({
         <h4 className="font-medium mb-4 text-foreground">Categories</h4>
         <div className="space-y-2">
           <button
-            onClick={() => handleFilterChange("category", "")}
+            onClick={() => handleCategoryClick("")}
             className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
               !selectedCategory
                 ? "bg-primary text-primary-foreground font-medium shadow-sm"
@@ -134,7 +170,7 @@ export default function ProductFilters({
           {categories.map((category) => (
             <button
               key={category}
-              onClick={() => handleFilterChange("category", category)}
+              onClick={() => handleCategoryClick(category)}
               className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                 selectedCategory === category
                   ? "bg-primary text-primary-foreground font-medium shadow-sm"
@@ -152,39 +188,38 @@ export default function ProductFilters({
         <div className="mb-8">
           <h4 className="font-medium mb-4 text-foreground">Brands</h4>
           <div className="space-y-2">
+            <button
+              onClick={() => handleBrandClick("")}
+              className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                !selectedBrand
+                  ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              All Brands
+            </button>
             {brands.map((brand) => (
-              <label
+              <button
                 key={brand}
-                className="flex items-center gap-2 cursor-pointer group"
+                onClick={() => handleBrandClick(brand)}
+                className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                  selectedBrand === brand
+                    ? "bg-primary text-primary-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
               >
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-border text-accent focus:ring-ring focus:ring-2 transition-colors"
-                  checked={searchParams.get("brand") === brand}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      handleFilterChange("brand", brand);
-                    } else {
-                      const params = new URLSearchParams(
-                        searchParams.toString(),
-                      );
-                      params.delete("brand");
-                      params.delete("page");
-                      router.push(`/products?${params.toString()}`);
-                    }
-                  }}
-                />
-                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-200">
-                  {brand}
-                </span>
-              </label>
+                {brand}
+              </button>
             ))}
           </div>
         </div>
       )}
 
       {/* Active Filters Summary */}
-      {(selectedCategory || selectedMinPrice || selectedMaxPrice) && (
+      {(selectedCategory ||
+        selectedMinPrice ||
+        selectedMaxPrice ||
+        selectedBrand) && (
         <div className="mt-6 pt-6 border-t border-border">
           <h4 className="font-medium mb-3 text-foreground text-sm">
             Active Filters
@@ -194,7 +229,18 @@ export default function ProductFilters({
               <div className="flex items-center gap-1 bg-accent/10 text-accent px-3 py-1 rounded-full text-sm">
                 <span>Category: {selectedCategory}</span>
                 <button
-                  onClick={() => handleFilterChange("category", "")}
+                  onClick={() => handleCategoryClick("")}
+                  className="ml-2 hover:text-accent-dark"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            {selectedBrand && (
+              <div className="flex items-center gap-1 bg-accent/10 text-accent px-3 py-1 rounded-full text-sm">
+                <span>Brand: {selectedBrand}</span>
+                <button
+                  onClick={() => handleBrandClick("")}
                   className="ml-2 hover:text-accent-dark"
                 >
                   <X size={14} />

@@ -17,6 +17,7 @@ interface PaginationProps {
   className?: string;
   variant?: "default" | "minimal" | "rounded";
   size?: "sm" | "default" | "lg";
+  onPageChange?: (page: number) => void;
 }
 
 export default function Pagination({
@@ -27,15 +28,20 @@ export default function Pagination({
   className = "",
   variant = "default",
   size = "default",
+  onPageChange,
 }: PaginationProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const updatePage = (page: number) => {
+    if (onPageChange) {
+      onPageChange(page);
+      return;
+    }
+
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", page.toString());
 
-    // Remove page param if it's page 1
     if (page === 1) {
       params.delete("page");
     }
@@ -44,7 +50,7 @@ export default function Pagination({
       ? `${baseUrl}${params.toString() ? `?${params.toString()}` : ""}`
       : `${params.toString() ? `?${params.toString()}` : ""}`;
 
-    router.push(targetUrl, { scroll: false }); // Prevent scroll to top
+    router.push(targetUrl, { scroll: false });
   };
 
   const getPageNumbers = () => {
@@ -57,39 +63,31 @@ export default function Pagination({
         pages.push(i);
       }
     } else {
-      // Show first page
       pages.push(1);
 
-      // Calculate start and end of middle pages
       let start = Math.max(2, currentPage - sidePages);
       let end = Math.min(totalPages - 1, currentPage + sidePages);
 
-      // Adjust if we're near the beginning
       if (currentPage <= sidePages + 1) {
         end = maxVisible - 1;
       }
 
-      // Adjust if we're near the end
       if (currentPage >= totalPages - sidePages) {
         start = totalPages - maxVisible + 2;
       }
 
-      // Add ellipsis after first page if needed
       if (start > 2) {
         pages.push("...");
       }
 
-      // Add middle pages
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
 
-      // Add ellipsis before last page if needed
       if (end < totalPages - 1) {
         pages.push("...");
       }
 
-      // Add last page
       pages.push(totalPages);
     }
 

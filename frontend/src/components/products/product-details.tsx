@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -39,6 +39,13 @@ import {
   useCheckInWishlist,
   useToggleWishlist,
 } from "@/lib/hooks/use-wishlist";
+import {
+  useAddToCart,
+  useCart,
+  useRemoveFromCart,
+  useIncrementCartItem,
+  useDecrementCartItem,
+} from "@/lib/hooks/use-cart";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import type { WishlistItem } from "@/lib/api/wishlist";
@@ -79,11 +86,44 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("description");
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [cartItemId, setCartItemId] = useState<string | null>(null);
+  const [cartQuantity, setCartQuantity] = useState<number>(0);
 
   const { data, isLoading, error } = useProductById(productId, {});
 
+  const { mutate: addToCart, isPending: isAddingToCart } = useAddToCart();
+  const { mutate: removeFromCart, isPending: isRemovingFromCart } =
+    useRemoveFromCart();
+  const { mutate: incrementItem, isPending: isIncrementing } =
+    useIncrementCartItem();
+  const { mutate: decrementItem, isPending: isDecrementing } =
+    useDecrementCartItem();
+
+  const { data: cartData, isLoading: isLoadingCart } = useCart();
+
   const isAuthenticated =
     typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
+
+  useEffect(() => {
+    if (cartData?.items && productId) {
+      const cartItem = cartData.items.find(
+        (item) =>
+          item.product._id === productId || item.product.id === productId,
+      );
+      if (cartItem) {
+        setCartItemId(cartItem._id);
+        setCartQuantity(cartItem.quantity);
+        setIsAddedToCart(true);
+        setQuantity(cartItem.quantity);
+      } else {
+        setCartItemId(null);
+        setCartQuantity(0);
+        setIsAddedToCart(false);
+        setQuantity(1);
+      }
+    }
+  }, [cartData, productId]);
 
   const { data: wishlistData, isLoading: isCheckingWishlist } =
     useCheckInWishlist(productId, {
@@ -136,12 +176,149 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   };
 
   const handleAddToCart = () => {
-    console.log("Add to cart:", {
-      productId: product._id,
-      quantity,
-      color: selectedColor,
-      size: selectedSize,
+    if (!isAuthenticated) {
+      toast.error("Please login to add items to cart", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+      router.push("/login");
+      return;
+    }
+
+    if (product.stock === 0) {
+      toast.error("Product is out of stock", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+      return;
+    }
+
+    if (isAddedToCart && cartItemId) {
+      incrementItem(cartItemId, {
+        onSuccess: (response) => {
+          if (response?.data) {
+            setCartQuantity(response.data.quantity);
+            setQuantity(response.data.quantity);
+          }
+        },
+        onError: (error) => {
+          console.error("Increment error:", error);
+          toast.error("Failed to update quantity", {
+            duration: 3000,
+            position: "bottom-center",
+          });
+        },
+      });
+      return;
+    }
+
+    addToCart(
+      { productId, quantity },
+      {
+        onSuccess: (response) => {
+          setIsAddedToCart(true);
+          if (response?.data?.items) {
+            const addedItem = response.data.items.find(
+              (item) =>
+                item.product._id === productId || item.product.id === productId,
+            );
+            if (addedItem) {
+              setCartItemId(addedItem._id);
+              setCartQuantity(addedItem.quantity);
+              setQuantity(addedItem.quantity);
+            }
+          }
+          toast.success(`${product.name} added to cart!`, {
+            duration: 2000,
+            position: "bottom-center",
+          });
+        },
+        onError: (error) => {
+          console.error("Add to cart error:", error);
+          toast.error("Failed to add to cart", {
+            duration: 3000,
+            position: "bottom-center",
+          });
+        },
+      },
+    );
+  };
+
+  const handleIncrement = () => {
+    if (!cartItemId) return;
+
+    if (cartQuantity >= product.stock) {
+      toast.error("Cannot add more. Stock limit reached.", {
+        duration: 2000,
+        position: "bottom-center",
+      });
+      return;
+    }
+
+    incrementItem(cartItemId, {
+      onSuccess: (response) => {
+        if (response?.data) {
+          setCartQuantity(response.data.quantity);
+          setQuantity(response.data.quantity);
+        }
+      },
+      onError: (error) => {
+        console.error("Increment error:", error);
+        toast.error("Failed to update quantity", {
+          duration: 3000,
+          position: "bottom-center",
+        });
+      },
     });
+  };
+
+  const handleDecrement = () => {
+    if (!cartItemId) return;
+
+    if (cartQuantity === 1) {
+      removeFromCart(cartItemId, {
+        onSuccess: () => {
+          setIsAddedToCart(false);
+          setCartItemId(null);
+          setCartQuantity(0);
+          setQuantity(1);
+          toast.success("Removed from cart", {
+            duration: 2000,
+            position: "bottom-center",
+          });
+        },
+        onError: (error) => {
+          console.error("Remove from cart error:", error);
+          toast.error("Failed to remove from cart", {
+            duration: 3000,
+            position: "bottom-center",
+          });
+        },
+      });
+    } else {
+      decrementItem(cartItemId, {
+        onSuccess: (response) => {
+          if (response?.data) {
+            if (response.data.removed) {
+              setIsAddedToCart(false);
+              setCartItemId(null);
+              setCartQuantity(0);
+              setQuantity(1);
+            } else {
+              setCartQuantity(response.data.quantity);
+              setQuantity(response.data.quantity);
+            }
+          }
+        },
+        onError: (error) => {
+          console.error("Decrement error:", error);
+          toast.error("Failed to update quantity", {
+            duration: 3000,
+            position: "bottom-center",
+          });
+        },
+      });
+    }
   };
 
   const handleToggleWishlist = () => {
@@ -190,6 +367,12 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   };
 
   const isLoadingWishlist = isCheckingWishlist || isTogglingWishlist;
+  const isCartLoading =
+    isLoadingCart ||
+    isAddingToCart ||
+    isRemovingFromCart ||
+    isIncrementing ||
+    isDecrementing;
 
   const categoryName = getCategoryName(product.category);
   const categorySlug = getCategorySlug(product.category);
@@ -556,33 +739,76 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
               {/* Quantity & Add to Cart */}
               <div className="mb-8">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex items-center border-2 border-border rounded-xl overflow-hidden bg-white dark:bg-gray-900">
-                    <button
-                      onClick={() => handleQuantityChange(quantity - 1)}
-                      disabled={quantity <= 1}
-                      className="h-12 w-12 flex items-center justify-center text-foreground-muted hover:bg-background-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <div className="h-12 w-16 flex items-center justify-center font-bold text-foreground">
-                      {quantity}
+                  {isAddedToCart && cartItemId ? (
+                    <div className="flex items-center border-2 border-accent rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+                      <button
+                        onClick={handleDecrement}
+                        disabled={isCartLoading || cartQuantity <= 1}
+                        className="h-12 w-12 flex items-center justify-center text-foreground-muted hover:bg-background-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDecrementing ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Minus size={16} />
+                        )}
+                      </button>
+                      <div className="h-12 w-16 flex items-center justify-center font-bold text-foreground">
+                        {cartQuantity}
+                      </div>
+                      <button
+                        onClick={handleIncrement}
+                        disabled={
+                          isCartLoading || cartQuantity >= product.stock
+                        }
+                        className="h-12 w-12 flex items-center justify-center text-foreground-muted hover:bg-background-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isIncrementing ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Plus size={16} />
+                        )}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleQuantityChange(quantity + 1)}
-                      disabled={quantity >= product.stock}
-                      className="h-12 w-12 flex items-center justify-center text-foreground-muted hover:bg-background-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center border-2 border-border rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+                      <button
+                        onClick={() => handleQuantityChange(quantity - 1)}
+                        disabled={quantity <= 1}
+                        className="h-12 w-12 flex items-center justify-center text-foreground-muted hover:bg-background-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <div className="h-12 w-16 flex items-center justify-center font-bold text-foreground">
+                        {quantity}
+                      </div>
+                      <button
+                        onClick={() => handleQuantityChange(quantity + 1)}
+                        disabled={quantity >= product.stock}
+                        className="h-12 w-12 flex items-center justify-center text-foreground-muted hover:bg-background-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  )}
 
                   <Button
                     onClick={handleAddToCart}
-                    disabled={product.stock === 0}
+                    disabled={product.stock === 0 || isCartLoading}
                     className="flex-1 py-3 text-lg gap-3 bg-primary hover:bg-primary-light text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
                   >
-                    <ShoppingCart size={20} />
-                    {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                    {isCartLoading ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : isAddedToCart ? (
+                      <>
+                        <Check size={20} />
+                        Update Cart
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart size={20} />
+                        Add to Cart
+                      </>
+                    )}
                     <ArrowRight
                       size={16}
                       className="group-hover:translate-x-1 transition-transform"
@@ -626,7 +852,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                       >
                         Sign in
                       </Link>{" "}
-                      to add items to your wishlist
+                      to add items to your cart and wishlist
                     </p>
                   </div>
                 )}

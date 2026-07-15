@@ -7,6 +7,7 @@ import { ChevronRight, Package } from "lucide-react";
 interface CategoryCardProps {
   id: string;
   name: string;
+  slug?: string;
   count: number;
   icon?: string;
   image?: string | { url: string; altText?: string } | null;
@@ -17,6 +18,7 @@ interface CategoryCardProps {
 export default function CategoryCard({
   id,
   name,
+  slug,
   count,
   icon,
   image,
@@ -26,8 +28,13 @@ export default function CategoryCard({
   const imageUrl = typeof image === "string" ? image : image?.url;
   const imageAlt = typeof image === "object" ? image?.altText : name;
 
+  const categoryParam = slug || id;
+
   return (
-    <Link href={`/products?category=${id}`} className="group block h-full">
+    <Link
+      href={`/products?category=${categoryParam}`}
+      className="group block h-full"
+    >
       <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 h-full flex flex-col transform hover:-translate-y-1">
         {/* Category Image Section */}
         <div className="relative h-52 overflow-hidden bg-linear-to-br from-muted to-muted/50">

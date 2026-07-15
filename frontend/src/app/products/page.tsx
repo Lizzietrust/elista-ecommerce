@@ -10,18 +10,41 @@ import { useProducts } from "@/lib/hooks/use-products";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Filter, X } from "lucide-react";
+import { useCategories } from "@/lib/hooks/use-categories";
+import type { Product } from "@/types";
 
 export default function ProductsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  const category = searchParams.get("category") || undefined;
+  const categoryId = searchParams.get("category") || undefined;
   const sort = searchParams.get("sort") || "-createdAt";
   const minPrice = searchParams.get("minPrice") || undefined;
   const maxPrice = searchParams.get("maxPrice") || undefined;
   const page = parseInt(searchParams.get("page") || "1");
   const searchQuery = searchParams.get("q") || undefined;
+  const brand = searchParams.get("brand") || undefined;
+
+  const { data: categoriesData } = useCategories({ isActive: true });
+  const allCategories = categoriesData?.data || [];
+
+  const selectedCategoryName = categoryId
+    ? allCategories.find(
+        (cat: { _id: string; name: string }) => cat._id === categoryId,
+      )?.name || categoryId
+    : undefined;
+
+  const apiParams = {
+    category: categoryId,
+    sort,
+    minPrice: minPrice ? parseFloat(minPrice) : undefined,
+    maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+    page,
+    limit: 12,
+    search: searchQuery,
+    ...(brand && { brand }),
+  };
 
   const {
     data: productsData,
@@ -30,38 +53,37 @@ export default function ProductsPage() {
     isError,
     isRefetching,
     refetch,
-  } = useProducts(
-    {
-      category,
-      sort,
-      minPrice: minPrice ? parseFloat(minPrice) : undefined,
-      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-      page,
-      limit: 12,
-      search: searchQuery,
-    },
-    {
+  } = useProducts({
+    endpoint: "all",
+    params: apiParams,
+    options: {
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 30,
       retry: 2,
     },
-  );
+  });
 
-  const products = productsData?.data || [];
+  const products: Product[] = productsData?.data || [];
   const totalCount = productsData?.total || 0;
   const totalPages = productsData?.totalPages || 0;
   const currentPage = productsData?.currentPage || 1;
 
-  const categories = [
+  const productCategories: string[] = [
     ...new Set(
-      products.map((p) =>
-        typeof p.category === "object" ? p.category.name : p.category,
-      ),
+      products
+        .map((p: Product) =>
+          typeof p.category === "object" ? p.category?.name : p.category,
+        )
+        .filter(Boolean) as string[],
     ),
-  ].filter(Boolean);
+  ];
 
-  const brands = [...new Set(products.map((p) => p.brand).filter(Boolean))];
+  const productBrands: string[] = [
+    ...new Set(
+      products.map((p: Product) => p.brand).filter(Boolean) as string[],
+    ),
+  ];
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams);
@@ -73,7 +95,41 @@ export default function ProductsPage() {
     router.push("/products");
   };
 
-  const hasActiveFilters = category || minPrice || maxPrice || searchQuery;
+  const hasActiveFilters =
+    categoryId || minPrice || maxPrice || searchQuery || brand;
+
+  const handleCategoryChange = (categoryName: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (categoryName && categoryName.trim() !== "") {
+      const category = allCategories.find(
+        (cat: { name: string }) => cat.name === categoryName,
+      );
+      if (category) {
+        params.set("category", category._id);
+      } else {
+        params.delete("category");
+      }
+    } else {
+      params.delete("category");
+    }
+
+    params.delete("page");
+    router.push(`/products?${params.toString()}`);
+  };
+
+  const handleBrandChange = (brandName: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (brandName && brandName.trim() !== "") {
+      params.set("brand", brandName);
+    } else {
+      params.delete("brand");
+    }
+
+    params.delete("page");
+    router.push(`/products?${params.toString()}`);
+  };
 
   if (isError) {
     return (
@@ -117,7 +173,7 @@ export default function ProductsPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 animate-slide-down">
           <div className="relative">
-            <div className="absolute -top-4 left-0 w-20 h-1 bg-gradient-to-r from-accent to-primary rounded-full"></div>
+            <div className="absolute -top-4 left-0 w-20 h-1 bg-linear-to-r from-accent to-primary rounded-full"></div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-3 tracking-tight">
               Our <span className="text-accent">Products</span>
@@ -170,11 +226,14 @@ export default function ProductsPage() {
               </div>
             )}
             <ProductFilters
-              categories={categories}
-              brands={brands}
-              selectedCategory={category}
+              categories={productCategories}
+              brands={productBrands}
+              selectedCategory={selectedCategoryName}
               selectedMinPrice={minPrice}
               selectedMaxPrice={maxPrice}
+              selectedBrand={brand}
+              onCategoryChange={handleCategoryChange}
+              onBrandChange={handleBrandChange}
             />
             {hasActiveFilters && (
               <Button
@@ -226,7 +285,7 @@ export default function ProductsPage() {
             ) : products.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product, index) => (
+                  {products.map((product: Product, index: number) => (
                     <div
                       key={product._id}
                       className="animate-fade-in"
@@ -293,7 +352,7 @@ export default function ProductsPage() {
 function ProductGridSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[...Array(6)].map((_, index) => (
+      {[...Array(6)].map((_, index: number) => (
         <div key={index} className="animate-pulse">
           <div className="bg-background-secondary rounded-xl aspect-square mb-4"></div>
           <div className="space-y-3">

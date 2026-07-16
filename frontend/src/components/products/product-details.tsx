@@ -21,9 +21,7 @@ import {
   Sparkles,
   MessageCircle,
   ArrowRight,
-  Store,
   Ruler,
-  Weight,
   Tag,
   ThumbsUp,
   Eye,
@@ -69,14 +67,12 @@ const getCategoryName = (
   return "Products";
 };
 
-const getCategorySlug = (
+const getCategoryId = (
   category: string | ProductCategory | undefined,
 ): string => {
-  if (!category) return "products";
-  if (typeof category === "object" && category.slug) return category.slug;
-  if (typeof category === "string")
-    return category.toLowerCase().replace(/\s+/g, "-");
-  return "products";
+  if (!category) return "";
+  if (typeof category === "object" && category._id) return category._id;
+  return "";
 };
 
 export function ProductDetails({ productId }: ProductDetailsProps) {
@@ -373,7 +369,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
     isDecrementing;
 
   const categoryName = getCategoryName(product.category);
-  const categorySlug = getCategorySlug(product.category);
+  const categoryId = getCategoryId(product.category);
 
   const reviewCount = product.reviewCount || product.ratingsCount || 0;
 
@@ -394,21 +390,25 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
               className="rotate-180 text-foreground-muted"
             />
             <Link
-              href="/categories"
+              href="/products"
               className="text-foreground-muted hover:text-accent transition-colors duration-300"
             >
-              Categories
+              Products
             </Link>
             <ChevronLeft
               size={14}
               className="rotate-180 text-foreground-muted"
             />
-            <Link
-              href={`/categories/${categorySlug}`}
-              className="text-foreground-muted hover:text-accent transition-colors duration-300"
-            >
-              {categoryName}
-            </Link>
+            {categoryId ? (
+              <Link
+                href={`/products?category=${categoryId}`}
+                className="text-foreground-muted hover:text-accent transition-colors duration-300"
+              >
+                {categoryName}
+              </Link>
+            ) : (
+              <span className="text-foreground-muted">{categoryName}</span>
+            )}
             <ChevronLeft
               size={14}
               className="rotate-180 text-foreground-muted"
@@ -557,13 +557,20 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
               {/* Product Header */}
               <div className="mb-6">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <Link
-                    href={`/categories/${categorySlug}`}
-                    className="text-sm font-semibold text-accent hover:underline inline-flex items-center gap-1"
-                  >
-                    <Tag size={14} />
-                    {categoryName}
-                  </Link>
+                  {categoryId ? (
+                    <Link
+                      href={`/products?category=${categoryId}`}
+                      className="text-sm font-semibold text-accent hover:underline inline-flex items-center gap-1"
+                    >
+                      <Tag size={14} />
+                      {categoryName}
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-semibold text-foreground-muted inline-flex items-center gap-1">
+                      <Tag size={14} />
+                      {categoryName}
+                    </span>
+                  )}
                   {product.brand && (
                     <>
                       <span className="text-border">•</span>
@@ -1015,16 +1022,29 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                   Discover more products you might love
                 </p>
               </div>
-              <Link
-                href={`/categories/${categorySlug}`}
-                className="text-accent hover:text-accent-light transition-colors font-semibold inline-flex items-center gap-2 group"
-              >
-                View All
-                <ArrowRight
-                  size={16}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </Link>
+              {categoryId ? (
+                <Link
+                  href={`/products?category=${categoryId}`}
+                  className="text-accent hover:text-accent-light transition-colors font-semibold inline-flex items-center gap-2 group"
+                >
+                  View All
+                  <ArrowRight
+                    size={16}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
+                </Link>
+              ) : (
+                <Link
+                  href="/products"
+                  className="text-accent hover:text-accent-light transition-colors font-semibold inline-flex items-center gap-2 group"
+                >
+                  View All
+                  <ArrowRight
+                    size={16}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
+                </Link>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

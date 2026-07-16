@@ -17,6 +17,7 @@ export interface ProductQueryParams {
   maxPrice?: number;
   rating?: number;
   inStock?: boolean;
+  stock?: number;
   featured?: boolean;
   search?: string;
   seller?: string;

@@ -83,8 +83,6 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("description");
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [cartItemId, setCartItemId] = useState<string | null>(null);
@@ -682,65 +680,11 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                 </p>
               </div>
 
-              {/* Color Selection */}
-              {product.colors && product.colors.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-semibold text-foreground mb-3">
-                    Select Color
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {product.colors.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`px-4 py-2 rounded-xl border-2 transition-all duration-300 ${
-                          selectedColor === color
-                            ? "border-accent bg-accent/10 text-accent font-semibold shadow-md"
-                            : "border-border hover:border-accent hover:bg-accent/5"
-                        }`}
-                      >
-                        {color}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Size Selection */}
-              {product.sizes && product.sizes.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-semibold text-foreground">
-                      Select Size
-                    </h3>
-                    <button className="text-sm text-accent hover:underline inline-flex items-center gap-1">
-                      <Ruler size={14} />
-                      Size Guide
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {product.sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        className={`w-12 h-12 rounded-xl border-2 transition-all duration-300 font-semibold ${
-                          selectedSize === size
-                            ? "border-accent bg-accent/10 text-accent shadow-md"
-                            : "border-border hover:border-accent"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Quantity & Add to Cart */}
               <div className="mb-8">
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   {isAddedToCart && cartItemId ? (
-                    <div className="flex items-center border-2 border-accent rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+                    <div className="flex items-center justify-between border-2 border-accent rounded-xl overflow-hidden bg-white dark:bg-gray-900">
                       <button
                         onClick={handleDecrement}
                         disabled={isCartLoading || cartQuantity <= 1}
